@@ -30,8 +30,9 @@ def main():
         sys.modules["app.schemas.message"].MessageResponse = SimpleNamespace
         sys.modules["app.schemas.notification"].ChannelCapabilityManager = SimpleNamespace(
             supports_callbacks=lambda channel: False, supports_editing=lambda channel: False)
-        spec = importlib.util.spec_from_file_location("relaynestprobe_under_test", Path(__file__).parent / "relaynestprobe/__init__.py")
+        spec = importlib.util.spec_from_file_location("relaynestprobe_under_test", Path(__file__).parent / "relaynestprobe/__init__.py", submodule_search_locations=[str(Path(__file__).parent / "relaynestprobe")])
         module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
         spec.loader.exec_module(module)
         plugin = module.RelayNestProbe()
         plugin.init_plugin()
@@ -124,6 +125,37 @@ def main():
         assert plugin.post_message(Message(**candidate_message, title="输入有误！")) is True
         assert plugin.post_message(Message(**candidate_message, title="真实业务回复")) is None
         assert not plugin._candidate_calls[0]["chat_context_preserved"]
+        # 真实 loopback HTTP 仅验证协议桩；不计为 MP 主进程或正式 Hub 证据。
+        transport = sys.modules["relaynestprobe_under_test.transport"]
+        with transport.receiver() as active:
+            active.update(run="local-test", sent=[])
+            plugin._transport = active
+            message = Message(**good, image=active["url"] + "/fixture.png", file_path=active["file"])
+            response = plugin.send_direct_message(message)
+            assert response.message_id in active["state"]["messages"]
+            row = active["state"]["messages"][response.message_id]
+            assert len(row["initial"]["attachments"]) == 2
+            assert plugin.edit_message(None, source, response.message_id, f"{source}:user", "relaynest-p1probe:edited")
+            assert row["revision"] == 2 and row["text"] == "relaynest-p1probe:edited"
+            payload = active["sent"][0]["payload"]
+            assert transport.request(active["url"] + "/messages", payload)["message_id"] == response.message_id
+            assert active["state"]["creates"] == 1 and active["state"]["replays"] == 1
+            # 回归：原生候选使用 phase/Bot 前缀，必须被临时接收桩接受。
+            context["userid"] = "RelayNest-P1Probe:media:A:local:user"
+            plugin._candidate_pending[source] = context
+            assert plugin.post_medias_message(Message(source=source, userid=context["userid"], save_history=False), media_items)
+            assert active["state"]["creates"] == 2
+            assert active["sent"][-1]["payload"]["path"] == "candidate:media"
+            message.image = "http://untrusted.invalid/image"
+            try:
+                plugin.send_direct_message(message)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError("未拒绝非夹具 URL")
+            plugin._transport = None
+        assert not Path(active["file"]).exists()
+        assert not any(t.name == "relaynest-p105-receiver" for t in transport.threading.enumerate())
         plugin._candidate_result = {"test_marker": True}
         plugin.stop_service()
         assert not plugin.get_state() and plugin.status()["messages"] == 0
@@ -135,8 +167,11 @@ def main():
         assert not plugin.probe()["success"]
         plugin.init_plugin({"enabled": False})
         assert not plugin.get_state()
-        print("PASS: 模块及文本桩、候选捕获、危险数字拒绝、传播边界、身份限制、缓存及停用清理；仅宿主桩验证")
+        print("PASS: 临时 HTTP ID/编辑/附件/重放/清理、模块及文本桩、候选捕获、危险数字拒绝、传播边界、身份限制、缓存及停用清理；仅宿主桩验证")
     finally:
+        for name in list(sys.modules):
+            if name.startswith("relaynestprobe_under_test"):
+                sys.modules.pop(name, None)
         for name, value in previous.items():
             if value is None:
                 sys.modules.pop(name, None)

@@ -15,12 +15,15 @@ from app.schemas.message import Message, MessageResponse
 from app.schemas.notification import ChannelCapabilityManager
 
 
-class RelayNestProbe(_PluginBase):
+from .transport import TransportProbeMixin, request
+
+
+class RelayNestProbe(TransportProbeMixin, _PluginBase):
     """探测 source 路由与模块接口；不注册完整 RelayNest 渠道。"""
 
     plugin_name = "RelayNest 最小探针"
     plugin_desc = "仅处理内置合成消息，不连接 Hub，不执行下载或订阅。"
-    plugin_version = "0.0.3"
+    plugin_version = "0.0.4"
     plugin_author = "RelayNest"
     plugin_config_prefix = "relaynestprobe_"
     plugin_order = -100
@@ -41,6 +44,8 @@ class RelayNestProbe(_PluginBase):
         self._candidate_pending = {}
         self._candidate_calls = []
         self._candidate_result = None
+        self._transport = None
+        self._transport_result = None
 
     def get_state(self):
         return self._enabled
@@ -57,6 +62,7 @@ class RelayNestProbe(_PluginBase):
     def get_api(self):
         """所有入口均要求 MP API 密钥，POST 只运行内置固定用例。"""
         return [
+            {"path": "/transport_probe", "endpoint": self.transport_probe, "methods": ["POST"], "auth": "apikey", "summary": "运行临时 HTTP 传输验证"},
             {"path": "/status", "endpoint": self.status, "methods": ["GET"], "auth": "apikey", "summary": "读取探针状态"},
             {"path": "/probe", "endpoint": self.probe, "methods": ["POST"], "auth": "apikey", "summary": "运行固定合成消息探针"},
             {"path": "/text_preflight", "endpoint": self.text_preflight, "methods": ["GET"], "auth": "apikey", "summary": "检查固定文本测试的传播边界"},
@@ -99,6 +105,7 @@ class RelayNestProbe(_PluginBase):
             return None
         with self._lock:
             self._record("post_message", message)
+            self._transport_send("post_message", message)
         # 此固定合成消息已被消费，阻止 legacy 调度继续进入其它 provider。
         return True
 
@@ -115,6 +122,7 @@ class RelayNestProbe(_PluginBase):
                 and message.save_history is False
             ):
                 return False
+            self._transport_send("reply", message)
             self._text_replies.append({
                 "source": message.source, "userid": message.userid,
                 "chat_context_preserved": getattr(message, "original_chat_id", None) == expected["chat_id"],
@@ -150,7 +158,8 @@ class RelayNestProbe(_PluginBase):
                 blocked_handlers.remove(webagent_handler)
         other_providers = [
             identity[0] for identity, methods in get_plugin_manager().get_plugin_modules().items()
-            if {"post_message", "post_medias_message", "post_torrents_message"}.intersection(methods)
+            if {"post_message", "post_medias_message", "post_torrents_message",
+                "send_direct_message", "edit_message"}.intersection(methods)
             and identity[0] != type(self).__name__
         ]
         collisions = [
@@ -246,6 +255,7 @@ class RelayNestProbe(_PluginBase):
                 titles = [getattr(item if kind == "media" else item.torrent_info, "title", "") for item in items]
                 if not all(title.startswith(context["fixture_prefix"]) for title in titles):
                     return False
+            self._transport_send(f"candidate:{kind}", message, items)
             self._candidate_calls.append({
                 "kind": kind, "source": message.source, "userid": message.userid,
                 "count": len(items or []), "buttons_present": bool(message.buttons),
@@ -389,11 +399,11 @@ class RelayNestProbe(_PluginBase):
             return self._candidate_result
 
     def send_direct_message(self, message):
-        """返回内存消息桩 ID，不能被当作真实 Hub 发送成功证据。"""
+        """返回本轮临时 HTTP 桩或旧内存桩 ID，均非正式 Hub 证据。"""
         if not self._matches(message):
             return None
         with self._lock:
-            message_id = f"relaynest-probe-{uuid4().hex}"
+            message_id = self._transport_send("direct", message) or f"relaynest-probe-{uuid4().hex}"
             self._records[message_id] = {"source": message.source, "edited": False}
             self._record("send_direct_message", message)
             return MessageResponse(
@@ -403,7 +413,7 @@ class RelayNestProbe(_PluginBase):
 
     def edit_message(self, channel, source, message_id, chat_id, text,
                      title=None, buttons=None, metadata=None):
-        """只允许编辑本轮内存消息桩，不操作真实消息或外部系统。"""
+        """只允许编辑本轮自有桩消息，不操作真实业务消息。"""
         with self._lock:
             record = self._records.get(message_id)
             if not (
@@ -412,6 +422,9 @@ class RelayNestProbe(_PluginBase):
                 and chat_id == f"{source}:user" and text == "relaynest-p1probe:edited"
             ):
                 return None
+            if self._transport:
+                request(self._transport["url"] + "/edit", {"source": source, "userid": chat_id,
+                        "message_id": message_id, "text": text})
             record["edited"] = True
             self._calls.append({"method": "edit_message", "source": source, "userid": chat_id})
             self._calls = self._calls[-24:]
@@ -421,6 +434,7 @@ class RelayNestProbe(_PluginBase):
         with self._lock:
             return {"enabled": self._enabled, "messages": len(self._records), "calls": list(self._calls),
                     "text_replies": len(self._text_replies), "text_result": self._text_result,
+                    "transport_active": self._transport is not None, "transport_result": self._transport_result,
                     "candidate_calls": len(self._candidate_calls), "candidate_result": self._candidate_result}
 
     def probe(self):
@@ -472,3 +486,5 @@ class RelayNestProbe(_PluginBase):
             self._candidate_pending.clear()
             self._candidate_calls.clear()
             self._candidate_result = None
+        self._transport = None
+        self._transport_result = None

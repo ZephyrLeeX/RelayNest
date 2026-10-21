@@ -19,11 +19,12 @@ def main():
         "probe": ("POST", "/plugin/RelayNestProbe/probe"),
         "text-preflight": ("GET", "/plugin/RelayNestProbe/text_preflight"),
         "text-probe": ("POST", "/plugin/RelayNestProbe/text_probe"),
+        "transport-probe": ("POST", "/plugin/RelayNestProbe/transport_probe"),
         "candidate-probe": ("POST", "/plugin/RelayNestProbe/candidate_probe"),
         "unload": ("DELETE", "/plugin/RelayNestProbe"),
     }
     if len(sys.argv) != 2 or sys.argv[1] not in routes:
-        raise SystemExit("参数：enable / load / status / probe / text-preflight / text-probe / candidate-probe / disable / unload")
+        raise SystemExit("参数：enable / load / status / probe / text-preflight / text-probe / candidate-probe / transport-probe / disable / unload")
     action = sys.argv[1]
     method, path = routes[action]
     values = dotenv_values("/config/app.env")

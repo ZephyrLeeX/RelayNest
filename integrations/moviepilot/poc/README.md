@@ -4,12 +4,14 @@
 
 0.0.3 增加原生媒体／种子候选控制测试：合成候选首屏、翻页、越界输入和退出共 16 项通过；同 userid 跨 source 会覆盖会话，原生空 channel 回调返回 AttributeError。详见 [候选执行报告](../../../docs/tasks/reports/P01-04-implementation.md)。
 
+0.0.4 增加 `transport-probe`：MP 主进程经真实发送方法向临时 loopback HTTP 接收桩传输，返回 ID、同消息编辑、夹具图片/文件字节、定向同步/异步通知及原生回复/候选路径检查通过。它是协议桩，不是正式 Hub 或 Android；广播、持久重放、容器重启仍未运行。完整结果及失败轮次见 [P01-05 报告](../../../docs/tasks/reports/P01-05-implementation.md)。
+
 ## 能力边界
 
 - 无第三方新增依赖；使用 MP 自带 SDK、消息模型和标准库。
 - 只处理 source 为 `RelayNest-P1Probe:A/B`、对应固定 userid、固定正文、`save_history=False` 且 channel 为空的合成消息。
-- 不监听 NoticeMessage、不启动后台线程、不接 Hub、不处理任意用户输入。文本测试只原样调用 `MessageChain.handle_message(text="/noai")`，不替换宿主核心、权限或事件实现。
-- 基础模块 probe 的两类候选只传空列表；candidate-probe 在内存播种 9 条合成媒体／种子候选，由原生渲染及交互控制处理。直接发送 ID 和编辑结果由内存消息桩生成，没有发送到真实设备。
+- 不监听 NoticeMessage；常规探针不启动后台线程，transport-probe 仅在请求期间启动临时 HTTP 服务线程并在 finally 关闭；不接正式 Hub、不处理任意用户输入。文本测试只原样调用 `MessageChain.handle_message(text="/noai")`，不替换宿主核心、权限或事件实现。
+- 基础模块 probe 的两类候选只传空列表；candidate-probe 在内存播种 9 条合成媒体／种子候选，由原生渲染及交互控制处理。旧 probe 的直接发送 ID 和编辑仍为内存桩；transport-probe 返回临时 HTTP 接收桩生成的 ID 并更新其内存行，没有发送到真实设备。
 - 不修改 NotificationChannel、能力表或 MP 核心，不借用 QQ/WebAgent。
 - v3.0.0 仅准备旧基类导入回退，未在该版本运行；目前没有市场版本兼容承诺。
 
@@ -27,7 +29,7 @@ PYTHONDONTWRITEBYTECODE=1 python integrations/moviepilot/poc/verify_probe.py
 
 以下操作只针对新目录 `relaynestprobe`。若目录已存在，应先确认归属，不能覆盖已有文件。所有路径和容器名均针对本次环境；不要使用市场安装接口下载不存在的插件。
 
-先建立一个全新的插件目录，再复制唯一源码文件：
+先建立一个全新的插件目录，再复制两个源码文件（均须使用本地同版本文件）：
 
 ```sh
 ssh -F /home/lijx/.ssh/config fnos 'docker exec moviepilot-v2 mkdir /app/app/plugins/relaynestprobe'
@@ -37,6 +39,8 @@ ssh -F /home/lijx/.ssh/config fnos \
 ```
 
 目录创建失败时停止，不能继续复制命令。测试时实际采用了目标不存在及文件哈希校验，未覆盖旧文件。
+
+另用相同方式将本地 `integrations/moviepilot/poc/relaynestprobe/transport.py` 复制到新目录内的 `transport.py`。加载前校验两文件 SHA-256；不能仅部署 `__init__.py`。
 
 使用下列命令，依次把末尾动作替换为 `enable`、`load`、`status`、`probe`：
 
@@ -48,7 +52,7 @@ ssh -F /home/lijx/.ssh/config fnos \
 
 v3.1.5 要求先通过官方 API 设置插件本体启用位，再重载以注册 API；仅放源码并调用重载会报告加载失败。`probe_api.py` 只允许固定探针路径，从容器内现有配置读取 API_TOKEN，通过 loopback 请求头使用，不输出凭据。无凭据访问探针 API 实测返回 HTTP 401。
 
-如需复现本轮文本测试，先使用 `text-preflight`，再使用 `text-probe`。传播检查会拒绝未知的活动 NoticeMessage 监听器、其它 post_message 插件 provider 和同名通知配置。唯一经过源码核对的内置 WebAgent 桥，只有在其真实提取函数拒绝本次 channel=None 消息时才被排除；不禁用任何现有监听器。
+如需复现本轮文本测试，先使用 `text-preflight`，再使用 `text-probe`。传播检查会拒绝未知的活动 NoticeMessage 监听器、其它五类发送/编辑插件 provider 和同名通知配置。唯一经过源码核对的内置 WebAgent 桥，只有在其真实提取函数拒绝本次 channel=None 消息时才被排除；不禁用任何现有监听器。
 
 `text-probe` 没有自定义输入参数，只运行两次固定 `/noai`，显式使用非渠道管理员身份。MP 原生流程会记录两条测试输入历史；同一探针实例的重复请求返回缓存，不再入站。重载会清除缓存，所以不要为了查看结果反复重载后运行文本测试。测试历史和 MP 正常保留的停用元数据不会被探针直接删除。
 
@@ -58,7 +62,7 @@ v3.1.5 要求先通过官方 API 设置插件本体启用位，再重载以注�
 
 测试结束依次执行 `disable`、`status`、`unload`。停用后的 status 应显示 `enabled=false`、messages 为 0；卸载后 status 返回 HTTP 404。MP 按正常机制保留该插件的停用元数据，不直接删除业务数据库行。
 
-最后核对远端目录文件内容及归属，只删除本次建立的 `/app/app/plugins/relaynestprobe`。本次删除前校验了 `__init__.py` 的 SHA-256，确认目录内只有该文件及 Python 缓存，再删除整个探针目录。不要修改 `/config/app.env`、通知配置、安装清单或其他插件目录。
+最后核对远端目录文件内容及归属，只删除本次建立的 `/app/app/plugins/relaynestprobe`。本次删除前校验了两个源码文件的 SHA-256，确认目录内只有本轮两个源码文件及 Python 缓存，再删除整个探针目录。不要修改 `/config/app.env`、通知配置、安装清单或其他插件目录。
 
 ## 如何解读成功结果
 
@@ -67,3 +71,13 @@ v3.1.5 要求先通过官方 API 设置插件本体启用位，再重载以注�
 模块 probe 的成功不能替代文本入站、业务权限、真实候选选择、按钮回调、主动广播、多 Bot 会话、真实附件、通知去重或容器重启后的恢复验证。
 
 `text-probe` 的 `success=true` 仅表示固定原生输入在两组独立测试身份下各获得一次 source/user 正确的提示回复。本轮 chat_context_preserved 和 message_context_preserved 均为 false；插件尚未补全这些上下文。它不能代表任意用户消息、实际业务命令、权限映射、群会话或引用回复均可用。
+
+## P01-05 最小传输复现
+
+启用并加载全新探针实例后，先 `text-preflight`，再运行 `transport-probe`，不要先运行 text-probe 或 candidate-probe（旧缓存没有传输证据，入口会拒绝）。客户端动作固定，无用户输入参数。常规 probe 仍只用旧内存桩。
+
+transport-probe 只绑定随机 loopback 端口，临时目录为 `/tmp/relaynest-p105-*`，请求结束关闭端口、join 服务线程并删除夹具。它先运行两个 Bot 各一次同步和异步的**明确目标通知**，再直接发送含固定图片和文件的消息、编辑原 ID，复用既有原生文本和候选控制探针。图片仅允许本轮桩生成的精确 URL，文件仅允许本轮创建的精确路径，不下载任意 URL 或读取用户文件。接收桩只接受固定测试 source 和两种测试 userid 命名空间。
+
+预期创建 24 行、编辑 2 次、显式同键重放 1 次；同正文不同键保留不同 ID。键由本轮 run ID 和发送序号产生，只有同一已构造载荷的重传复用该键，不能将它描述成 MP 稳定事件键或持久幂等。附件哈希只检查字节完整性。候选只发送类型、标题、正文、目标和候选数量，不是完整候选对象协议。
+
+同一实例再请求 transport-probe 返回缓存，不重复入站。重载清空缓存，重载后不要为查看结果再次执行原生测试。收尾沿用 disable → status 清空 → unload → status 404 → 哈希/目录校验 → 删除源码，并检查临时目录不存在、容器 healthy、StartedAt 和原有插件清单不变。测试历史保留，不手工清除数据库行。进行中并发停用/重载、故障恢复及重启均未验证。
