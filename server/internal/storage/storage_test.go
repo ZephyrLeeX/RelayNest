@@ -162,10 +162,12 @@ func TestPersistenceAndSequence(t *testing.T) {
 func TestConcurrentOpen(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "db.sqlite")
 	var wg sync.WaitGroup
+	start := make(chan struct{})
 	for i := 0; i < 6; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			<-start
 			s, err := Open(context.Background(), Config{Path: path})
 			if err != nil {
 				t.Error(err)
@@ -178,6 +180,7 @@ func TestConcurrentOpen(t *testing.T) {
 			}
 		}()
 	}
+	close(start)
 	wg.Wait()
 }
 

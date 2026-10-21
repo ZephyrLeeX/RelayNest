@@ -60,12 +60,8 @@ func Open(ctx context.Context, cfg Config) (*Store, error) {
 		return fail(fmt.Errorf("storage connect: %w", err))
 	}
 	// journal_mode 是文件持久设置；先开启 WAL，再允许迁移事务获取写锁。
-	var journal string
-	if err = s.writer.QueryRowContext(ctx, "PRAGMA journal_mode=WAL").Scan(&journal); err != nil {
+	if err = enableWAL(ctx, s.writer, cfg.BusyTimeout); err != nil {
 		return fail(fmt.Errorf("storage WAL: %w", err))
-	}
-	if journal != "wal" {
-		return fail(fmt.Errorf("storage: expected WAL, got %q", journal))
 	}
 	if err = migrate(ctx, s.writer, migrations.Files); err != nil {
 		return fail(err)
