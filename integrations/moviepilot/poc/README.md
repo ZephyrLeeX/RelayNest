@@ -1,12 +1,12 @@
 # RelayNest 最小 MoviePilot 探针
 
-此探针验证 `channel=None + 独立 source` 能否进入宿主模块分发器。已经在用户现有 MoviePilot v3.1.5 主进程中运行，测试后卸载并移除了远端源码。不作为正式插件发布，不代表 P1 完整双向验收通过。
+此探针验证 `channel=None + 独立 source` 的模块分发和受控文本入站。0.0.1 已验证模块入口，0.0.2 已在用户现有 MoviePilot v3.1.5 主进程验证固定 `/noai` 输入及原生定向提示回复。每轮测试后均卸载并移除了远端源码。不作为正式插件发布，不代表 P1 完整双向验收通过。
 
 ## 能力边界
 
 - 无第三方新增依赖；使用 MP 自带 SDK、消息模型和标准库。
 - 只处理 source 为 `RelayNest-P1Probe:A/B`、对应固定 userid、固定正文、`save_history=False` 且 channel 为空的合成消息。
-- 不监听 NoticeMessage、不启动后台线程、不接 Hub、不处理任意用户输入，不调用 MessageChain 业务处理函数。
+- 不监听 NoticeMessage、不启动后台线程、不接 Hub、不处理任意用户输入。文本测试只原样调用 `MessageChain.handle_message(text="/noai")`，不替换宿主核心、权限或事件实现。
 - 两类候选只传空列表；直接发送 ID 和编辑结果由内存消息桩生成，没有发送到真实设备。
 - 不修改 NotificationChannel、能力表或 MP 核心，不借用 QQ/WebAgent。
 - v3.0.0 仅准备旧基类导入回退，未在该版本运行；目前没有市场版本兼容承诺。
@@ -19,7 +19,7 @@
 PYTHONDONTWRITEBYTECODE=1 python integrations/moviepilot/poc/verify_probe.py
 ```
 
-该脚本使用宿主桩验证拒绝边界和状态清理。真实 MP 的加载、分发和卸载证据见 [执行报告](../../../docs/tasks/reports/P01-02-implementation.md)。
+该脚本使用宿主桩验证拒绝边界和状态清理。真实 MP 的模块证据见 [模块执行报告](../../../docs/tasks/reports/P01-02-implementation.md)，原生文本证据见 [文本执行报告](../../../docs/tasks/reports/P01-03-implementation.md)。
 
 ## 在当前 fnOS 实例复现
 
@@ -46,6 +46,10 @@ ssh -F /home/lijx/.ssh/config fnos \
 
 v3.1.5 要求先通过官方 API 设置插件本体启用位，再重载以注册 API；仅放源码并调用重载会报告加载失败。`probe_api.py` 只允许固定探针路径，从容器内现有配置读取 API_TOKEN，通过 loopback 请求头使用，不输出凭据。无凭据访问探针 API 实测返回 HTTP 401。
 
+如需复现本轮文本测试，先使用 `text-preflight`，再使用 `text-probe`。传播检查会拒绝未知的活动 NoticeMessage 监听器、其它 post_message 插件 provider 和同名通知配置。唯一经过源码核对的内置 WebAgent 桥，只有在其真实提取函数拒绝本次 channel=None 消息时才被排除；不禁用任何现有监听器。
+
+`text-probe` 没有自定义输入参数，只运行两次固定 `/noai`，显式使用非渠道管理员身份。MP 原生流程会记录两条测试输入历史；同一探针实例的重复请求返回缓存，不再入站。重载会清除缓存，所以不要为了查看结果反复重载后运行文本测试。测试历史和 MP 正常保留的停用元数据不会被探针直接删除。
+
 测试结束依次执行 `disable`、`status`、`unload`。停用后的 status 应显示 `enabled=false`、messages 为 0；卸载后 status 返回 HTTP 404。MP 按正常机制保留该插件的停用元数据，不直接删除业务数据库行。
 
 最后核对远端目录文件内容及归属，只删除本次建立的 `/app/app/plugins/relaynestprobe`。本次删除前校验了 `__init__.py` 的 SHA-256，确认目录内只有该文件及 Python 缓存，再删除整个探针目录。不要修改 `/config/app.env`、通知配置、安装清单或其他插件目录。
@@ -54,4 +58,6 @@ v3.1.5 要求先通过官方 API 设置插件本体启用位，再重载以注�
 
 `success=true` 表示两组固定 source 均命中了普通消息、两个候选模块入口、直接发送以及手动编辑 provider。`native_callbacks=false`、`native_editing=false` 是仍未解决的宿主能力门槛。
 
-这不能替代文本入站、业务权限、真实候选选择、按钮回调、主动广播、多 Bot 会话、真实附件、通知去重或容器重启后的恢复验证。
+模块 probe 的成功不能替代文本入站、业务权限、真实候选选择、按钮回调、主动广播、多 Bot 会话、真实附件、通知去重或容器重启后的恢复验证。
+
+`text-probe` 的 `success=true` 仅表示固定原生输入在两组独立测试身份下各获得一次 source/user 正确的提示回复。本轮 chat_context_preserved 和 message_context_preserved 均为 false；插件尚未补全这些上下文。它不能代表任意用户消息、实际业务命令、权限映射、群会话或引用回复均可用。

@@ -8,7 +8,10 @@ from types import ModuleType, SimpleNamespace
 
 def main():
     """临时替换导入并在结束后恢复，避免污染调用进程。"""
-    names = ["app", "app.sdk", "app.sdk.plugin", "app.schemas", "app.schemas.message", "app.schemas.notification"]
+    names = ["app", "app.sdk", "app.sdk.plugin", "app.schemas", "app.schemas.message", "app.schemas.notification",
+             "app.application", "app.application.notification", "app.application.plugin",
+             "app.application.plugin.runtime", "app.application.messaging", "app.application.messaging.webagent",
+             "app.application.messaging.webagent.events", "app.schemas.types", "app.chain", "app.chain.message"]
     previous = {name: sys.modules.get(name) for name in names}
     try:
         for name in names:
@@ -18,6 +21,9 @@ def main():
             def __init__(self, **kwargs):
                 super().__init__(**{"channel": None, "source": None, "userid": None,
                                    "text": None, "save_history": True, **kwargs})
+
+            def model_dump(self):
+                return vars(self).copy()
 
         sys.modules["app.sdk.plugin"]._PluginBase = object
         sys.modules["app.schemas.message"].Message = Message
@@ -49,13 +55,61 @@ def main():
         message_id, record = next(iter(plugin._records.items()))
         other = next(source for source in plugin._sources if source != record["source"])
         assert plugin.edit_message(None, other, message_id, f"{other}:user", "relaynest-p1probe:edited") is None
+
+        # 这里的链是测试桩：只检查固定输入、缓存和捕获边界，不宣称宿主文本链通过。
+        handlers, providers, configs, inputs = [], {}, [], []
+        plugin.eventmanager = SimpleNamespace(visualize_handlers=lambda: handlers)
+        sys.modules["app.schemas.types"].EventType = SimpleNamespace(NoticeMessage=SimpleNamespace(value="notice"))
+        sys.modules["app.application.notification"].get_notification_configs = lambda **kwargs: configs
+        sys.modules["app.application.plugin.runtime"].get_plugin_manager = lambda: SimpleNamespace(get_plugin_modules=lambda: providers)
+        assert plugin.text_preflight()["success"]
+        handlers.append({"event_type": "notice", "status": "enabled", "handler_identifier": "OtherPlugin.send"})
+        assert not plugin.text_preflight()["success"]
+        handlers.clear()
+        providers[("OtherPlugin", "other")] = {"post_message": object()}
+        assert not plugin.text_preflight()["success"]
+        providers.clear()
+        configs.append(SimpleNamespace(name=plugin._sources[0]))
+        assert not plugin.text_preflight()["success"]
+        configs.clear()
+        handlers.append({"event_type": "notice", "status": "enabled",
+                         "handler_identifier": "app.application.messaging.webagent.events.dispatch_web_agent_message_event"})
+        events_module = sys.modules["app.application.messaging.webagent.events"]
+        events_module.extract_web_agent_message_from_event_data = lambda data: None
+        assert plugin.text_preflight()["success"] and plugin.text_preflight()["webagent_rejects_probe"]
+        events_module.extract_web_agent_message_from_event_data = lambda data: object()
+        assert not plugin.text_preflight()["success"]
+        handlers.clear()
+
+        class NativeChainStub:
+            def handle_message(self, **kwargs):
+                assert kwargs["text"] == "/noai" and kwargs["is_channel_admin"] is False
+                assert kwargs["channel"] is None
+                inputs.append(kwargs)
+                reply = dict(source=kwargs["source"], userid=kwargs["userid"],
+                             title=plugin._reply_title, text=None, save_history=False)
+                for change in [{"channel": "QQ"}, {"source": "OtherBot"}, {"userid": "other-user"},
+                               {"title": "other-title"}, {"text": "business-reply"}, {"save_history": True}]:
+                    assert plugin.post_message(Message(**{**reply, **change})) is None
+                assert plugin.post_message(Message(**reply)) is True
+
+        sys.modules["app.chain.message"].MessageChain = NativeChainStub
+        native = plugin.text_probe()
+        assert native["success"] and len(inputs) == 2
+        assert all(row["reply_count"] == 1 for row in native["results"])
+        assert all(not row["replies"][0]["chat_context_preserved"] for row in native["results"])
+        assert plugin.text_probe() is native and len(inputs) == 2
+        plugin.probe()
+        assert plugin.text_probe() is native and len(inputs) == 2
         plugin.stop_service()
         assert not plugin.get_state() and plugin.status()["messages"] == 0
+        assert plugin.status()["text_replies"] == 0 and plugin.status()["text_result"] is None
+        assert not plugin._text_pending
         assert plugin.post_message(Message(**good)) is None
         assert not plugin.probe()["success"]
         plugin.init_plugin({"enabled": False})
         assert not plugin.get_state()
-        print("PASS: 合成模块流程、重复运行、外部身份拒绝、跨 source 编辑拒绝、停用和清理；仅宿主桩验证")
+        print("PASS: 模块及固定文本桩、传播边界拒绝、身份拒绝、重复请求缓存、跨 source 编辑拒绝、停用清理；仅宿主桩验证")
     finally:
         for name, value in previous.items():
             if value is None:

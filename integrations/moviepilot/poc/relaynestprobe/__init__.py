@@ -1,4 +1,4 @@
-"""只处理固定合成消息的可移除探针，不接入任何 MoviePilot 业务命令。"""
+"""只处理固定测试消息的可移除探针，不执行下载或订阅业务。"""
 
 import threading
 from uuid import uuid4
@@ -20,13 +20,14 @@ class RelayNestProbe(_PluginBase):
 
     plugin_name = "RelayNest 最小探针"
     plugin_desc = "仅处理内置合成消息，不连接 Hub，不执行下载或订阅。"
-    plugin_version = "0.0.1"
+    plugin_version = "0.0.2"
     plugin_author = "RelayNest"
     plugin_config_prefix = "relaynestprobe_"
     plugin_order = -100
     auth_level = 1
     _sources = ("RelayNest-P1Probe:A", "RelayNest-P1Probe:B")
     _text = "relaynest-p1probe:synthetic"
+    _reply_title = "请输入要使用传统交互处理的内容"
 
     def init_plugin(self, config=None):
         """仅建立内存状态，不创建线程、网络连接或插件数据库。"""
@@ -34,6 +35,9 @@ class RelayNestProbe(_PluginBase):
         self._enabled = bool((config or {}).get("enabled", True))
         self._records = {}
         self._calls = []
+        self._text_pending = {}
+        self._text_replies = []
+        self._text_result = None
 
     def get_state(self):
         return self._enabled
@@ -41,7 +45,7 @@ class RelayNestProbe(_PluginBase):
     def get_form(self):
         return [
             {"component": "VSwitch", "props": {"model": "enabled", "label": "启用合成消息探针"}},
-            {"component": "VAlert", "props": {"type": "info", "text": "仅验证模块接口；未接入用户消息或业务命令。"}},
+            {"component": "VAlert", "props": {"type": "info", "text": "仅验证模块接口和固定 /noai 输入；不接受任意业务命令。"}},
         ], {"enabled": True}
 
     def get_page(self):
@@ -52,6 +56,8 @@ class RelayNestProbe(_PluginBase):
         return [
             {"path": "/status", "endpoint": self.status, "methods": ["GET"], "auth": "apikey", "summary": "读取探针状态"},
             {"path": "/probe", "endpoint": self.probe, "methods": ["POST"], "auth": "apikey", "summary": "运行固定合成消息探针"},
+            {"path": "/text_preflight", "endpoint": self.text_preflight, "methods": ["GET"], "auth": "apikey", "summary": "检查固定文本测试的传播边界"},
+            {"path": "/text_probe", "endpoint": self.text_probe, "methods": ["POST"], "auth": "apikey", "summary": "运行固定原生文本入站测试"},
         ]
 
     def get_module(self):
@@ -81,12 +87,121 @@ class RelayNestProbe(_PluginBase):
         self._calls = self._calls[-24:]
 
     def post_message(self, message, **kwargs):
+        if self._capture_text_reply(message):
+            return True
         if not self._matches(message):
             return None
         with self._lock:
             self._record("post_message", message)
         # 此固定合成消息已被消费，阻止 legacy 调度继续进入其它 provider。
         return True
+
+    def _capture_text_reply(self, message):
+        """仅收集本轮待处理身份的固定原生提示，不转发通知事件。"""
+        if message is None:
+            return False
+        with self._lock:
+            expected = self._text_pending.get(message.source)
+            if not (
+                self._enabled and expected and message.channel is None
+                and message.userid == expected["userid"]
+                and message.title == self._reply_title and not message.text
+                and message.save_history is False
+            ):
+                return False
+            self._text_replies.append({
+                "source": message.source, "userid": message.userid,
+                "chat_context_preserved": getattr(message, "original_chat_id", None) == expected["chat_id"],
+                "message_context_preserved": getattr(message, "original_message_id", None) == expected["message_id"],
+            })
+            return True
+
+    def text_preflight(self):
+        """只读检查扩散入口；仅排除已核实不接收本次消息的 WebAgent 桥。"""
+        from app.application.notification import get_notification_configs
+        from app.application.plugin.runtime import get_plugin_manager
+        from app.schemas.types import EventType
+
+        notice_handlers = [
+            row["handler_identifier"] for row in self.eventmanager.visualize_handlers()
+            if row["event_type"] == EventType.NoticeMessage.value and row["status"] == "enabled"
+        ]
+        webagent_handler = "app.application.messaging.webagent.events.dispatch_web_agent_message_event"
+        webagent_rejects_probe = None
+        blocked_handlers = list(notice_handlers)
+        if webagent_handler in notice_handlers:
+            from app.application.messaging.webagent.events import extract_web_agent_message_from_event_data
+
+            # 该桥在提取结果为空时立即返回；用真实消息模型校验本次 channel=None 的范围。
+            webagent_rejects_probe = all(
+                extract_web_agent_message_from_event_data(Message(
+                    channel=None, source=source, userid=f"{source}:user:preflight",
+                    title=self._reply_title, save_history=False,
+                ).model_dump()) is None
+                for source in self._sources
+            )
+            if webagent_rejects_probe:
+                blocked_handlers.remove(webagent_handler)
+        other_providers = [
+            identity[0] for identity, methods in get_plugin_manager().get_plugin_modules().items()
+            if "post_message" in methods and identity[0] != type(self).__name__
+        ]
+        collisions = [
+            conf.name for conf in get_notification_configs(include_disabled=True)
+            if conf.name in self._sources
+        ]
+        return {"success": self._enabled and not (blocked_handlers or other_providers or collisions),
+                "active_notice_handlers": notice_handlers, "other_post_providers": other_providers,
+                "source_collisions": collisions, "blocked_notice_handlers": blocked_handlers,
+                "webagent_rejects_probe": webagent_rejects_probe}
+
+    def text_probe(self):
+        """原样调用宿主 handle_message；只发送两条固定 /noai，不替换核心或事件。"""
+        from app.chain.message import MessageChain
+
+        with self._lock:
+            if not self._enabled:
+                return {"success": False, "reason": "探针已停用"}
+            # 同一实例重复请求只返回本轮结果，避免多次写入测试消息历史。
+            if self._text_result is not None:
+                return self._text_result
+            preflight = self.text_preflight()
+            if not preflight["success"]:
+                return {"success": False, "reason": "传播边界检查未通过", "preflight": preflight}
+            self._text_replies.clear()
+            results = []
+            run_id = uuid4().hex[:12]
+            for source in self._sources:
+                context = {"userid": f"{source}:user:{run_id}",
+                           "chat_id": f"{source}:chat:{run_id}",
+                           "message_id": f"{source}:message:{run_id}"}
+                self._text_pending[source] = context
+                before = len(self._text_replies)
+                error_type = None
+                try:
+                    MessageChain().handle_message(
+                        channel=None, source=source, userid=context["userid"],
+                        username=context["userid"], text="/noai", is_channel_admin=False,
+                        original_message_id=context["message_id"], original_chat_id=context["chat_id"],
+                    )
+                except Exception as error:
+                    # 只报告异常类型，不把宿主原始异常或配置带入响应。
+                    error_type = type(error).__name__
+                finally:
+                    self._text_pending.pop(source, None)
+                replies = self._text_replies[before:]
+                results.append({"source": source, "input": "/noai", "is_channel_admin": False,
+                                "error_type": error_type, "reply_count": len(replies),
+                                "directed_reply": error_type is None and len(replies) == 1
+                                and replies[0]["source"] == source and replies[0]["userid"] == context["userid"],
+                                "replies": replies})
+            self._text_result = {
+                "success": all(row["directed_reply"] for row in results),
+                "kind": "native_handle_message_fixed_noai", "preflight": preflight, "results": results,
+                "native_callbacks": ChannelCapabilityManager.supports_callbacks(None),
+                "native_editing": ChannelCapabilityManager.supports_editing(None),
+            }
+            return self._text_result
 
     def post_medias_message(self, message, medias):
         if not self._matches(message) or medias:
@@ -133,7 +248,8 @@ class RelayNestProbe(_PluginBase):
 
     def status(self):
         with self._lock:
-            return {"enabled": self._enabled, "messages": len(self._records), "calls": list(self._calls)}
+            return {"enabled": self._enabled, "messages": len(self._records), "calls": list(self._calls),
+                    "text_replies": len(self._text_replies), "text_result": self._text_result}
 
     def probe(self):
         """通过宿主真实模块分发器运行固定用例，不经过 NoticeMessage 或业务链。"""
@@ -178,3 +294,6 @@ class RelayNestProbe(_PluginBase):
             self._enabled = False
             self._records.clear()
             self._calls.clear()
+            self._text_pending.clear()
+            self._text_replies.clear()
+            self._text_result = None
