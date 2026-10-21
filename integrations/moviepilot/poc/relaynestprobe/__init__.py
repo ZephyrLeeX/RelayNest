@@ -20,7 +20,7 @@ class RelayNestProbe(_PluginBase):
 
     plugin_name = "RelayNest 最小探针"
     plugin_desc = "仅处理内置合成消息，不连接 Hub，不执行下载或订阅。"
-    plugin_version = "0.0.2"
+    plugin_version = "0.0.3"
     plugin_author = "RelayNest"
     plugin_config_prefix = "relaynestprobe_"
     plugin_order = -100
@@ -38,6 +38,9 @@ class RelayNestProbe(_PluginBase):
         self._text_pending = {}
         self._text_replies = []
         self._text_result = None
+        self._candidate_pending = {}
+        self._candidate_calls = []
+        self._candidate_result = None
 
     def get_state(self):
         return self._enabled
@@ -58,6 +61,7 @@ class RelayNestProbe(_PluginBase):
             {"path": "/probe", "endpoint": self.probe, "methods": ["POST"], "auth": "apikey", "summary": "运行固定合成消息探针"},
             {"path": "/text_preflight", "endpoint": self.text_preflight, "methods": ["GET"], "auth": "apikey", "summary": "检查固定文本测试的传播边界"},
             {"path": "/text_probe", "endpoint": self.text_probe, "methods": ["POST"], "auth": "apikey", "summary": "运行固定原生文本入站测试"},
+            {"path": "/candidate_probe", "endpoint": self.candidate_probe, "methods": ["POST"], "auth": "apikey", "summary": "运行无下载的固定候选控制测试"},
         ]
 
     def get_module(self):
@@ -87,6 +91,8 @@ class RelayNestProbe(_PluginBase):
         self._calls = self._calls[-24:]
 
     def post_message(self, message, **kwargs):
+        if self._capture_candidate("post_message", message):
+            return True
         if self._capture_text_reply(message):
             return True
         if not self._matches(message):
@@ -144,7 +150,8 @@ class RelayNestProbe(_PluginBase):
                 blocked_handlers.remove(webagent_handler)
         other_providers = [
             identity[0] for identity, methods in get_plugin_manager().get_plugin_modules().items()
-            if "post_message" in methods and identity[0] != type(self).__name__
+            if {"post_message", "post_medias_message", "post_torrents_message"}.intersection(methods)
+            and identity[0] != type(self).__name__
         ]
         collisions = [
             conf.name for conf in get_notification_configs(include_disabled=True)
@@ -204,6 +211,8 @@ class RelayNestProbe(_PluginBase):
             return self._text_result
 
     def post_medias_message(self, message, medias):
+        if self._capture_candidate("media", message, medias):
+            return True
         if not self._matches(message) or medias:
             return None
         with self._lock:
@@ -211,11 +220,173 @@ class RelayNestProbe(_PluginBase):
         return True
 
     def post_torrents_message(self, message, torrents):
+        if self._capture_candidate("torrent", message, torrents):
+            return True
         if not self._matches(message) or torrents:
             return None
         with self._lock:
             self._record("post_torrents_message", message)
         return True
+
+    def _capture_candidate(self, kind, message, items=None):
+        """只捕获本轮夹具候选及固定控制回复，不记录真实媒体或种子。"""
+        if message is None:
+            return False
+        with self._lock:
+            context = self._candidate_pending.get(message.source)
+            if not (self._enabled and context and message.channel is None
+                    and message.userid == context["userid"] and message.save_history is False):
+                return False
+            if kind == "post_message":
+                if message.title not in {"输入有误！", "媒体交互已结束"} or message.text:
+                    return False
+            else:
+                if not items or len(items) > 8:
+                    return False
+                titles = [getattr(item if kind == "media" else item.torrent_info, "title", "") for item in items]
+                if not all(title.startswith(context["fixture_prefix"]) for title in titles):
+                    return False
+            self._candidate_calls.append({
+                "kind": kind, "source": message.source, "userid": message.userid,
+                "count": len(items or []), "buttons_present": bool(message.buttons),
+                "chat_context_preserved": getattr(message, "original_chat_id", None) == context["chat_id"],
+                "message_context_preserved": getattr(message, "original_message_id", None) == context["message_id"],
+                "title": message.title if kind == "post_message" else None,
+            })
+            return True
+
+    @staticmethod
+    def _candidate_input(source, context, text):
+        """固定白名单不含 0 或有效序号，防止探针进入下载和订阅分支。"""
+        if text not in {"/noai 999999", "/noai n", "/noai q"}:
+            raise ValueError("候选探针仅允许越界数字、下一页和退出")
+        from app.chain.message import MessageChain
+
+        MessageChain().handle_message(
+            channel=None, source=source, userid=context["userid"], username=context["userid"],
+            text=text, is_channel_admin=False, original_chat_id=context["chat_id"],
+            original_message_id=context["message_id"], reply_to_message_id=context["fixture_prefix"],
+        )
+
+    def candidate_probe(self):
+        """播种自有内存夹具，再走原生列表渲染和受控文本；不执行有效下载选择。"""
+        from app.application.messaging.media import media_interaction_manager as manager
+        from app.chain.interaction import MediaInteractionChain
+        from app.chain.message import MessageChain
+        from app.domain.context import Context, MediaInfo, TorrentInfo
+
+        with self._lock:
+            if not self._enabled:
+                return {"success": False, "reason": "探针已停用"}
+            if self._candidate_result is not None:
+                return self._candidate_result
+            preflight = self.text_preflight()
+            if not preflight["success"]:
+                return {"success": False, "preflight": preflight}
+            chain = MediaInteractionChain()
+            if chain._page_size(None) != 8:
+                return {"success": False, "reason": "宿主候选分页契约改变，未执行测试"}
+            self._candidate_calls.clear()
+            run_id = uuid4().hex[:12]
+            owned = []
+            controls = []
+            error_type = None
+            callback_error = None
+            callback_returned = False
+            collision = False
+            try:
+                # 只使用随机测试用户，直接观察宿主 store 是否按 source 分区。
+                shared_user = f"RelayNest-P1Probe:shared:{run_id}"
+                for source in self._sources:
+                    request = manager.create_or_replace(shared_user, None, source, shared_user, "Search", "probe")
+                    owned.append(request)
+                collision = (manager.get_by_user(shared_user).request_id == owned[-1].request_id
+                             and manager.get_by_id(owned[-2].request_id, shared_user) is None)
+                manager.remove(owned[-1].request_id)
+                for phase in ("media", "torrent"):
+                    contexts = {}
+                    requests = {}
+                    for source in self._sources:
+                        prefix = f"RelayNest-P1Probe:{phase}:{source[-1]}:{run_id}"
+                        context = {"userid": f"{prefix}:user", "chat_id": f"{prefix}:chat",
+                                   "message_id": f"{prefix}:initial", "fixture_prefix": prefix}
+                        contexts[source] = context
+                        items = []
+                        for index in range(9):
+                            media = MediaInfo()
+                            media.title = f"{prefix}:{index + 1}"
+                            if phase == "media":
+                                items.append(media)
+                            else:
+                                torrent = TorrentInfo()
+                                torrent.title = f"{prefix}:{index + 1}"
+                                item = Context()
+                                item.media_info, item.torrent_info = media, torrent
+                                items.append(item)
+                        request = manager.create_or_replace(context["userid"], None, source, context["userid"],
+                                                            "Search", "probe", title="RelayNest P1 probe", items=items)
+                        request.phase = phase
+                        owned.append(request)
+                        requests[source] = request
+                        self._candidate_pending[source] = context
+                        before = len(self._candidate_calls)
+                        chain._render_interaction(request, None, source, context["userid"],
+                                                  original_message_id=context["message_id"],
+                                                  original_chat_id=context["chat_id"])
+                        calls = self._candidate_calls[before:]
+                        controls.append({"phase": phase, "source": source, "step": "initial",
+                                         "passed": len(calls) == 1 and calls[0]["kind"] == phase
+                                         and calls[0]["count"] == 8, "calls": calls})
+                    # 两个会话同时存在，交错操作，检查每步不会更改另一组会话。
+                    for step, text in (("invalid", "/noai 999999"), ("next", "/noai n"), ("quit", "/noai q")):
+                        for source in self._sources:
+                            context, request = contexts[source], requests[source]
+                            other = self._sources[1] if source == self._sources[0] else self._sources[0]
+                            other_before = manager.get_by_user(contexts[other]["userid"])
+                            other_snapshot = (other_before.request_id, other_before.page) if other_before else None
+                            context["message_id"] = f"{context['fixture_prefix']}:{step}"
+                            before = len(self._candidate_calls)
+                            self._candidate_input(source, context, text)
+                            calls = self._candidate_calls[before:]
+                            current = manager.get_by_user(context["userid"])
+                            other_after = manager.get_by_user(contexts[other]["userid"])
+                            other_unchanged = other_snapshot == ((other_after.request_id, other_after.page) if other_after else None)
+                            expected_title = "输入有误！" if step == "invalid" else "媒体交互已结束"
+                            delivered = len(calls) == 1 and calls[0]["source"] == source and calls[0]["userid"] == context["userid"]
+                            if step == "next":
+                                passed = delivered and calls[0]["kind"] == phase and calls[0]["count"] == 1 and current.page == 1
+                            else:
+                                passed = delivered and calls[0]["title"] == expected_title
+                                passed = passed and (current is None if step == "quit" else current.page == 0)
+                            controls.append({"phase": phase, "source": source, "step": step,
+                                             "passed": bool(passed and other_unchanged), "calls": calls})
+                    self._candidate_pending.clear()
+                try:
+                    MessageChain().handle_message(
+                        channel=None, source=self._sources[0], userid=f"RelayNest-P1Probe:callback:{run_id}",
+                        username="RelayNest probe", text="", is_channel_admin=False,
+                        callback_data=f"media:relaynest-probe-{run_id}:noop",
+                    )
+                    callback_returned = True
+                except Exception as error:
+                    callback_error = type(error).__name__
+            except Exception as error:
+                error_type = type(error).__name__
+            finally:
+                self._candidate_pending.clear()
+                # 仅清理本轮记录下来的 request_id，不清空宿主其它用户的会话。
+                for request in owned:
+                    manager.remove(request.request_id)
+            cleaned = all(manager.get_by_id(request.request_id, request.user_id) is None for request in owned)
+            self._candidate_result = {
+                "success": error_type is None and len(controls) == 16 and all(row["passed"] for row in controls) and cleaned,
+                "kind": "native_candidate_fixture_controls", "error_type": error_type,
+                "same_user_replaces_previous_source": collision, "controls": controls, "owned_sessions_removed": cleaned,
+                "callback": {"supported": ChannelCapabilityManager.supports_callbacks(None),
+                             "returned_without_error": callback_returned, "error_type": callback_error},
+                "valid_selection_executed": False,
+            }
+            return self._candidate_result
 
     def send_direct_message(self, message):
         """返回内存消息桩 ID，不能被当作真实 Hub 发送成功证据。"""
@@ -249,7 +420,8 @@ class RelayNestProbe(_PluginBase):
     def status(self):
         with self._lock:
             return {"enabled": self._enabled, "messages": len(self._records), "calls": list(self._calls),
-                    "text_replies": len(self._text_replies), "text_result": self._text_result}
+                    "text_replies": len(self._text_replies), "text_result": self._text_result,
+                    "candidate_calls": len(self._candidate_calls), "candidate_result": self._candidate_result}
 
     def probe(self):
         """通过宿主真实模块分发器运行固定用例，不经过 NoticeMessage 或业务链。"""
@@ -297,3 +469,6 @@ class RelayNestProbe(_PluginBase):
             self._text_pending.clear()
             self._text_replies.clear()
             self._text_result = None
+            self._candidate_pending.clear()
+            self._candidate_calls.clear()
+            self._candidate_result = None

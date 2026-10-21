@@ -20,7 +20,7 @@ def main():
         class Message(SimpleNamespace):
             def __init__(self, **kwargs):
                 super().__init__(**{"channel": None, "source": None, "userid": None,
-                                   "text": None, "save_history": True, **kwargs})
+                                   "text": None, "title": None, "buttons": None, "save_history": True, **kwargs})
 
             def model_dump(self):
                 return vars(self).copy()
@@ -101,15 +101,41 @@ def main():
         assert plugin.text_probe() is native and len(inputs) == 2
         plugin.probe()
         assert plugin.text_probe() is native and len(inputs) == 2
+        for unsafe in ("/noai 0", "/noai 1", "1", "/download", "/noai 自动选择"):
+            try:
+                plugin._candidate_input(plugin._sources[0], {}, unsafe)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError("危险候选输入未被拒绝")
+        source = plugin._sources[0]
+        context = {"userid": "fixture-user", "chat_id": "fixture-chat", "message_id": "fixture-message",
+                   "fixture_prefix": "RelayNest-P1Probe:fixture:"}
+        plugin._candidate_pending[source] = context
+        candidate_message = dict(source=source, userid=context["userid"], save_history=False)
+        media_items = [SimpleNamespace(title=context["fixture_prefix"] + "1")]
+        assert plugin.post_medias_message(Message(**candidate_message), media_items) is True
+        torrents = [SimpleNamespace(torrent_info=media_items[0])]
+        assert plugin.post_torrents_message(Message(**candidate_message), torrents) is True
+        assert plugin.post_medias_message(Message(**candidate_message), [SimpleNamespace(title="real-media")]) is None
+        assert plugin.post_medias_message(Message(**candidate_message), media_items * 9) is None
+        for change in ({"source": "OtherBot"}, {"userid": "other-user"}, {"channel": "QQ"}, {"save_history": True}):
+            assert plugin.post_medias_message(Message(**{**candidate_message, **change}), media_items) is None
+        assert plugin.post_message(Message(**candidate_message, title="输入有误！")) is True
+        assert plugin.post_message(Message(**candidate_message, title="真实业务回复")) is None
+        assert not plugin._candidate_calls[0]["chat_context_preserved"]
+        plugin._candidate_result = {"test_marker": True}
         plugin.stop_service()
         assert not plugin.get_state() and plugin.status()["messages"] == 0
         assert plugin.status()["text_replies"] == 0 and plugin.status()["text_result"] is None
         assert not plugin._text_pending
+        assert not plugin._candidate_pending and plugin.status()["candidate_calls"] == 0
+        assert plugin.status()["candidate_result"] is None
         assert plugin.post_message(Message(**good)) is None
         assert not plugin.probe()["success"]
         plugin.init_plugin({"enabled": False})
         assert not plugin.get_state()
-        print("PASS: 模块及固定文本桩、传播边界拒绝、身份拒绝、重复请求缓存、跨 source 编辑拒绝、停用清理；仅宿主桩验证")
+        print("PASS: 模块及文本桩、候选捕获、危险数字拒绝、传播边界、身份限制、缓存及停用清理；仅宿主桩验证")
     finally:
         for name, value in previous.items():
             if value is None:
