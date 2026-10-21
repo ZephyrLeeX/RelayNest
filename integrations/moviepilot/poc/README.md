@@ -81,3 +81,23 @@ transport-probe 只绑定随机 loopback 端口，临时目录为 `/tmp/relaynes
 预期创建 24 行、编辑 2 次、显式同键重放 1 次；同正文不同键保留不同 ID。键由本轮 run ID 和发送序号产生，只有同一已构造载荷的重传复用该键，不能将它描述成 MP 稳定事件键或持久幂等。附件哈希只检查字节完整性。候选只发送类型、标题、正文、目标和候选数量，不是完整候选对象协议。
 
 同一实例再请求 transport-probe 返回缓存，不重复入站。重载清空缓存，重载后不要为查看结果再次执行原生测试。收尾沿用 disable → status 清空 → unload → status 404 → 哈希/目录校验 → 删除源码，并检查临时目录不存在、容器 healthy、StartedAt 和原有插件清单不变。测试历史保留，不手工清除数据库行。进行中并发停用/重载、故障恢复及重启均未验证。
+
+## 回调补丁助手原型（方案 A）
+
+用户已选择独立 RelayNest 渠道的文件补丁方案；上下文恢复、自动编辑作为可选项。新增独立目录 `relaynestpatch`，类名 `RelayNestPatch`，版本0.0.1。它只有补丁管理界面，不是正式消息插件；旧探针的channel=None限制和既有结果保持原样。
+
+插件配置页提供“检查补丁状态”“一键应用回调补丁”“恢复原文件”三个按钮。打开配置或保存配置不会自动改核心。写操作使用已登录管理员身份，点击后确认；应用和恢复均须重启MP进程后再检查，插件reload不足以生效。助手不执行重启。
+
+首版仅支持 `APP_VERSION='v3.1.5'` 且 `app/schemas/types.py`、`notification.py` 与已核对SHA-256一致的实例。只新增RelayNest枚举以及按钮/callback两项能力，不开启自动编辑。未知版本、第三方源码修改、符号链接或备份冲突均拒绝覆盖；重复应用不会重复插入。备份和操作清单按补丁ID/MP版本保存于宿主分配的插件数据目录，请保持该目录持久化。
+
+两文件逐个原子替换，整体不具备跨文件事务；操作中断可能显示partial，此时先恢复，确认状态前不要重启。恢复只处理已识别的原文件/本补丁，不覆盖用户后续修改。容器重建可能清除核心文件补丁，升级后先点击检查；新MP版本须先更新已验证的适配指纹，不能保证任意升级后都能直接套用。
+
+本地验证（只写临时目录）：
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 python integrations/moviepilot/poc/verify_patch.py
+# 可选：对固定研究源码副本核对真实指纹及应用/恢复；源目录只读
+PYTHONDONTWRITEBYTECODE=1 python integrations/moviepilot/poc/verify_patch.py --source-root /tmp/relaynest-p1-research/3.1.5
+```
+
+该原型尚未安装到现有MP，也未做实际页面点击、重启及原生callback验收。安装需将新目录内两个Python文件一起部署，通过官方API启用/加载；无自动下载远程补丁或任意文件编辑功能。已有探针的安装命令只适用于RelayNestProbe，不能直接用于本助手。详见[实现与验证记录](../../../docs/tasks/reports/P01-06-callback-patch-prototype.md)。
