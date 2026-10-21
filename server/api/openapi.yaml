@@ -2,8 +2,7 @@ openapi: 3.1.0
 info:
   title: RelayNest 核心 API
   version: 1.0.0
-  description: P03-04：通用 Schema、管理员认证、Bot 与两套独立凭据管理。仅契约，不代表运行时路由已实现。后续 P03-05～07 串行扩展消息/投递/客户端等接口。JSON
-    拒绝未知字段；受保护响应 no-store。Web 仅管理元数据，不浏览正文/附件/历史；Hub 不解释业务命令或执行 MCP。
+  description: P03-04～05：认证/Bot与消息、独立callback、标准Webhook、附件及客户端历史契约。仅契约，不代表运行时路由已实现；P03-06～07继续投递/同步/设备。JSON拒绝未知字段，受保护响应no-store。Web仅管理元数据，无正文/附件/历史；Hub不解释业务命令或执行MCP。
 servers:
 - url: /api/v1
 paths:
@@ -11,8 +10,8 @@ paths:
     post:
       operationId: login
       summary: 登录唯一管理员
-      description: Web 只返回 Cookie 和 CSRF；Android 返回设备会话 Bearer。登录验证同源 Origin；Cookie
-        HttpOnly、SameSite=Lax，外部 HTTPS 时 Secure。响应及日志不得泄露密码；凭据错误统一 401 AUTHENTICATION_FAILED。
+      description: Web 只返回 Cookie 和 CSRF；Android 返回设备会话 Bearer。登录验证同源 Origin；Cookie HttpOnly、SameSite=Lax，外部 HTTPS
+        时 Secure。响应及日志不得泄露密码；凭据错误统一 401 AUTHENTICATION_FAILED。
       security: []
       responses:
         '200':
@@ -24,8 +23,8 @@ paths:
                 type: string
                 const: no-store
             Set-Cookie:
-              description: 仅 Web 登录设置 relaynest_session；HttpOnly; SameSite=Lax; Path=/api/v1；外部
-                HTTPS 时 Secure。Android 不设置。
+              description: 仅 Web 登录设置 relaynest_session；HttpOnly; SameSite=Lax; Path=/api/v1；外部 HTTPS 时 Secure。Android
+                不设置。
               schema:
                 type: string
           content:
@@ -293,8 +292,7 @@ paths:
     post:
       operationId: resetAPIToken
       summary: 仅重置 Bot API Token
-      description: 旧 API Token 在提交后立即失效，取消旧 Long Polling、撤销旧租约并重新排队；消息/失败记录保留，不影响
-        Webhook Key。新值仅本响应显示一次。
+      description: 旧 API Token 在提交后立即失效，取消旧 Long Polling、撤销旧租约并重新排队；消息/失败记录保留，不影响 Webhook Key。新值仅本响应显示一次。
       security:
       - AdminBearer: []
       - WebCookie: []
@@ -366,6 +364,687 @@ paths:
       required: true
       schema:
         $ref: '#/components/schemas/ID'
+  /bot/messages:
+    post:
+      operationId: createBotMessage
+      summary: 创建本 Bot 应用消息
+      description: 仅启用 Bot 的 send 能力，sender 固定 application。所有资源引用（回复、附件、消息、按钮）均须在当前 Bot 授权域内验证；跨 Bot 或无权资源404 RESOURCE_NOT_FOUND，不泄露是否存在。附件仅
+        ready 可绑定；同一附件 ID 不得重复、kind 必须匹配。受保护响应与日志不泄露非授权正文/附件/路径。Bot 凭据访问须校验启用状态；写入提交前复验身份及凭据代次。
+      security:
+      - BotAPIToken: []
+      responses:
+        '201':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+              description: 受保护响应固定 no-store。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '410':
+          $ref: '#/components/responses/410'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        x-max-bytes: 262144
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMessageRequest'
+        description: JSON 原始请求体最多256 KiB，超过返回413；未知字段/结构错误400，字段语义422。文本/callback UTF-8字节及数量限制另行校验。
+      x-bot-capability: send
+      x-reference-policy: same-bot-authorized-ready
+  /webhooks/{bot_id}:
+    post:
+      operationId: createWebhookMessage
+      summary: 创建本 Bot 应用消息
+      description: 独立 WebhookKey 仅向路径指定且匹配凭据的启用 Bot 创建标准消息，sender 固定 application；不提供字段转换、模板、脚本、读/编辑/上传能力。可绑定本 Bot
+        已准备且允许发送的附件；外部链接不自动抓取。所有资源引用（回复、附件、消息、按钮）均须在当前 Bot 授权域内验证；跨 Bot 或无权资源404 RESOURCE_NOT_FOUND，不泄露是否存在。附件仅
+        ready 可绑定；同一附件 ID 不得重复、kind 必须匹配。受保护响应与日志不泄露非授权正文/附件/路径。Bot 凭据访问须校验启用状态；写入提交前复验身份及凭据代次。
+      security:
+      - WebhookKey: []
+      responses:
+        '201':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+              description: 受保护响应固定 no-store。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '410':
+          $ref: '#/components/responses/410'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: bot_id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ID'
+        description: ''
+      requestBody:
+        required: true
+        x-max-bytes: 262144
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMessageRequest'
+        description: JSON 原始请求体最多256 KiB，超过返回413；未知字段/结构错误400，字段语义422。文本/callback UTF-8字节及数量限制另行校验。
+      x-bot-capability: webhook-create-only
+      x-reference-policy: same-bot-authorized-ready
+  /bot/messages/{id}:
+    patch:
+      operationId: editBotMessage
+      summary: CAS 编辑自身应用消息
+      description: 仅启用 Bot send，拒绝编辑 administrator 或其他 Bot 消息。409 REVISION_CONFLICT 不覆盖内容；缺失或无权404。编辑不改变 bot_seq/创建时间/未读/提醒；旧
+        callback 保持点击时快照。所有资源引用（回复、附件、消息、按钮）均须在当前 Bot 授权域内验证；跨 Bot 或无权资源404 RESOURCE_NOT_FOUND，不泄露是否存在。附件仅 ready
+        可绑定；同一附件 ID 不得重复、kind 必须匹配。受保护响应与日志不泄露非授权正文/附件/路径。Bot 凭据访问须校验启用状态；写入提交前复验身份及凭据代次。
+      security:
+      - BotAPIToken: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+              description: 受保护响应固定 no-store。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '410':
+          $ref: '#/components/responses/410'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ID'
+        description: ''
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        x-max-bytes: 262144
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditMessageRequest'
+        description: JSON 原始请求体最多256 KiB，超过返回413；未知字段/结构错误400，字段语义422。文本/callback UTF-8字节及数量限制另行校验。
+      x-bot-capability: send
+      x-reference-policy: same-bot-authorized-ready
+  /client/bots/{id}/messages:
+    post:
+      operationId: createClientMessage
+      summary: 发送消息
+      description: 仅 Android 会话向启用且 receive 的 Bot 发送普通消息，sender 固定 administrator；同事务创建 message.created 应用事件和投递。所有资源引用（回复、附件、消息、按钮）均须在当前
+        Bot 授权域内验证；跨 Bot 或无权资源404 RESOURCE_NOT_FOUND，不泄露是否存在。附件仅 ready 可绑定；同一附件 ID 不得重复、kind 必须匹配。受保护响应与日志不泄露非授权正文/附件/路径。Bot
+        凭据访问须校验启用状态；写入提交前复验身份及凭据代次。
+      security:
+      - AdminBearer: []
+      responses:
+        '201':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+              description: 受保护响应固定 no-store。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientMessageReceipt'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '410':
+          $ref: '#/components/responses/410'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ID'
+        description: ''
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        x-max-bytes: 262144
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMessageRequest'
+        description: JSON 原始请求体最多256 KiB，超过返回413；未知字段/结构错误400，字段语义422。文本/callback UTF-8字节及数量限制另行校验。
+      x-client-type: android
+      x-target-bot-capability: receive
+      x-reference-policy: same-bot-authorized-ready
+    get:
+      operationId: listClientMessages
+      summary: 获取授权消息历史/详情
+      description: 仅 Android Bearer；Web Cookie 不可访问正文。管理员可查看停用 Bot 的仍存历史；不存在/过期或无权404 RESOURCE_NOT_FOUND。所有资源引用（回复、附件、消息、按钮）均须在当前
+        Bot 授权域内验证；跨 Bot 或无权资源404 RESOURCE_NOT_FOUND，不泄露是否存在。附件仅 ready 可绑定；同一附件 ID 不得重复、kind 必须匹配。受保护响应与日志不泄露非授权正文/附件/路径。Bot
+        凭据访问须校验启用状态；写入提交前复验身份及凭据代次。
+      security:
+      - AdminBearer: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+              description: 受保护响应固定 no-store。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessagePage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '410':
+          $ref: '#/components/responses/410'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ID'
+        description: ''
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/OpaqueCursor'
+        description: 本 Bot 历史 bot_seq 边界；首屏省略。
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+        description: 有界页大小，服务端按资源限制处理；不使用offset。
+      x-client-type: android
+  /client/bots/{id}/callbacks:
+    post:
+      operationId: createCallback
+      summary: 提交独立按钮事件
+      description: 仅 Android 会话向启用且 receive 的 Bot 点击 callback 按钮。父消息非当前版本或按钮已不存在/不再是callback时409 BUTTON_STALE；Bot停用409
+        BOT_DISABLED，无receive能力403。独立生成button.callback，不生成可见聊天消息。业务授权/时效/重复执行由接入应用判断。所有资源引用（回复、附件、消息、按钮）均须在当前 Bot
+        授权域内验证；跨 Bot 或无权资源404 RESOURCE_NOT_FOUND，不泄露是否存在。附件仅 ready 可绑定；同一附件 ID 不得重复、kind 必须匹配。受保护响应与日志不泄露非授权正文/附件/路径。Bot
+        凭据访问须校验启用状态；写入提交前复验身份及凭据代次。
+      security:
+      - AdminBearer: []
+      responses:
+        '201':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+              description: 受保护响应固定 no-store。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CallbackReceipt'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '410':
+          $ref: '#/components/responses/410'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ID'
+        description: ''
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        x-max-bytes: 262144
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CallbackRequest'
+        description: JSON 原始请求体最多256 KiB，超过返回413；未知字段/结构错误400，字段语义422。文本/callback UTF-8字节及数量限制另行校验。
+      x-client-type: android
+      x-target-bot-capability: receive
+      x-reference-policy: same-bot-authorized-ready
+  /client/messages/{id}:
+    get:
+      operationId: getClientMessage
+      summary: 获取授权消息历史/详情
+      description: 仅 Android Bearer；Web Cookie 不可访问正文。管理员可查看停用 Bot 的仍存历史；不存在/过期或无权404 RESOURCE_NOT_FOUND。所有资源引用（回复、附件、消息、按钮）均须在当前
+        Bot 授权域内验证；跨 Bot 或无权资源404 RESOURCE_NOT_FOUND，不泄露是否存在。附件仅 ready 可绑定；同一附件 ID 不得重复、kind 必须匹配。受保护响应与日志不泄露非授权正文/附件/路径。Bot
+        凭据访问须校验启用状态；写入提交前复验身份及凭据代次。
+      security:
+      - AdminBearer: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+              description: 受保护响应固定 no-store。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '410':
+          $ref: '#/components/responses/410'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ID'
+        description: ''
+      x-client-type: android
+  /attachments:
+    post:
+      operationId: uploadAttachment
+      summary: 单文件流式上传
+      description: 仅Android管理员或启用Bot send；Web Cookie/Webhook/receive-only不可上传。bot_id 必须在身份授权范围内；管理员目标 bot_id 必须存在且已授权。图片默认10MiB、文件50MiB，按全局配置生效；检查实际流字节，超限413，不信任Content-Length。随机物理文件名、SHA-256、fsync/同卷rename及DB
+        ready成功后才201；DB失败不宣称成功。未完成staging可安全重试，同键完成上传返回原附件，半文件不作成功；空闲未引用staging/ready 24小时后回收，活动上传保护。非分片上传协议。所有资源引用（回复、附件、消息、按钮）均须在当前
+        Bot 授权域内验证；跨 Bot 或无权资源404 RESOURCE_NOT_FOUND，不泄露是否存在。附件仅 ready 可绑定；同一附件 ID 不得重复、kind 必须匹配。受保护响应与日志不泄露非授权正文/附件/路径。Bot
+        凭据访问须校验启用状态；写入提交前复验身份及凭据代次。
+      security:
+      - AdminBearer: []
+      - BotAPIToken: []
+      responses:
+        '201':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+              description: 受保护响应固定 no-store。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attachment'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '410':
+          $ref: '#/components/responses/410'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - name: bot_id
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/ID'
+        description: ''
+      - name: kind
+        in: query
+        required: true
+        schema:
+          enum:
+          - image
+          - file
+        description: ''
+      - name: filename
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+        description: 原始显示文件名；不得作为物理路径。
+      - name: media_type
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+        description: 显示MIME，服务端校验/安全处理；不凭此放宽图片或文件实际字节限制。
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+        description: 单文件原始二进制流；不是JSON/base64或multipart分片协议。
+        x-default-max-bytes:
+          image: 10485760
+          file: 52428800
+        x-configurable-max-bytes: true
+      x-client-type: android-or-bot
+      x-bot-capability: send
+      x-reference-policy: same-bot-authorized-ready
+  /attachments/{id}:
+    get:
+      operationId: downloadAttachment
+      summary: 权限下载与断点传输
+      description: 仅Android管理员或启用Bot API下载ready授权附件。Bot send仅本Bot获准发送消息附件；receive仅已领取事件所需附件，不能枚举历史。Web Cookie/Webhook无权；管理员仍可下载停用Bot授权历史。先取得下载引用/短租约再打开，清理不能删除活动文件；ready缺文件返回404
+        ATTACHMENT_MISSING并记录健康异常。先鉴权后处理条件与范围，错误不泄露资源大小。支持单/多字节范围，不能满足416；格式非法400。所有资源引用（回复、附件、消息、按钮）均须在当前 Bot 授权域内验证；跨
+        Bot 或无权资源404 RESOURCE_NOT_FOUND，不泄露是否存在。附件仅 ready 可绑定；同一附件 ID 不得重复、kind 必须匹配。受保护响应与日志不泄露非授权正文/附件/路径。Bot
+        凭据访问须校验启用状态；写入提交前复验身份及凭据代次。
+      security:
+      - AdminBearer: []
+      - BotAPIToken: []
+      responses:
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '410':
+          $ref: '#/components/responses/410'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+        '200':
+          description: 完整内容
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+              description: 受保护响应固定 no-store。
+            ETag:
+              schema:
+                $ref: '#/components/schemas/StrongETag'
+              description: ready 内容强ETag。
+            Accept-Ranges:
+              schema:
+                type: string
+                const: bytes
+              description: 支持字节范围。
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+              description: 禁止浏览器MIME嗅探。
+            Content-Disposition:
+              schema:
+                type: string
+              description: 安全attachment及经过转义的filename/filename*；拒绝CR/LF注入，不含物理路径。
+            Content-Length:
+              schema:
+                type: integer
+                minimum: 0
+              description: 实际响应体字节数，多区间包括边界与各部分头部。
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '206':
+          description: 单区间或多区间内容；多区间每部分均含Content-Range和Content-Type。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+              description: 受保护响应固定 no-store。
+            ETag:
+              schema:
+                $ref: '#/components/schemas/StrongETag'
+              description: ready 内容强ETag。
+            Accept-Ranges:
+              schema:
+                type: string
+                const: bytes
+              description: 支持字节范围。
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+              description: 禁止浏览器MIME嗅探。
+            Content-Disposition:
+              schema:
+                type: string
+              description: 安全attachment及经过转义的filename/filename*；拒绝CR/LF注入，不含物理路径。
+            Content-Length:
+              schema:
+                type: integer
+                minimum: 0
+              description: 实际响应体字节数，多区间包括边界与各部分头部。
+            Content-Range:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ContentRange'
+                - type: string
+                  pattern: ^bytes [0-9]+-[0-9]+/[0-9]+$
+              description: 单区间必须返回；多区间由各part携带，不在顶层返回。
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+            multipart/byteranges:
+              schema:
+                type: string
+                format: binary
+        '304':
+          description: If-None-Match 匹配，无响应体。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+              description: 受保护响应固定 no-store。
+            ETag:
+              schema:
+                $ref: '#/components/schemas/StrongETag'
+              description: ready 内容强ETag。
+            Accept-Ranges:
+              schema:
+                type: string
+                const: bytes
+              description: 支持字节范围。
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+              description: 禁止浏览器MIME嗅探。
+        '416':
+          description: RANGE_NOT_SATISFIABLE；所有范围不满足实际资源。只对已经授权且ready文件返回大小。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+              description: 受保护响应固定 no-store。
+            Content-Range:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ContentRange'
+                - type: string
+                  pattern: ^bytes \*/[0-9]+$
+              description: 必须为 bytes */size。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ID'
+        description: ''
+      - name: Range
+        in: header
+        required: false
+        schema:
+          $ref: '#/components/schemas/ByteRanges'
+        description: ''
+      - name: If-Range
+        in: header
+        required: false
+        schema:
+          type: string
+        description: 强ETag或HTTP日期；匹配时按Range，不匹配/弱ETag则忽略Range返回完整200。
+      - name: If-None-Match
+        in: header
+        required: false
+        schema:
+          type: string
+        description: 匹配当前ETag返回304；优先于Range。
+      x-client-type: android-or-bot
+      x-bot-capability: send-authorized-or-receive-claimed-event
+      x-reference-policy: same-bot-authorized-ready
 components:
   schemas:
     ID:
@@ -377,8 +1056,7 @@ components:
     Sequence:
       type: string
       pattern: ^(0|[1-9][0-9]{0,17}|[1-8][0-9]{18}|9[0-1][0-9]{17}|92[0-1][0-9]{16}|922[0-2][0-9]{15}|9223[0-2][0-9]{14}|92233[0-6][0-9]{13}|922337[0-1][0-9]{12}|92233720[0-2][0-9]{10}|922337203[0-5][0-9]{9}|9223372036[0-7][0-9]{8}|92233720368[0-4][0-9]{7}|922337203685[0-3][0-9]{6}|9223372036854[0-6][0-9]{5}|92233720368547[0-6][0-9]{4}|922337203685477[0-4][0-9]{3}|9223372036854775[0-7][0-9]{2}|922337203685477580[0-6]|9223372036854775807)$
-      description: SQLite 非负 64 位序号的规范十进制字符串；禁止数字、前导零及指数形式。bot_seq/change_seq/read_seq
-        不可互换。
+      description: SQLite 非负 64 位序号的规范十进制字符串；禁止数字、前导零及指数形式。bot_seq/change_seq/read_seq 不可互换。
       not:
         pattern: '[^0-9]'
     Version:
@@ -444,8 +1122,8 @@ components:
       - send
       - receive
       additionalProperties: false
-      description: Bot API 授权能力。send 可创建/编辑自身 application 消息并上传附件；receive 可 claim/ACK/renew
-        及下载对应投递附件；不能管理 Bot 或跨 Bot。停用覆盖两项授权。
+      description: Bot API 授权能力。send 可创建/编辑自身 application 消息并上传附件；receive 可 claim/ACK/renew 及下载对应投递附件；不能管理 Bot 或跨
+        Bot。停用覆盖两项授权。
     LoginRequest:
       oneOf:
       - type: object
@@ -491,8 +1169,7 @@ components:
         - device_name
         - device_id
         additionalProperties: false
-      description: 唯一管理员，无注册/SSO/RelayShelf 依赖。Android 每安装生成 device_id；Web 登录验证同源
-        Origin。用户名/密码错误统一返回 401 AUTHENTICATION_FAILED。
+      description: 唯一管理员，无注册/SSO/RelayShelf 依赖。Android 每安装生成 device_id；Web 登录验证同源 Origin。用户名/密码错误统一返回 401 AUTHENTICATION_FAILED。
     Administrator:
       type: object
       properties:
@@ -654,8 +1331,7 @@ components:
       - credentials
       - connection
       additionalProperties: false
-      description: 仅管理元数据；recent_poll 表示近期应用轮询，不承诺业务消费者持续在线；Webhook-only 为 unknown。无正文、附件、历史、callback_data
-        或原始异常。
+      description: 仅管理元数据；recent_poll 表示近期应用轮询，不承诺业务消费者持续在线；Webhook-only 为 unknown。无正文、附件、历史、callback_data 或原始异常。
     CreateBotRequest:
       type: object
       properties:
@@ -763,6 +1439,323 @@ components:
       - has_more
       additionalProperties: false
       description: 有界管理元数据分页；不包含任何消息历史。
+    MessageText:
+      type: string
+      maxLength: 65536
+      x-utf8-max-bytes: 65536
+      description: UTF-8 最多 64 KiB；maxLength 仅为字符数上界，运行时还必须检查编码后的字节数。不截断。
+    CallbackData:
+      type: string
+      maxLength: 4096
+      x-utf8-max-bytes: 4096
+      description: UTF-8 最多 4 KiB，允许空字符串；逐字保留，不 trim、不解释命令、不记录日志。
+    MessageButton:
+      oneOf:
+      - type: object
+        properties:
+          id: &id001
+            type: string
+            minLength: 1
+          label: &id002
+            type: string
+            minLength: 1
+            maxLength: 128
+          url:
+            type: string
+            format: uri
+            description: 普通外部链接，不自动抓取为附件。
+            pattern: '^[A-Za-z][A-Za-z0-9+.-]*:'
+            not:
+              pattern: '[\x00-\x20\x7f]'
+        required:
+        - id
+        - label
+        - url
+        additionalProperties: false
+      - type: object
+        properties:
+          id: *id001
+          label: *id002
+          callback_data:
+            $ref: '#/components/schemas/CallbackData'
+        required:
+        - id
+        - label
+        - callback_data
+        additionalProperties: false
+      description: URL 与 callback_data 严格互斥。每消息内 button id 必须唯一，由服务语义校验。
+    MessageButtons:
+      type: array
+      items:
+        type: array
+        items:
+          $ref: '#/components/schemas/MessageButton'
+        minItems: 1
+        maxItems: 5
+      maxItems: 10
+    AttachmentReference:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ID'
+        kind:
+          enum:
+          - image
+          - file
+      required:
+      - id
+      - kind
+      additionalProperties: false
+    CreateMessageRequest:
+      type: object
+      properties:
+        format: &id003
+          enum:
+          - plain
+          - markdown
+        text: &id004
+          $ref: '#/components/schemas/MessageText'
+        attachments: &id005
+          type: array
+          items:
+            $ref: '#/components/schemas/AttachmentReference'
+          maxItems: 10
+          uniqueItems: true
+        reply_to_message_id: &id006
+          oneOf:
+          - $ref: '#/components/schemas/ID'
+          - type: 'null'
+        buttons: &id007
+          $ref: '#/components/schemas/MessageButtons'
+      required:
+      - format
+      additionalProperties: false
+      anyOf: &id008
+      - required:
+        - text
+        properties:
+          text:
+            minLength: 1
+      - required:
+        - attachments
+        properties:
+          attachments:
+            minItems: 1
+      - required:
+        - buttons
+        properties:
+          buttons:
+            minItems: 1
+      description: 标准消息载荷；text/attachments/buttons 省略分别视为空字符串/空数组/空数组，reply 省略视为 null。三类内容至少一类非空；附件 ID 不得重复，kind
+        必须符合存储元数据；所有引用和附件均属当前 Bot，附件必须 ready 且身份允许发送。sender、bot_id、revision 由服务生成，调用方不可指定。普通回复保留原引用 ID；源消息自然过期后显示引用已过期，不无限保存正文。
+    EditMessageRequest:
+      type: object
+      properties:
+        format: *id003
+        text: *id004
+        attachments: *id005
+        reply_to_message_id: *id006
+        buttons: *id007
+        expected_revision:
+          $ref: '#/components/schemas/Version'
+      required:
+      - format
+      - expected_revision
+      additionalProperties: false
+      anyOf: *id008
+      description: 完整替换当前内容，省略字段按创建时空值处理；不是字段局部合并。仅 Bot send 编辑自身 application 消息。CAS 检查失败返回 409 REVISION_CONFLICT；完整校验后同事务更新正文、revision、附件关系及
+        message.updated。bot_seq/created_at 不变，不增加未读、不重新响铃；仅保留当前正文。
+    Message:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ID'
+        bot_id:
+          $ref: '#/components/schemas/ID'
+        bot_seq:
+          $ref: '#/components/schemas/Sequence'
+        revision:
+          $ref: '#/components/schemas/Version'
+        sender:
+          enum:
+          - application
+          - administrator
+        format: *id003
+        text: *id004
+        attachments: *id005
+        reply_to_message_id: *id006
+        buttons: *id007
+        created_at:
+          $ref: '#/components/schemas/UTCDateTime'
+        updated_at:
+          $ref: '#/components/schemas/UTCDateTime'
+      required:
+      - id
+      - bot_id
+      - bot_seq
+      - revision
+      - sender
+      - format
+      - text
+      - attachments
+      - reply_to_message_id
+      - buttons
+      - created_at
+      - updated_at
+      additionalProperties: false
+      description: 当前消息快照；sender 由身份确定。仅授权客户端历史/详情、消息写入回执返回正文，不向 Web 管理路由开放。reply_to_message_id 保留原 ID，即使引用自然过期；缺失引用详情以
+        404 表示，客户端显示引用已过期。
+      anyOf:
+      - required:
+        - text
+        properties:
+          text:
+            minLength: 1
+      - required:
+        - attachments
+        properties:
+          attachments:
+            minItems: 1
+      - required:
+        - buttons
+        properties:
+          buttons:
+            minItems: 1
+    ClientMessageReceipt:
+      type: object
+      properties:
+        message:
+          $ref: '#/components/schemas/Message'
+        delivery_id:
+          $ref: '#/components/schemas/ID'
+      required:
+      - message
+      - delivery_id
+      additionalProperties: false
+      description: 持久化成功才返回；delivery_id 只表示已建立应用投递，不表示业务执行完成。
+    CallbackRequest:
+      type: object
+      properties:
+        message_id:
+          $ref: '#/components/schemas/ID'
+        message_revision:
+          $ref: '#/components/schemas/Version'
+        button_id:
+          type: string
+          minLength: 1
+      required:
+      - message_id
+      - message_revision
+      - button_id
+      additionalProperties: false
+      description: 点击提交消息/版本/按钮 ID；callback_data 从该版本按钮快照读取，不信任客户端传参。来源管理员和设备由当前 Android 会话确定。
+    CallbackReceipt:
+      type: object
+      properties:
+        event_id:
+          $ref: '#/components/schemas/ID'
+        delivery_id:
+          $ref: '#/components/schemas/ID'
+        message_id:
+          $ref: '#/components/schemas/ID'
+        message_revision:
+          $ref: '#/components/schemas/Version'
+        button_id:
+          type: string
+          minLength: 1
+        callback_data:
+          $ref: '#/components/schemas/CallbackData'
+        created_at:
+          $ref: '#/components/schemas/UTCDateTime'
+      required:
+      - event_id
+      - delivery_id
+      - message_id
+      - message_revision
+      - button_id
+      - callback_data
+      - created_at
+      additionalProperties: false
+      description: 独立 button.callback 交互回执，不创建可见聊天消息。服务持久化点击时参数快照、管理员身份及来源设备；随后编辑不得改写快照。同一次点击重试复用键，再次点击使用新键；Hub
+        不解释业务参数或执行 MCP。
+    MessagePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        next_cursor:
+          oneOf:
+          - $ref: '#/components/schemas/OpaqueCursor'
+          - type: 'null'
+        has_more:
+          type: boolean
+      required:
+      - items
+      - next_cursor
+      - has_more
+      additionalProperties: false
+      description: 按 bot_seq 从新到旧返回有界历史；cursor 是该 Bot 的不透明 bot_seq 边界，不能跨 Bot 或用 offset。next_cursor 末页为 null；has_more
+        与其一致。编辑不改变排序。复用通用分页字段语义，不含同步游标/epoch。
+    Attachment:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ID'
+        bot_id:
+          $ref: '#/components/schemas/ID'
+        kind:
+          enum:
+          - image
+          - file
+        filename:
+          type: string
+          minLength: 1
+        media_type:
+          type: string
+          minLength: 1
+        size:
+          $ref: '#/components/schemas/Sequence'
+        sha256:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+          minLength: 64
+          maxLength: 64
+        state:
+          const: ready
+        created_at:
+          $ref: '#/components/schemas/UTCDateTime'
+      required:
+      - id
+      - bot_id
+      - kind
+      - filename
+      - media_type
+      - size
+      - sha256
+      - state
+      - created_at
+      additionalProperties: false
+      description: 仅完整持久化后的 ready 附件；size 为实际字节数十进制字符串，sha256 为内容摘要。不返回物理路径/存储键。原始文件名只作显示；不可拼接存储路径。
+    ByteRanges:
+      type: string
+      pattern: ^bytes=(?:[0-9]+-[0-9]*|-[0-9]+)(?:, *(?:[0-9]+-[0-9]*|-[0-9]+))*$
+      x-byte-ranges: true
+      description: 字节区间，含闭区间、开放结尾、suffix 及多区间；数字仅 ASCII。显式 start > end 非法（400），相对实际大小全不相交或 suffix=0 返回416；部分相交截至末字节，至少一个可满足时206。资源零字节时所有有效
+        Range 均416。
+    ContentRange:
+      type: string
+      pattern: ^bytes (?:[0-9]+-[0-9]+/[0-9]+|\*/[0-9]+)$
+      description: 206 单区间为 bytes start-end/size；416 为 bytes */size。区间/长度与真实文件一致，运行时验证。 206 必须满足 0 <= start <= end
+        < size；416 为不含区间的 */size。
+      x-content-range: true
+    StrongETag:
+      type: string
+      pattern: ^"[0-9a-f]{64}"$
+      minLength: 66
+      maxLength: 66
+      description: ready 文件 SHA-256 的带双引号强 ETag。
   responses:
     '400':
       description: 格式错误
@@ -915,3 +1908,14 @@ components:
       type: http
       scheme: bearer
       description: 独立、仅发送；仅 POST /webhooks/{bot_id}，禁止在 URL 携带。
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        $ref: '#/components/schemas/ID'
+      description: 客户端生成 UUID v4。作用域=管理员或 Bot 身份+路由类别，与 Token 版本无关。规范化摘要含路径目标 Bot/资源 ID、有效字段/附件 ID/引用/按钮，排除 Authorization；编辑含
+        expected_revision，callback 含点击目标和版本，上传含目标 Bot/元数据/实际文件摘要。同键同请求返回原状态/结果；不同内容409 IDEMPOTENCY_CONFLICT。编辑重放先恢复原结果，再判断新的
+        CAS，防止成功重试误报冲突。存活消息及投递期间保留记录；清理后最小墓碑7天，命中410 RESOURCE_EXPIRED，不重新创建；受保护投递记录不按7天删除。窗口后不承诺去重，客户端不得自动重放未知旧意图。
+        重放仍须先验证当前身份/能力/授权；重置后使用新有效凭据恢复，不能以旧已撤销Token换回结果。callback 重放先恢复原交互，再判断新点击的按钮时效。
