@@ -1,0 +1,11 @@
+root = true
+
+[*.{kt,kts}]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+# Compose UI 函数遵循官方 PascalCase 命名约定。
+ktlint_function_naming_ignore_when_annotated_with = Composable
