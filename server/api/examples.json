@@ -1,0 +1,904 @@
+[
+  {
+    "name": "合法序号 0",
+    "schema": "Sequence",
+    "valid": true,
+    "value": "0"
+  },
+  {
+    "name": "合法序号 1",
+    "schema": "Sequence",
+    "valid": true,
+    "value": "1"
+  },
+  {
+    "name": "合法序号 9007199254740993",
+    "schema": "Sequence",
+    "valid": true,
+    "value": "9007199254740993"
+  },
+  {
+    "name": "合法序号 9223372036854775807",
+    "schema": "Sequence",
+    "valid": true,
+    "value": "9223372036854775807"
+  },
+  {
+    "name": "非法序号 0",
+    "schema": "Sequence",
+    "valid": false,
+    "value": 0
+  },
+  {
+    "name": "非法序号 9007199254740993",
+    "schema": "Sequence",
+    "valid": false,
+    "value": 9007199254740993
+  },
+  {
+    "name": "非法序号 '01'",
+    "schema": "Sequence",
+    "valid": false,
+    "value": "01"
+  },
+  {
+    "name": "非法序号 '-1'",
+    "schema": "Sequence",
+    "valid": false,
+    "value": "-1"
+  },
+  {
+    "name": "非法序号 '1e3'",
+    "schema": "Sequence",
+    "valid": false,
+    "value": "1e3"
+  },
+  {
+    "name": "非法序号 '9223372036854775808'",
+    "schema": "Sequence",
+    "valid": false,
+    "value": "9223372036854775808"
+  },
+  {
+    "name": "非法序号 '9999999999999999999'",
+    "schema": "Sequence",
+    "valid": false,
+    "value": "9999999999999999999"
+  },
+  {
+    "name": "非法序号 '18446744073709551615'",
+    "schema": "Sequence",
+    "valid": false,
+    "value": "18446744073709551615"
+  },
+  {
+    "name": "非法序号 '1\\n'",
+    "schema": "Sequence",
+    "valid": false,
+    "value": "1\n"
+  },
+  {
+    "name": "标准错误",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "BOT_DISABLED",
+        "message": "Bot 已停用",
+        "request_id": "req-test",
+        "retryable": false
+      }
+    }
+  },
+  {
+    "name": "错误缺 request_id",
+    "schema": "Error",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "BOT_DISABLED",
+        "message": "Bot 已停用",
+        "retryable": false
+      }
+    }
+  },
+  {
+    "name": "错误泄漏字段",
+    "schema": "Error",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "BAD_REQUEST",
+        "message": "失败",
+        "request_id": "req-test",
+        "retryable": false,
+        "sql": "PRIVATE"
+      }
+    }
+  },
+  {
+    "name": "web 登录请求",
+    "schema": "LoginRequest",
+    "valid": true,
+    "value": {
+      "username": "admin",
+      "password": "TEST_ONLY",
+      "client_type": "web",
+      "device_name": "测试设备"
+    }
+  },
+  {
+    "name": "web 登录拒绝未知字段",
+    "schema": "LoginRequest",
+    "valid": false,
+    "value": {
+      "username": "admin",
+      "password": "TEST_ONLY",
+      "client_type": "web",
+      "device_name": "测试设备",
+      "extra": "x"
+    }
+  },
+  {
+    "name": "android 登录请求",
+    "schema": "LoginRequest",
+    "valid": true,
+    "value": {
+      "username": "admin",
+      "password": "TEST_ONLY",
+      "client_type": "android",
+      "device_name": "测试设备",
+      "device_id": "12345678-1234-4123-8123-123456789abc"
+    }
+  },
+  {
+    "name": "android 登录拒绝未知字段",
+    "schema": "LoginRequest",
+    "valid": false,
+    "value": {
+      "username": "admin",
+      "password": "TEST_ONLY",
+      "client_type": "android",
+      "device_name": "测试设备",
+      "device_id": "12345678-1234-4123-8123-123456789abc",
+      "extra": "x"
+    }
+  },
+  {
+    "name": "拒绝 Bot 登录",
+    "schema": "LoginRequest",
+    "valid": false,
+    "value": {
+      "token": "TEST_ONLY"
+    }
+  },
+  {
+    "name": "Web 登录响应",
+    "schema": "LoginResponse",
+    "valid": true,
+    "value": {
+      "session": {
+        "id": "12345678-1234-4123-8123-123456789abc",
+        "administrator": {
+          "username": "admin"
+        },
+        "client_type": "web",
+        "device_id": "12345678-1234-4123-8123-123456789abc",
+        "device_name": "测试手机",
+        "idle_expires_at": "2026-10-21T10:00:00Z",
+        "absolute_expires_at": "2026-11-21T10:00:00Z"
+      },
+      "csrf_token": "TEST_CSRF"
+    }
+  },
+  {
+    "name": "Android 登录响应",
+    "schema": "LoginResponse",
+    "valid": true,
+    "value": {
+      "session": {
+        "id": "12345678-1234-4123-8123-123456789abc",
+        "administrator": {
+          "username": "admin"
+        },
+        "client_type": "android",
+        "device_id": "12345678-1234-4123-8123-123456789abc",
+        "device_name": "测试手机",
+        "idle_expires_at": "2026-10-21T10:00:00Z",
+        "absolute_expires_at": "2026-11-21T10:00:00Z"
+      },
+      "access_token": "TEST_ONLY",
+      "token_type": "Bearer"
+    }
+  },
+  {
+    "name": "当前 Web 会话",
+    "schema": "SessionResponse",
+    "valid": true,
+    "value": {
+      "session": {
+        "id": "12345678-1234-4123-8123-123456789abc",
+        "administrator": {
+          "username": "admin"
+        },
+        "client_type": "web",
+        "device_id": "12345678-1234-4123-8123-123456789abc",
+        "device_name": "测试手机",
+        "idle_expires_at": "2026-10-21T10:00:00Z",
+        "absolute_expires_at": "2026-11-21T10:00:00Z"
+      },
+      "csrf_token": "TEST_CSRF"
+    }
+  },
+  {
+    "name": "当前 Android 会话",
+    "schema": "SessionResponse",
+    "valid": true,
+    "value": {
+      "session": {
+        "id": "12345678-1234-4123-8123-123456789abc",
+        "administrator": {
+          "username": "admin"
+        },
+        "client_type": "android",
+        "device_id": "12345678-1234-4123-8123-123456789abc",
+        "device_name": "测试手机",
+        "idle_expires_at": "2026-10-21T10:00:00Z",
+        "absolute_expires_at": "2026-11-21T10:00:00Z"
+      }
+    }
+  },
+  {
+    "name": "当前会话不返回 Bearer",
+    "schema": "SessionResponse",
+    "valid": false,
+    "value": {
+      "session": {
+        "id": "12345678-1234-4123-8123-123456789abc",
+        "administrator": {
+          "username": "admin"
+        },
+        "client_type": "android",
+        "device_id": "12345678-1234-4123-8123-123456789abc",
+        "device_name": "测试手机",
+        "idle_expires_at": "2026-10-21T10:00:00Z",
+        "absolute_expires_at": "2026-11-21T10:00:00Z"
+      },
+      "access_token": "TEST_ONLY"
+    }
+  },
+  {
+    "name": "Web 不返回 Bearer",
+    "schema": "WebSessionResponse",
+    "valid": false,
+    "value": {
+      "session": {
+        "id": "12345678-1234-4123-8123-123456789abc",
+        "administrator": {
+          "username": "admin"
+        },
+        "client_type": "web",
+        "device_id": "12345678-1234-4123-8123-123456789abc",
+        "device_name": "测试手机",
+        "idle_expires_at": "2026-10-21T10:00:00Z",
+        "absolute_expires_at": "2026-11-21T10:00:00Z"
+      },
+      "csrf_token": "TEST_CSRF",
+      "access_token": "TEST_ONLY"
+    }
+  },
+  {
+    "name": "UTC 时间",
+    "schema": "UTCDateTime",
+    "valid": true,
+    "value": "2026-10-21T10:00:00Z"
+  },
+  {
+    "name": "非法时间 2026-10-21T18:00:00+08:00",
+    "schema": "UTCDateTime",
+    "valid": false,
+    "value": "2026-10-21T18:00:00+08:00"
+  },
+  {
+    "name": "非法时间 2026-99-99T00:00:00Z",
+    "schema": "UTCDateTime",
+    "valid": false,
+    "value": "2026-99-99T00:00:00Z"
+  },
+  {
+    "name": "非法时间 yesterday",
+    "schema": "UTCDateTime",
+    "valid": false,
+    "value": "yesterday"
+  },
+  {
+    "name": "创建 Bot",
+    "schema": "CreateBotRequest",
+    "valid": true,
+    "value": {
+      "name": "测试通知",
+      "enabled": true,
+      "capabilities": {
+        "send": true,
+        "receive": false
+      }
+    }
+  },
+  {
+    "name": "创建未知权限",
+    "schema": "CreateBotRequest",
+    "valid": false,
+    "value": {
+      "name": "测试通知",
+      "enabled": true,
+      "capabilities": {
+        "send": true,
+        "receive": false,
+        "admin": true
+      }
+    }
+  },
+  {
+    "name": "修改 Bot",
+    "schema": "PatchBotRequest",
+    "valid": true,
+    "value": {
+      "expected_version": 1,
+      "enabled": false
+    }
+  },
+  {
+    "name": "修改缺版本",
+    "schema": "PatchBotRequest",
+    "valid": false,
+    "value": {
+      "enabled": false
+    }
+  },
+  {
+    "name": "删除确认",
+    "schema": "DeleteBotRequest",
+    "valid": true,
+    "value": {
+      "confirm_name": "测试通知",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "删除缺名称",
+    "schema": "DeleteBotRequest",
+    "valid": false,
+    "value": {
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "删除缺版本",
+    "schema": "DeleteBotRequest",
+    "valid": false,
+    "value": {
+      "confirm_name": "测试通知"
+    }
+  },
+  {
+    "name": "API Token 首次返回",
+    "schema": "IssuedAPIToken",
+    "valid": true,
+    "value": {
+      "credential": {
+        "credential_id": "public-test-id",
+        "generation": 1
+      },
+      "token": "TEST_ONLY_NOT_A_CREDENTIAL",
+      "capabilities": {
+        "send": true,
+        "receive": false
+      }
+    }
+  },
+  {
+    "name": "Webhook Key 首次返回",
+    "schema": "IssuedWebhookKey",
+    "valid": true,
+    "value": {
+      "credential": {
+        "credential_id": "public-test-id",
+        "generation": 1
+      },
+      "key": "TEST_ONLY_NOT_A_CREDENTIAL"
+    }
+  },
+  {
+    "name": "Webhook 不授予 receive",
+    "schema": "IssuedWebhookKey",
+    "valid": false,
+    "value": {
+      "credential": {
+        "credential_id": "public-test-id",
+        "generation": 1
+      },
+      "key": "TEST_ONLY_NOT_A_CREDENTIAL",
+      "capabilities": {
+        "receive": true
+      }
+    }
+  },
+  {
+    "name": "API 响应不能替代 Webhook",
+    "schema": "IssuedWebhookKey",
+    "valid": false,
+    "value": {
+      "credential": {
+        "credential_id": "public-test-id",
+        "generation": 1
+      },
+      "token": "TEST_ONLY_NOT_A_CREDENTIAL",
+      "capabilities": {
+        "send": true,
+        "receive": false
+      }
+    }
+  },
+  {
+    "name": "Webhook 响应不能替代 API",
+    "schema": "IssuedAPIToken",
+    "valid": false,
+    "value": {
+      "credential": {
+        "credential_id": "public-test-id",
+        "generation": 1
+      },
+      "key": "TEST_ONLY_NOT_A_CREDENTIAL"
+    }
+  },
+  {
+    "name": "Bot 创建响应",
+    "schema": "CreatedBotResponse",
+    "valid": true,
+    "value": {
+      "bot": {
+        "id": "12345678-1234-4123-8123-123456789abc",
+        "name": "测试通知",
+        "enabled": true,
+        "capabilities": {
+          "send": true,
+          "receive": false
+        },
+        "version": 1,
+        "credentials": {
+          "api_token": {
+            "credential_id": "public-test-id",
+            "generation": 1
+          },
+          "webhook_key": {
+            "credential_id": "other-public-id",
+            "generation": 1
+          }
+        },
+        "connection": {
+          "state": "unknown",
+          "last_poll_at": null
+        }
+      },
+      "api_token": {
+        "credential": {
+          "credential_id": "public-test-id",
+          "generation": 1
+        },
+        "token": "TEST_ONLY_NOT_A_CREDENTIAL",
+        "capabilities": {
+          "send": true,
+          "receive": false
+        }
+      },
+      "webhook_key": {
+        "credential": {
+          "credential_id": "public-test-id",
+          "generation": 1
+        },
+        "key": "TEST_ONLY_NOT_A_CREDENTIAL"
+      }
+    }
+  },
+  {
+    "name": "管理列表",
+    "schema": "BotPage",
+    "valid": true,
+    "value": {
+      "items": [
+        {
+          "id": "12345678-1234-4123-8123-123456789abc",
+          "name": "测试通知",
+          "enabled": true,
+          "capabilities": {
+            "send": true,
+            "receive": false
+          },
+          "version": 1,
+          "credentials": {
+            "api_token": {
+              "credential_id": "public-test-id",
+              "generation": 1
+            },
+            "webhook_key": {
+              "credential_id": "other-public-id",
+              "generation": 1
+            }
+          },
+          "connection": {
+            "state": "unknown",
+            "last_poll_at": null
+          }
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    }
+  },
+  {
+    "name": "分页继续",
+    "schema": "Pagination",
+    "valid": true,
+    "value": {
+      "next_cursor": "opaque-next",
+      "has_more": true
+    }
+  },
+  {
+    "name": "分页缺字段",
+    "schema": "Pagination",
+    "valid": false,
+    "value": {
+      "has_more": false
+    }
+  },
+  {
+    "name": "Bot 元数据拒绝 body",
+    "schema": "Bot",
+    "valid": false,
+    "value": {
+      "id": "12345678-1234-4123-8123-123456789abc",
+      "name": "测试通知",
+      "enabled": true,
+      "capabilities": {
+        "send": true,
+        "receive": false
+      },
+      "version": 1,
+      "credentials": {
+        "api_token": {
+          "credential_id": "public-test-id",
+          "generation": 1
+        },
+        "webhook_key": {
+          "credential_id": "other-public-id",
+          "generation": 1
+        }
+      },
+      "connection": {
+        "state": "unknown",
+        "last_poll_at": null
+      },
+      "body": "PRIVATE"
+    }
+  },
+  {
+    "name": "Bot 元数据拒绝 attachments",
+    "schema": "Bot",
+    "valid": false,
+    "value": {
+      "id": "12345678-1234-4123-8123-123456789abc",
+      "name": "测试通知",
+      "enabled": true,
+      "capabilities": {
+        "send": true,
+        "receive": false
+      },
+      "version": 1,
+      "credentials": {
+        "api_token": {
+          "credential_id": "public-test-id",
+          "generation": 1
+        },
+        "webhook_key": {
+          "credential_id": "other-public-id",
+          "generation": 1
+        }
+      },
+      "connection": {
+        "state": "unknown",
+        "last_poll_at": null
+      },
+      "attachments": "PRIVATE"
+    }
+  },
+  {
+    "name": "Bot 元数据拒绝 history",
+    "schema": "Bot",
+    "valid": false,
+    "value": {
+      "id": "12345678-1234-4123-8123-123456789abc",
+      "name": "测试通知",
+      "enabled": true,
+      "capabilities": {
+        "send": true,
+        "receive": false
+      },
+      "version": 1,
+      "credentials": {
+        "api_token": {
+          "credential_id": "public-test-id",
+          "generation": 1
+        },
+        "webhook_key": {
+          "credential_id": "other-public-id",
+          "generation": 1
+        }
+      },
+      "connection": {
+        "state": "unknown",
+        "last_poll_at": null
+      },
+      "history": "PRIVATE"
+    }
+  },
+  {
+    "name": "Bot 元数据拒绝 messages",
+    "schema": "Bot",
+    "valid": false,
+    "value": {
+      "id": "12345678-1234-4123-8123-123456789abc",
+      "name": "测试通知",
+      "enabled": true,
+      "capabilities": {
+        "send": true,
+        "receive": false
+      },
+      "version": 1,
+      "credentials": {
+        "api_token": {
+          "credential_id": "public-test-id",
+          "generation": 1
+        },
+        "webhook_key": {
+          "credential_id": "other-public-id",
+          "generation": 1
+        }
+      },
+      "connection": {
+        "state": "unknown",
+        "last_poll_at": null
+      },
+      "messages": "PRIVATE"
+    }
+  },
+  {
+    "name": "Bot 元数据拒绝 callback_data",
+    "schema": "Bot",
+    "valid": false,
+    "value": {
+      "id": "12345678-1234-4123-8123-123456789abc",
+      "name": "测试通知",
+      "enabled": true,
+      "capabilities": {
+        "send": true,
+        "receive": false
+      },
+      "version": 1,
+      "credentials": {
+        "api_token": {
+          "credential_id": "public-test-id",
+          "generation": 1
+        },
+        "webhook_key": {
+          "credential_id": "other-public-id",
+          "generation": 1
+        }
+      },
+      "connection": {
+        "state": "unknown",
+        "last_poll_at": null
+      },
+      "callback_data": "PRIVATE"
+    }
+  },
+  {
+    "name": "Bot 元数据拒绝 token",
+    "schema": "Bot",
+    "valid": false,
+    "value": {
+      "id": "12345678-1234-4123-8123-123456789abc",
+      "name": "测试通知",
+      "enabled": true,
+      "capabilities": {
+        "send": true,
+        "receive": false
+      },
+      "version": 1,
+      "credentials": {
+        "api_token": {
+          "credential_id": "public-test-id",
+          "generation": 1
+        },
+        "webhook_key": {
+          "credential_id": "other-public-id",
+          "generation": 1
+        }
+      },
+      "connection": {
+        "state": "unknown",
+        "last_poll_at": null
+      },
+      "token": "PRIVATE"
+    }
+  },
+  {
+    "name": "Bot 元数据拒绝 key",
+    "schema": "Bot",
+    "valid": false,
+    "value": {
+      "id": "12345678-1234-4123-8123-123456789abc",
+      "name": "测试通知",
+      "enabled": true,
+      "capabilities": {
+        "send": true,
+        "receive": false
+      },
+      "version": 1,
+      "credentials": {
+        "api_token": {
+          "credential_id": "public-test-id",
+          "generation": 1
+        },
+        "webhook_key": {
+          "credential_id": "other-public-id",
+          "generation": 1
+        }
+      },
+      "connection": {
+        "state": "unknown",
+        "last_poll_at": null
+      },
+      "key": "PRIVATE"
+    }
+  },
+  {
+    "name": "Bot 元数据拒绝 raw_error",
+    "schema": "Bot",
+    "valid": false,
+    "value": {
+      "id": "12345678-1234-4123-8123-123456789abc",
+      "name": "测试通知",
+      "enabled": true,
+      "capabilities": {
+        "send": true,
+        "receive": false
+      },
+      "version": 1,
+      "credentials": {
+        "api_token": {
+          "credential_id": "public-test-id",
+          "generation": 1
+        },
+        "webhook_key": {
+          "credential_id": "other-public-id",
+          "generation": 1
+        }
+      },
+      "connection": {
+        "state": "unknown",
+        "last_poll_at": null
+      },
+      "raw_error": "PRIVATE"
+    }
+  },
+  {
+    "name": "凭据元数据无明文",
+    "schema": "CredentialMetadata",
+    "valid": false,
+    "value": {
+      "credential_id": "public-test-id",
+      "generation": 1,
+      "token": "PRIVATE"
+    }
+  },
+  {
+    "name": "管理列表不接收历史",
+    "schema": "BotPage",
+    "valid": false,
+    "value": {
+      "items": [
+        {
+          "id": "12345678-1234-4123-8123-123456789abc",
+          "name": "测试通知",
+          "enabled": true,
+          "capabilities": {
+            "send": true,
+            "receive": false
+          },
+          "version": 1,
+          "credentials": {
+            "api_token": {
+              "credential_id": "public-test-id",
+              "generation": 1
+            },
+            "webhook_key": {
+              "credential_id": "other-public-id",
+              "generation": 1
+            }
+          },
+          "connection": {
+            "state": "unknown",
+            "last_poll_at": null
+          }
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false,
+      "history": []
+    }
+  },
+  {
+    "name": "Web 会话缺 CSRF",
+    "schema": "SessionResponse",
+    "valid": false,
+    "value": {
+      "session": {
+        "id": "12345678-1234-4123-8123-123456789abc",
+        "administrator": {
+          "username": "admin"
+        },
+        "client_type": "web",
+        "device_id": "12345678-1234-4123-8123-123456789abc",
+        "device_name": "测试手机",
+        "idle_expires_at": "2026-10-21T10:00:00Z",
+        "absolute_expires_at": "2026-11-21T10:00:00Z"
+      }
+    }
+  },
+  {
+    "name": "Web 会话不能获得 Android Bearer",
+    "schema": "AndroidLoginResponse",
+    "valid": false,
+    "value": {
+      "session": {
+        "id": "12345678-1234-4123-8123-123456789abc",
+        "administrator": {
+          "username": "admin"
+        },
+        "client_type": "web",
+        "device_id": "12345678-1234-4123-8123-123456789abc",
+        "device_name": "测试手机",
+        "idle_expires_at": "2026-10-21T10:00:00Z",
+        "absolute_expires_at": "2026-11-21T10:00:00Z"
+      },
+      "access_token": "TEST_ONLY",
+      "token_type": "Bearer"
+    }
+  },
+  {
+    "name": "Android 会话不能伪作 Web bootstrap",
+    "schema": "WebSessionResponse",
+    "valid": false,
+    "value": {
+      "session": {
+        "id": "12345678-1234-4123-8123-123456789abc",
+        "administrator": {
+          "username": "admin"
+        },
+        "client_type": "android",
+        "device_id": "12345678-1234-4123-8123-123456789abc",
+        "device_name": "测试手机",
+        "idle_expires_at": "2026-10-21T10:00:00Z",
+        "absolute_expires_at": "2026-11-21T10:00:00Z"
+      },
+      "csrf_token": "TEST_ONLY"
+    }
+  },
+  {
+    "name": "拒绝非 v4 UUID",
+    "schema": "ID",
+    "valid": false,
+    "value": "12345678-1234-1123-8123-123456789abc"
+  }
+]

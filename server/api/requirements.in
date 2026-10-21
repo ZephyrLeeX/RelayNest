@@ -1,0 +1,4 @@
+# 仅契约校验工具，不影响 Go 运行时依赖。
+openapi-spec-validator==0.7.2
+jsonschema==4.25.1
+PyYAML==6.0.2

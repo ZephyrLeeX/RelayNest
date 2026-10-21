@@ -1,0 +1,917 @@
+openapi: 3.1.0
+info:
+  title: RelayNest 核心 API
+  version: 1.0.0
+  description: P03-04：通用 Schema、管理员认证、Bot 与两套独立凭据管理。仅契约，不代表运行时路由已实现。后续 P03-05～07 串行扩展消息/投递/客户端等接口。JSON
+    拒绝未知字段；受保护响应 no-store。Web 仅管理元数据，不浏览正文/附件/历史；Hub 不解释业务命令或执行 MCP。
+servers:
+- url: /api/v1
+paths:
+  /auth/login:
+    post:
+      operationId: login
+      summary: 登录唯一管理员
+      description: Web 只返回 Cookie 和 CSRF；Android 返回设备会话 Bearer。登录验证同源 Origin；Cookie
+        HttpOnly、SameSite=Lax，外部 HTTPS 时 Secure。响应及日志不得泄露密码；凭据错误统一 401 AUTHENTICATION_FAILED。
+      security: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              description: 受保护响应固定 no-store。
+              schema:
+                type: string
+                const: no-store
+            Set-Cookie:
+              description: 仅 Web 登录设置 relaynest_session；HttpOnly; SameSite=Lax; Path=/api/v1；外部
+                HTTPS 时 Secure。Android 不设置。
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+  /auth/session:
+    get:
+      operationId: getSession
+      summary: 当前会话及 Web CSRF bootstrap
+      description: 当前会话及 Web CSRF bootstrap
+      security:
+      - AdminBearer: []
+      - WebCookie: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              description: 受保护响应固定 no-store。
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+  /auth/logout:
+    post:
+      operationId: logout
+      summary: 仅注销当前管理员会话
+      description: 撤销当前会话及推送映射，关闭对应连接；不影响其他设备及任何 Bot 凭据。Web 清除会话 Cookie。
+      security:
+      - AdminBearer: []
+      - WebCookie: []
+        CSRF: []
+      responses:
+        '204':
+          description: 成功
+          headers:
+            Cache-Control:
+              description: 受保护响应固定 no-store。
+              schema:
+                type: string
+                const: no-store
+            Set-Cookie:
+              description: Web 清除 relaynest_session（Max-Age=0）；Android 不设置。
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+  /admin/bots:
+    get:
+      operationId: listBots
+      summary: Bot 元数据列表
+      description: Bot 元数据列表
+      security:
+      - AdminBearer: []
+      - WebCookie: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              description: 受保护响应固定 no-store。
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          $ref: '#/components/schemas/OpaqueCursor'
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+        description: 有界分页；服务端资源控制限制实际页大小，客户端沿 next_cursor 继续。
+    post:
+      operationId: createBot
+      summary: 创建 Bot 并一次返回两套独立凭据
+      description: 创建 Bot 并一次返回两套独立凭据
+      security:
+      - AdminBearer: []
+      - WebCookie: []
+        CSRF: []
+      responses:
+        '201':
+          description: 成功
+          headers:
+            Cache-Control:
+              description: 受保护响应固定 no-store。
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatedBotResponse'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBotRequest'
+  /admin/bots/{id}:
+    patch:
+      operationId: patchBot
+      summary: 修改 Bot 名称、启停及能力
+      description: 修改 Bot 名称、启停及能力
+      security:
+      - AdminBearer: []
+      - WebCookie: []
+        CSRF: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              description: 受保护响应固定 no-store。
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bot'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchBotRequest'
+    delete:
+      operationId: deleteBot
+      summary: 二次确认后永久删除 Bot
+      description: 二次确认后永久删除 Bot
+      security:
+      - AdminBearer: []
+      - WebCookie: []
+        CSRF: []
+      responses:
+        '204':
+          description: 成功
+          headers:
+            Cache-Control:
+              description: 受保护响应固定 no-store。
+              schema:
+                type: string
+                const: no-store
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteBotRequest'
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/ID'
+  /admin/bots/{id}/credentials/api-token/reset:
+    post:
+      operationId: resetAPIToken
+      summary: 仅重置 Bot API Token
+      description: 旧 API Token 在提交后立即失效，取消旧 Long Polling、撤销旧租约并重新排队；消息/失败记录保留，不影响
+        Webhook Key。新值仅本响应显示一次。
+      security:
+      - AdminBearer: []
+      - WebCookie: []
+        CSRF: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              description: 受保护响应固定 no-store。
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssuedAPIToken'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/ID'
+  /admin/bots/{id}/credentials/webhook-key/reset:
+    post:
+      operationId: resetWebhookKey
+      summary: 仅重置入站 Webhook Key
+      description: 旧 Webhook Key 在提交后立即失效，不影响 API Token、API 租约、消息或失败记录。新值仅本响应显示一次。
+      security:
+      - AdminBearer: []
+      - WebCookie: []
+        CSRF: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              description: 受保护响应固定 no-store。
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssuedWebhookKey'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/ID'
+components:
+  schemas:
+    ID:
+      type: string
+      format: uuid
+      pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
+      description: 服务端 UUID v4；ID 本身不授予访问权限。
+      maxLength: 36
+    Sequence:
+      type: string
+      pattern: ^(0|[1-9][0-9]{0,17}|[1-8][0-9]{18}|9[0-1][0-9]{17}|92[0-1][0-9]{16}|922[0-2][0-9]{15}|9223[0-2][0-9]{14}|92233[0-6][0-9]{13}|922337[0-1][0-9]{12}|92233720[0-2][0-9]{10}|922337203[0-5][0-9]{9}|9223372036[0-7][0-9]{8}|92233720368[0-4][0-9]{7}|922337203685[0-3][0-9]{6}|9223372036854[0-6][0-9]{5}|92233720368547[0-6][0-9]{4}|922337203685477[0-4][0-9]{3}|9223372036854775[0-7][0-9]{2}|922337203685477580[0-6]|9223372036854775807)$
+      description: SQLite 非负 64 位序号的规范十进制字符串；禁止数字、前导零及指数形式。bot_seq/change_seq/read_seq
+        不可互换。
+      not:
+        pattern: '[^0-9]'
+    Version:
+      type: integer
+      minimum: 1
+      description: 从 1 开始的实体版本；不等于序号或凭据代次。
+    UTCDateTime:
+      type: string
+      format: date-time
+      pattern: Z$
+      description: UTC RFC3339 时间。
+    OpaqueCursor:
+      type: string
+      minLength: 1
+      description: 不透明分页令牌；客户端原样回传，不推导序号或采用 offset。
+    Pagination:
+      type: object
+      properties:
+        next_cursor:
+          oneOf:
+          - $ref: '#/components/schemas/OpaqueCursor'
+          - type: 'null'
+        has_more:
+          type: boolean
+      required:
+      - next_cursor
+      - has_more
+      additionalProperties: false
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              pattern: ^[A-Z][A-Z0-9_]*$
+              description: 稳定机器码；按 code 分支，不匹配中文 message。后续卡可增加 code。
+            message:
+              type: string
+            request_id:
+              type: string
+              minLength: 1
+            retryable:
+              type: boolean
+          required:
+          - code
+          - message
+          - request_id
+          - retryable
+          additionalProperties: false
+      required:
+      - error
+      additionalProperties: false
+    Capabilities:
+      type: object
+      properties:
+        send:
+          type: boolean
+        receive:
+          type: boolean
+      required:
+      - send
+      - receive
+      additionalProperties: false
+      description: Bot API 授权能力。send 可创建/编辑自身 application 消息并上传附件；receive 可 claim/ACK/renew
+        及下载对应投递附件；不能管理 Bot 或跨 Bot。停用覆盖两项授权。
+    LoginRequest:
+      oneOf:
+      - type: object
+        properties:
+          username:
+            type: string
+            minLength: 1
+          password:
+            type: string
+            minLength: 1
+            writeOnly: true
+          client_type:
+            const: web
+          device_name:
+            type: string
+            minLength: 1
+        required:
+        - username
+        - password
+        - client_type
+        - device_name
+        additionalProperties: false
+      - type: object
+        properties:
+          username:
+            type: string
+            minLength: 1
+          password:
+            type: string
+            minLength: 1
+            writeOnly: true
+          client_type:
+            const: android
+          device_name:
+            type: string
+            minLength: 1
+          device_id:
+            $ref: '#/components/schemas/ID'
+        required:
+        - username
+        - password
+        - client_type
+        - device_name
+        - device_id
+        additionalProperties: false
+      description: 唯一管理员，无注册/SSO/RelayShelf 依赖。Android 每安装生成 device_id；Web 登录验证同源
+        Origin。用户名/密码错误统一返回 401 AUTHENTICATION_FAILED。
+    Administrator:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+      required:
+      - username
+      additionalProperties: false
+    Session:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ID'
+        administrator:
+          $ref: '#/components/schemas/Administrator'
+        client_type:
+          enum:
+          - web
+          - android
+        device_id:
+          $ref: '#/components/schemas/ID'
+        device_name:
+          type: string
+          minLength: 1
+        idle_expires_at:
+          $ref: '#/components/schemas/UTCDateTime'
+        absolute_expires_at:
+          $ref: '#/components/schemas/UTCDateTime'
+      required:
+      - id
+      - administrator
+      - client_type
+      - device_id
+      - device_name
+      - idle_expires_at
+      - absolute_expires_at
+      additionalProperties: false
+      description: 仅会话元数据，无 Token/密码摘要。有效请求可延长空闲期但不超过绝对期限；过期需重新登录。
+    WebSession:
+      allOf:
+      - $ref: '#/components/schemas/Session'
+      - properties:
+          client_type:
+            const: web
+    AndroidSession:
+      allOf:
+      - $ref: '#/components/schemas/Session'
+      - properties:
+          client_type:
+            const: android
+    WebSessionResponse:
+      type: object
+      properties:
+        session:
+          $ref: '#/components/schemas/WebSession'
+        csrf_token:
+          type: string
+          minLength: 1
+      required:
+      - session
+      - csrf_token
+      additionalProperties: false
+      description: Web CSRF bootstrap；csrf_token 不得写日志。Cookie 会话不在 JSON 中返回。
+    AndroidSessionResponse:
+      type: object
+      properties:
+        session:
+          $ref: '#/components/schemas/AndroidSession'
+      required:
+      - session
+      additionalProperties: false
+    SessionResponse:
+      oneOf:
+      - $ref: '#/components/schemas/WebSessionResponse'
+      - $ref: '#/components/schemas/AndroidSessionResponse'
+    AndroidLoginResponse:
+      type: object
+      properties:
+        session:
+          $ref: '#/components/schemas/AndroidSession'
+        access_token:
+          type: string
+          minLength: 1
+        token_type:
+          const: Bearer
+      required:
+      - session
+      - access_token
+      - token_type
+      additionalProperties: false
+      description: 仅 Android 登录成功返回会话 Bearer；后续 GET session 不再返回。
+    LoginResponse:
+      oneOf:
+      - $ref: '#/components/schemas/WebSessionResponse'
+      - $ref: '#/components/schemas/AndroidLoginResponse'
+    CredentialMetadata:
+      type: object
+      properties:
+        credential_id:
+          type: string
+          minLength: 1
+        generation:
+          type: integer
+          minimum: 1
+      required:
+      - credential_id
+      - generation
+      additionalProperties: false
+      description: 公开查找标识与撤销代次，无密钥或摘要。两套凭据独立生成、独立摘要存储，各至少 256 bit 随机。
+    BotCredentials:
+      type: object
+      properties:
+        api_token:
+          $ref: '#/components/schemas/CredentialMetadata'
+        webhook_key:
+          $ref: '#/components/schemas/CredentialMetadata'
+      required:
+      - api_token
+      - webhook_key
+      additionalProperties: false
+    Bot:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ID'
+        name:
+          type: string
+          minLength: 1
+        enabled:
+          type: boolean
+        capabilities:
+          $ref: '#/components/schemas/Capabilities'
+        version:
+          $ref: '#/components/schemas/Version'
+        credentials:
+          $ref: '#/components/schemas/BotCredentials'
+        connection:
+          type: object
+          properties:
+            state:
+              enum:
+              - recent_poll
+              - unknown
+            last_poll_at:
+              oneOf:
+              - $ref: '#/components/schemas/UTCDateTime'
+              - type: 'null'
+          required:
+          - state
+          - last_poll_at
+          additionalProperties: false
+      required:
+      - id
+      - name
+      - enabled
+      - capabilities
+      - version
+      - credentials
+      - connection
+      additionalProperties: false
+      description: 仅管理元数据；recent_poll 表示近期应用轮询，不承诺业务消费者持续在线；Webhook-only 为 unknown。无正文、附件、历史、callback_data
+        或原始异常。
+    CreateBotRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        enabled:
+          type: boolean
+        capabilities:
+          $ref: '#/components/schemas/Capabilities'
+      required:
+      - name
+      - enabled
+      - capabilities
+      additionalProperties: false
+    PatchBotRequest:
+      type: object
+      properties:
+        expected_version:
+          $ref: '#/components/schemas/Version'
+        name:
+          type: string
+          minLength: 1
+        enabled:
+          type: boolean
+        capabilities:
+          $ref: '#/components/schemas/Capabilities'
+      required:
+      - expected_version
+      additionalProperties: false
+      description: 版本比较防覆盖；停用/授权变更按提交前重新鉴权，停用不清空队列。
+    DeleteBotRequest:
+      type: object
+      properties:
+        confirm_name:
+          type: string
+          minLength: 1
+        expected_version:
+          $ref: '#/components/schemas/Version'
+      required:
+      - confirm_name
+      - expected_version
+      additionalProperties: false
+      description: UI 二次确认后显式提交 Bot 名称与当前版本；永久删除凭据/历史/受保护队列，异步回收无引用附件。
+    IssuedAPIToken:
+      type: object
+      properties:
+        credential:
+          $ref: '#/components/schemas/CredentialMetadata'
+        token:
+          type: string
+          minLength: 1
+        capabilities:
+          $ref: '#/components/schemas/Capabilities'
+      required:
+      - credential
+      - token
+      - capabilities
+      additionalProperties: false
+      description: 仅创建/重置响应返回明文；绑定本 Bot 的 send/receive 授权；不可替代 Webhook Key。
+    IssuedWebhookKey:
+      type: object
+      properties:
+        credential:
+          $ref: '#/components/schemas/CredentialMetadata'
+        key:
+          type: string
+          minLength: 1
+      required:
+      - credential
+      - key
+      additionalProperties: false
+      description: 仅创建/重置返回；仅 Authorization Bearer 用于 POST /webhooks/{bot_id} 创建标准消息。不可用于读、编辑、上传、claim/ACK/renew
+        或管理接口。
+    CreatedBotResponse:
+      type: object
+      properties:
+        bot:
+          $ref: '#/components/schemas/Bot'
+        api_token:
+          $ref: '#/components/schemas/IssuedAPIToken'
+        webhook_key:
+          $ref: '#/components/schemas/IssuedWebhookKey'
+      required:
+      - bot
+      - api_token
+      - webhook_key
+      additionalProperties: false
+    BotPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Bot'
+        next_cursor:
+          oneOf:
+          - $ref: '#/components/schemas/OpaqueCursor'
+          - type: 'null'
+        has_more:
+          type: boolean
+      required:
+      - items
+      - next_cursor
+      - has_more
+      additionalProperties: false
+      description: 有界管理元数据分页；不包含任何消息历史。
+  responses:
+    '400':
+      description: 格式错误
+      headers:
+        Cache-Control:
+          description: 受保护响应固定 no-store。
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '401':
+      description: 未认证、过期或撤销
+      headers:
+        Cache-Control:
+          description: 受保护响应固定 no-store。
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '403':
+      description: 越权或 CSRF/同源检查失败
+      headers:
+        Cache-Control:
+          description: 受保护响应固定 no-store。
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '404':
+      description: 无权或不存在资源
+      headers:
+        Cache-Control:
+          description: 受保护响应固定 no-store。
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '409':
+      description: 版本冲突
+      headers:
+        Cache-Control:
+          description: 受保护响应固定 no-store。
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '410':
+      description: 资源或游标过期
+      headers:
+        Cache-Control:
+          description: 受保护响应固定 no-store。
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '413':
+      description: 请求超限
+      headers:
+        Cache-Control:
+          description: 受保护响应固定 no-store。
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '422':
+      description: 字段语义错误
+      headers:
+        Cache-Control:
+          description: 受保护响应固定 no-store。
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '429':
+      description: 限流
+      headers:
+        Cache-Control:
+          description: 受保护响应固定 no-store。
+          schema:
+            type: string
+            const: no-store
+        Retry-After:
+          description: 尽量提供重试等待秒数或 HTTP 日期。
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '503':
+      description: 存储或暂时不可用
+      headers:
+        Cache-Control:
+          description: 受保护响应固定 no-store。
+          schema:
+            type: string
+            const: no-store
+        Retry-After:
+          description: 尽量提供重试等待秒数或 HTTP 日期。
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  securitySchemes:
+    AdminBearer:
+      type: http
+      scheme: bearer
+      description: Android 管理员设备会话；非 JWT，自包含 Token 不能替代可撤销会话。Bot 凭据不能访问管理接口。
+    WebCookie:
+      type: apiKey
+      in: cookie
+      name: relaynest_session
+      description: Web 管理会话；HttpOnly、SameSite=Lax，外部 HTTPS 时 Secure；同一唯一管理员。
+    CSRF:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+      description: Web 写操作验证会话 CSRF 及同源 Origin/Referer；不适用于无会话的登录。
+    BotAPIToken:
+      type: http
+      scheme: bearer
+      description: 仅本 Bot 的 send/receive 授权；不能用于 /auth、/admin 或 Webhook。
+    WebhookKey:
+      type: http
+      scheme: bearer
+      description: 独立、仅发送；仅 POST /webhooks/{bot_id}，禁止在 URL 携带。
