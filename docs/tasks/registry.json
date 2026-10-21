@@ -28,9 +28,12 @@
       "requires_user_authorization": false
     },
     "G-MP": {
-      "status": "pending",
-      "evidence": [],
-      "decision": null,
+      "status": "pass",
+      "evidence": [
+        "docs/tasks/reports/P01-06-user-acceptance.md",
+        "docs/tasks/reports/P01-06-callback-live.md"
+      ],
+      "decision": "2026-10-21 用户接受剩余验证缺口，按调整后的最小 PoC 范围验收 P1 通过；采用方案 A 核心文件补丁，仅 v3.1.5 有运行证据。未测项目仍 NOT_RUN，未执行独立审计，不代表 AC-07 或正式插件验收通过。",
       "source_tasks": [
         "P01-06"
       ],
@@ -199,13 +202,16 @@
       "dependencies": [
         "P00-03"
       ],
-      "status": "todo",
+      "status": "done",
       "owner": null,
       "base_sha": null,
-      "implementation_sha": null,
+      "implementation_sha": "61d9dcc",
       "audit_report": null,
       "integration_sha": null,
-      "evidence": [],
+      "evidence": [
+        "docs/tasks/reports/P01-01-implementation.md",
+        "docs/tasks/reports/P01-06-user-acceptance.md"
+      ],
       "blocker": null,
       "kind": "verification",
       "gates_required": [
@@ -222,13 +228,16 @@
       "dependencies": [
         "P01-01"
       ],
-      "status": "todo",
+      "status": "done",
       "owner": null,
       "base_sha": null,
-      "implementation_sha": null,
+      "implementation_sha": "8e8afa6",
       "audit_report": null,
       "integration_sha": null,
-      "evidence": [],
+      "evidence": [
+        "docs/tasks/reports/P01-02-implementation.md",
+        "docs/tasks/reports/P01-06-user-acceptance.md"
+      ],
       "blocker": null,
       "kind": "verification",
       "gates_required": [
@@ -245,13 +254,16 @@
       "dependencies": [
         "P01-02"
       ],
-      "status": "todo",
+      "status": "done",
       "owner": null,
       "base_sha": null,
-      "implementation_sha": null,
+      "implementation_sha": "213f832",
       "audit_report": null,
       "integration_sha": null,
-      "evidence": [],
+      "evidence": [
+        "docs/tasks/reports/P01-03-implementation.md",
+        "docs/tasks/reports/P01-06-user-acceptance.md"
+      ],
       "blocker": null,
       "kind": "verification",
       "gates_required": [
@@ -268,13 +280,16 @@
       "dependencies": [
         "P01-03"
       ],
-      "status": "todo",
+      "status": "done",
       "owner": null,
       "base_sha": null,
-      "implementation_sha": null,
+      "implementation_sha": "498d5b7",
       "audit_report": null,
       "integration_sha": null,
-      "evidence": [],
+      "evidence": [
+        "docs/tasks/reports/P01-04-implementation.md",
+        "docs/tasks/reports/P01-06-user-acceptance.md"
+      ],
       "blocker": null,
       "kind": "verification",
       "gates_required": [
@@ -291,13 +306,16 @@
       "dependencies": [
         "P01-04"
       ],
-      "status": "todo",
+      "status": "done",
       "owner": null,
       "base_sha": null,
-      "implementation_sha": null,
+      "implementation_sha": "061c0b8",
       "audit_report": null,
       "integration_sha": null,
-      "evidence": [],
+      "evidence": [
+        "docs/tasks/reports/P01-05-implementation.md",
+        "docs/tasks/reports/P01-06-user-acceptance.md"
+      ],
       "blocker": null,
       "kind": "verification",
       "gates_required": [
@@ -314,13 +332,16 @@
       "dependencies": [
         "P01-05"
       ],
-      "status": "todo",
+      "status": "done",
       "owner": null,
       "base_sha": null,
-      "implementation_sha": null,
+      "implementation_sha": "5d31b6f",
       "audit_report": null,
       "integration_sha": null,
-      "evidence": [],
+      "evidence": [
+        "docs/tasks/reports/P01-06-implementation.md",
+        "docs/tasks/reports/P01-06-user-acceptance.md"
+      ],
       "blocker": null,
       "kind": "verification",
       "gates_required": [
