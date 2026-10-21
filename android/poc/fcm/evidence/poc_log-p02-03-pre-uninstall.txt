@@ -1,0 +1,56 @@
+10-21 15:41:43.118  App 进程启动（pid=31383）
+10-21 15:41:43.128  已登记周期补偿任务（30min，网络约束，KEEP）
+10-21 15:41:43.190  Activity onResume（前台）
+10-21 15:41:43.192  已登记即时补偿任务 trigger=app-open（KEEP）
+10-21 15:41:43.223  Activity onPause（离开前台）
+10-21 15:41:43.471  token 获取成功: eNXTP-4t…(len=142)…RgdY
+10-21 15:43:42.179  SCREEN_ON（亮屏）
+10-21 15:43:52.143  SCREEN_OFF（灭屏/锁屏）
+10-21 15:44:13.752  SCREEN_ON（亮屏）
+10-21 15:44:24.902  SCREEN_OFF（灭屏/锁屏）
+10-21 15:45:52.546  SCREEN_ON（亮屏）
+10-21 15:45:53.896  Activity onResume（前台）
+10-21 15:45:53.897  已登记即时补偿任务 trigger=app-open（KEEP）
+10-21 15:45:53.941  SyncWork 运行 trigger=periodic screenOn=true doze=true
+10-21 15:45:53.941  SyncWork 完成 trigger=periodic
+10-21 15:45:53.947  SyncWork 运行 trigger=app-open screenOn=true doze=true
+10-21 15:45:53.947  SyncWork 完成 trigger=app-open
+10-21 15:45:54.667  onMessageReceived id=0:1792568567205489%cec58810f9fd7ecd prio=2/2 sent=1792568567198 recv=1792568754666 screenOn=true doze=false data=[type=sync_hint, watermark=201, deployment_id=poc-deployment-1]
+10-21 15:47:20.030  Activity onPause（离开前台）
+10-21 15:49:46.223  onMessageReceived id=0:1792568986109518%cec58810f9fd7ecd prio=1/1 sent=1792568986104 recv=1792568986222 screenOn=false doze=true data=[type=sync_hint, watermark=302, deployment_id=poc-deployment-1]
+10-21 15:51:59.630  App 进程启动（pid=8468）
+10-21 15:51:59.639  已登记周期补偿任务（30min，网络约束，KEEP）
+10-21 15:51:59.671  Activity onResume（前台）
+10-21 15:51:59.672  已登记即时补偿任务 trigger=app-open（KEEP）
+10-21 15:51:59.717  token 获取成功: eNXTP-4t…(len=142)…RgdY
+10-21 15:51:59.740  SyncWork 运行 trigger=app-open screenOn=true doze=false
+10-21 15:51:59.742  SyncWork 完成 trigger=app-open
+10-21 15:54:13.333  onMessageReceived id=0:1792569253202153%cec58810f9fd7ecd prio=2/2 sent=1792569253194 recv=1792569253331 screenOn=true doze=false data=[type=sync_hint, watermark=501, deployment_id=poc-deployment-1]
+10-21 15:54:18.388  onMessageReceived id=0:1792569077108052%cec58810f9fd7ecd prio=2/2 sent=1792569077102 recv=1792569258387 screenOn=true doze=false data=[type=sync_hint, watermark=401, deployment_id=poc-deployment-1]
+10-21 16:00:17.371  Activity onPause（离开前台）
+10-21 16:00:18.050  SCREEN_OFF（灭屏/锁屏）
+10-21 16:05:12.328  SCREEN_ON（亮屏）
+10-21 16:05:13.189  Activity onResume（前台）
+10-21 16:05:13.190  已登记即时补偿任务 trigger=app-open（KEEP）
+10-21 16:05:13.278  SyncWork 运行 trigger=app-open screenOn=true doze=true
+10-21 16:05:13.279  SyncWork 完成 trigger=app-open
+10-21 16:05:51.945  Activity onPause（离开前台）
+10-21 16:08:33.474  App 进程启动（pid=12550）
+10-21 16:08:33.481  已登记周期补偿任务（30min，网络约束，KEEP）
+10-21 16:08:33.514  Activity onResume（前台）
+10-21 16:08:33.516  已登记即时补偿任务 trigger=app-open（KEEP）
+10-21 16:08:33.562  token 获取成功: eNXTP-4t…(len=142)…RgdY
+10-21 16:08:33.586  SyncWork 运行 trigger=app-open screenOn=true doze=false
+10-21 16:08:33.588  SyncWork 完成 trigger=app-open
+10-21 16:09:41.921  onMessageReceived id=0:1792569971771182%cec58810f9fd7ecd prio=1/1 sent=1792569971765 recv=1792570181919 screenOn=true doze=false data=[type=sync_hint, watermark=601, deployment_id=poc-deployment-1]
+10-21 16:09:58.464  onMessageReceived id=0:1792570194514018%cec58810f9fd7ecd prio=1/1 sent=1792570194507 recv=1792570198463 screenOn=true doze=false data=[type=sync_hint, watermark=602, deployment_id=poc-deployment-1]
+10-21 16:10:22.407  Activity onPause（离开前台）
+10-21 16:12:57.012  App 进程启动（pid=17266）
+10-21 16:12:57.022  已登记周期补偿任务（30min，网络约束，KEEP）
+10-21 16:12:57.054  onMessageReceived id=0:1792570376706022%cec58810f9fd7ecd prio=1/1 sent=1792570376700 recv=1792570377052 screenOn=true doze=false data=[type=sync_hint, watermark=801, deployment_id=poc-deployment-1]
+10-21 16:13:02.117  onMessageReceived id=0:1792570228966339%cec58810f9fd7ecd prio=1/1 sent=1792570228960 recv=1792570382116 screenOn=true doze=false data=[type=sync_hint, watermark=701, deployment_id=poc-deployment-1]
+10-21 16:18:17.335  App 进程启动（pid=16826）
+10-21 16:18:17.352  已登记周期补偿任务（30min，网络约束，KEEP）
+10-21 16:18:17.673  SyncWork 运行 trigger=periodic screenOn=true doze=false
+10-21 16:18:17.678  SyncWork 完成 trigger=periodic
+10-21 16:21:57.557  onMessageReceived id=0:1792570750338705%cec58810f9fd7ecd prio=1/1 sent=1792570750331 recv=1792570917553 screenOn=true doze=false data=[type=sync_hint, watermark=901, deployment_id=poc-deployment-1]

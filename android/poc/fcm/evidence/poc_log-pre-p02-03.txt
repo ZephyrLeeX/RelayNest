@@ -1,0 +1,36 @@
+10-21 15:41:43.118  App 进程启动（pid=31383）
+10-21 15:41:43.128  已登记周期补偿任务（30min，网络约束，KEEP）
+10-21 15:41:43.190  Activity onResume（前台）
+10-21 15:41:43.192  已登记即时补偿任务 trigger=app-open（KEEP）
+10-21 15:41:43.223  Activity onPause（离开前台）
+10-21 15:41:43.471  token 获取成功: eNXTP-4t…(len=142)…RgdY
+10-21 15:43:42.179  SCREEN_ON（亮屏）
+10-21 15:43:52.143  SCREEN_OFF（灭屏/锁屏）
+10-21 15:44:13.752  SCREEN_ON（亮屏）
+10-21 15:44:24.902  SCREEN_OFF（灭屏/锁屏）
+10-21 15:45:52.546  SCREEN_ON（亮屏）
+10-21 15:45:53.896  Activity onResume（前台）
+10-21 15:45:53.897  已登记即时补偿任务 trigger=app-open（KEEP）
+10-21 15:45:53.941  SyncWork 运行 trigger=periodic screenOn=true doze=true
+10-21 15:45:53.941  SyncWork 完成 trigger=periodic
+10-21 15:45:53.947  SyncWork 运行 trigger=app-open screenOn=true doze=true
+10-21 15:45:53.947  SyncWork 完成 trigger=app-open
+10-21 15:45:54.667  onMessageReceived id=0:1792568567205489%cec58810f9fd7ecd prio=2/2 sent=1792568567198 recv=1792568754666 screenOn=true doze=false data=[type=sync_hint, watermark=201, deployment_id=poc-deployment-1]
+10-21 15:47:20.030  Activity onPause（离开前台）
+10-21 15:49:46.223  onMessageReceived id=0:1792568986109518%cec58810f9fd7ecd prio=1/1 sent=1792568986104 recv=1792568986222 screenOn=false doze=true data=[type=sync_hint, watermark=302, deployment_id=poc-deployment-1]
+10-21 15:51:59.630  App 进程启动（pid=8468）
+10-21 15:51:59.639  已登记周期补偿任务（30min，网络约束，KEEP）
+10-21 15:51:59.671  Activity onResume（前台）
+10-21 15:51:59.672  已登记即时补偿任务 trigger=app-open（KEEP）
+10-21 15:51:59.717  token 获取成功: eNXTP-4t…(len=142)…RgdY
+10-21 15:51:59.740  SyncWork 运行 trigger=app-open screenOn=true doze=false
+10-21 15:51:59.742  SyncWork 完成 trigger=app-open
+10-21 15:54:13.333  onMessageReceived id=0:1792569253202153%cec58810f9fd7ecd prio=2/2 sent=1792569253194 recv=1792569253331 screenOn=true doze=false data=[type=sync_hint, watermark=501, deployment_id=poc-deployment-1]
+10-21 15:54:18.388  onMessageReceived id=0:1792569077108052%cec58810f9fd7ecd prio=2/2 sent=1792569077102 recv=1792569258387 screenOn=true doze=false data=[type=sync_hint, watermark=401, deployment_id=poc-deployment-1]
+10-21 16:00:17.371  Activity onPause（离开前台）
+10-21 16:00:18.050  SCREEN_OFF（灭屏/锁屏）
+10-21 16:05:12.328  SCREEN_ON（亮屏）
+10-21 16:05:13.189  Activity onResume（前台）
+10-21 16:05:13.190  已登记即时补偿任务 trigger=app-open（KEEP）
+10-21 16:05:13.278  SyncWork 运行 trigger=app-open screenOn=true doze=true
+10-21 16:05:13.279  SyncWork 完成 trigger=app-open
