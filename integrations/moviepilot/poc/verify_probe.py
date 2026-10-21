@@ -3,6 +3,7 @@
 import importlib.util
 from pathlib import Path
 import sys
+import tempfile
 from types import ModuleType, SimpleNamespace
 
 
@@ -156,6 +157,25 @@ def main():
             plugin._transport = None
         assert not Path(active["file"]).exists()
         assert not any(t.name == "relaynest-p105-receiver" for t in transport.threading.enumerate())
+        # 专用渠道测试入口仅能提交自有request的翻页，下载/选择及外部ID都拒绝。
+        for unsafe in ("media:fixture:download:0", "media:fixture:select:1", "media:foreign:page-next", "update:restart"):
+            try:
+                plugin._callback_input(source, {}, unsafe, ("fixture",))
+            except ValueError:
+                pass
+            else:
+                raise AssertionError("不安全callback未被拒绝")
+        relaynest_channel = object()
+        sys.modules["app.schemas.types"].NotificationChannel = SimpleNamespace(RelayNest=relaynest_channel)
+        callback_context = dict(userid=f"{source}:callback:local:user", fixture_prefix="RelayNest-P1Probe:callback:local:")
+        plugin._callback_pending[source] = callback_context
+        callback_message = Message(source=source, userid=callback_context["userid"], channel=relaynest_channel, save_history=False)
+        callback_items = [SimpleNamespace(title=callback_context["fixture_prefix"] + "1")]
+        assert plugin._capture_callback("media", callback_message, callback_items)
+        for change in ({"channel": None}, {"source": "OtherBot"}, {"userid": "other-user"}, {"save_history": True}):
+            assert not plugin._capture_callback("media", Message(**{**callback_message.model_dump(), **change}), callback_items)
+        assert not plugin._capture_callback("media", callback_message, [SimpleNamespace(title="real-media")])
+        plugin._callback_result = {"test_marker": True}
         plugin._candidate_result = {"test_marker": True}
         plugin.stop_service()
         assert not plugin.get_state() and plugin.status()["messages"] == 0
@@ -163,11 +183,20 @@ def main():
         assert not plugin._text_pending
         assert not plugin._candidate_pending and plugin.status()["candidate_calls"] == 0
         assert plugin.status()["candidate_result"] is None
+        assert not plugin._callback_pending and not plugin._callback_calls and plugin._callback_result is None
         assert plugin.post_message(Message(**good)) is None
         assert not plugin.probe()["success"]
         plugin.init_plugin({"enabled": False})
         assert not plugin.get_state()
-        print("PASS: 临时 HTTP ID/编辑/附件/重放/清理、模块及文本桩、候选捕获、危险数字拒绝、传播边界、身份限制、缓存及停用清理；仅宿主桩验证")
+        restart_spec = importlib.util.spec_from_file_location("restart_preflight_under_test", Path(__file__).parent / "restart_preflight.py")
+        restart_module = importlib.util.module_from_spec(restart_spec)
+        restart_spec.loader.exec_module(restart_module)
+        with tempfile.TemporaryDirectory() as folder:
+            bind_rows = restart_module.check_bind_sources([
+                {"Type": "bind", "Source": folder, "Destination": "/config"},
+                {"Type": "bind", "Source": str(Path(folder) / "missing"), "Destination": "/netdisk"}])
+            assert bind_rows[0]["available"] and not bind_rows[1]["available"] and bind_rows[1]["errno"] == 2
+        print("PASS: 重启挂载预检、回调危险动作拒绝、临时 HTTP ID/编辑/附件/重放/清理、模块及文本桩、候选捕获、危险数字拒绝、传播边界、身份限制、缓存及停用清理；仅宿主桩验证")
     finally:
         for name in list(sys.modules):
             if name.startswith("relaynestprobe_under_test"):

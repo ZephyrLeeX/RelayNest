@@ -134,6 +134,7 @@ class TransportProbeMixin:
         payload = {"key": f"{active['run']}:{len(active['sent'])}", "path": path,
                    "source": message.source, "userid": message.userid,
                    "text": message.text, "title": message.title, "count": len(items or []),
+                   "buttons": message.buttons,
                    "attachments": attachments}
         result = request(active["url"] + "/messages", payload)
         active["sent"].append({"payload": payload, "message_id": result["message_id"]})

@@ -9,7 +9,7 @@
 ## 能力边界
 
 - 无第三方新增依赖；使用 MP 自带 SDK、消息模型和标准库。
-- 只处理 source 为 `RelayNest-P1Probe:A/B`、对应固定 userid、固定正文、`save_history=False` 且 channel 为空的合成消息。
+- 常规探针只处理 source 为 `RelayNest-P1Probe:A/B`、固定身份和正文、`save_history=False` 且 channel 为空的合成消息；0.0.5 的 callback-probe 另只接受已打补丁的 RelayNest 渠道及自有候选夹具。
 - 不监听 NoticeMessage；常规探针不启动后台线程，transport-probe 仅在请求期间启动临时 HTTP 服务线程并在 finally 关闭；不接正式 Hub、不处理任意用户输入。文本测试只原样调用 `MessageChain.handle_message(text="/noai")`，不替换宿主核心、权限或事件实现。
 - 基础模块 probe 的两类候选只传空列表；candidate-probe 在内存播种 9 条合成媒体／种子候选，由原生渲染及交互控制处理。旧 probe 的直接发送 ID 和编辑仍为内存桩；transport-probe 返回临时 HTTP 接收桩生成的 ID 并更新其内存行，没有发送到真实设备。
 - 不修改 NotificationChannel、能力表或 MP 核心，不借用 QQ/WebAgent。
@@ -100,4 +100,27 @@ PYTHONDONTWRITEBYTECODE=1 python integrations/moviepilot/poc/verify_patch.py
 PYTHONDONTWRITEBYTECODE=1 python integrations/moviepilot/poc/verify_patch.py --source-root /tmp/relaynest-p1-research/3.1.5
 ```
 
-该原型尚未安装到现有MP，也未做实际页面点击、重启及原生callback验收。安装需将新目录内两个Python文件一起部署，通过官方API启用/加载；无自动下载远程补丁或任意文件编辑功能。已有探针的安装命令只适用于RelayNestProbe，不能直接用于本助手。详见[实现与验证记录](../../../docs/tasks/reports/P01-06-callback-patch-prototype.md)。
+原型阶段的实现记录见[补丁助手报告](../../../docs/tasks/reports/P01-06-callback-patch-prototype.md)。后续已获用户授权部署并应用，MP重启恢复后原生callback最小检查通过，详见[实际部署与回调报告](../../../docs/tasks/reports/P01-06-callback-live.md)。真实浏览器点击及正式Hub/Android链路仍未验证。
+
+
+## 已部署助手的持久本地仓库
+
+当前实例的 `/config/relaynest-local-plugins` 是本助手的本地仓库，根目录使用源码中的 `relaynestpatch/package.v3.json`，源文件放 `plugins.v3/relaynestpatch/`。清单只声明 `==3.1.5`，不等于正式RelayNest插件的最低版本承诺。
+
+本轮通过官方 `/system/env` 仅追加 `PLUGIN_LOCAL_REPO_PATHS` 中这一条路径，随后通过官方插件来源/安装接口登记；原有8个安装ID保留，新增RelayNestPatch。只有 enable/load 会遗漏正式安装登记，重启后API可能不存在；不能把reload成功当作持久安装。`probe_api.py` 提供固定的 patch-register-local、patch-source、patch-install、patch-form、patch-status 动作；patch-install使用该宿主实际要求的GET安装接口。调用前先确认本地候选唯一且可信，不直接编辑MP数据库或伪造市场源。
+
+本地仓库与备份必须保留在持久配置卷。登记后的再次重启/容器替换尚未复测，不将其写成完整升级恢复保证。
+
+## 已打补丁渠道的callback-probe
+
+0.0.5新增callback-probe：部署 `relaynestprobe` 的三个Python文件，在新加载实例调用固定端点。只从本轮原生媒体/种子按钮中使用page-next、page-prev；明确拒绝select、download（含0）、外部request_id和其它动作。两组命名空间userid、两种phase各检查首屏按钮、错误用户、跨Bot请求、下一页、重复下一页、上一页、失效请求，共28项。按钮完整数组会发送到临时HTTP桩；回调由探针调用原生handle_message提交同一按钮数据，不代表Android/Hub入站事件已验证。
+
+重复请求返回本轮缓存；每轮finally仅移除自有request_id、关闭临时HTTP服务。结束仍须disable→确认状态清空→unload→确认404→按源码哈希删除探针目录。补丁助手是用户授权的常驻安装，不随临时探针一起删除。
+
+后续在Docker宿主重启前先运行只读绑定源检查：
+
+```sh
+ssh -F /home/lijx/.ssh/config fnos 'python3 -' < integrations/moviepilot/poc/restart_preflight.py
+```
+
+它不读取容器环境或执行启停；发现绑定源缺失时非零退出。一次检查不能保证未来挂载始终可用。本轮重启因旧/netdisk源缺失中断，已按用户授权移除该绑定并恢复服务；当前运行于保留原文件层的本地恢复镜像，后续Compose重建可能回到原镜像，须再检查补丁状态。

@@ -16,14 +16,15 @@ from app.schemas.notification import ChannelCapabilityManager
 
 
 from .transport import TransportProbeMixin, request
+from .callback_probe import CallbackProbeMixin
 
 
-class RelayNestProbe(TransportProbeMixin, _PluginBase):
+class RelayNestProbe(CallbackProbeMixin, TransportProbeMixin, _PluginBase):
     """探测 source 路由与模块接口；不注册完整 RelayNest 渠道。"""
 
     plugin_name = "RelayNest 最小探针"
     plugin_desc = "仅处理内置合成消息，不连接 Hub，不执行下载或订阅。"
-    plugin_version = "0.0.4"
+    plugin_version = "0.0.5"
     plugin_author = "RelayNest"
     plugin_config_prefix = "relaynestprobe_"
     plugin_order = -100
@@ -46,6 +47,9 @@ class RelayNestProbe(TransportProbeMixin, _PluginBase):
         self._candidate_result = None
         self._transport = None
         self._transport_result = None
+        self._callback_pending = {}
+        self._callback_calls = []
+        self._callback_result = None
 
     def get_state(self):
         return self._enabled
@@ -62,6 +66,7 @@ class RelayNestProbe(TransportProbeMixin, _PluginBase):
     def get_api(self):
         """所有入口均要求 MP API 密钥，POST 只运行内置固定用例。"""
         return [
+            {"path": "/callback_probe", "endpoint": self.callback_probe, "methods": ["POST"], "auth": "apikey", "summary": "仅翻页的原生回调探针"},
             {"path": "/transport_probe", "endpoint": self.transport_probe, "methods": ["POST"], "auth": "apikey", "summary": "运行临时 HTTP 传输验证"},
             {"path": "/status", "endpoint": self.status, "methods": ["GET"], "auth": "apikey", "summary": "读取探针状态"},
             {"path": "/probe", "endpoint": self.probe, "methods": ["POST"], "auth": "apikey", "summary": "运行固定合成消息探针"},
@@ -97,6 +102,8 @@ class RelayNestProbe(TransportProbeMixin, _PluginBase):
         self._calls = self._calls[-24:]
 
     def post_message(self, message, **kwargs):
+        if self._capture_callback("post_message", message):
+            return True
         if self._capture_candidate("post_message", message):
             return True
         if self._capture_text_reply(message):
@@ -131,7 +138,10 @@ class RelayNestProbe(TransportProbeMixin, _PluginBase):
             return True
 
     def text_preflight(self):
-        """只读检查扩散入口；仅排除已核实不接收本次消息的 WebAgent 桥。"""
+        return self._message_preflight(None)
+
+    def _message_preflight(self, channel):
+        """只读检查指定渠道扩散入口，逐次用真实提取函数核对WebAgent桥。"""
         from app.application.notification import get_notification_configs
         from app.application.plugin.runtime import get_plugin_manager
         from app.schemas.types import EventType
@@ -149,7 +159,7 @@ class RelayNestProbe(TransportProbeMixin, _PluginBase):
             # 该桥在提取结果为空时立即返回；用真实消息模型校验本次 channel=None 的范围。
             webagent_rejects_probe = all(
                 extract_web_agent_message_from_event_data(Message(
-                    channel=None, source=source, userid=f"{source}:user:preflight",
+                    channel=channel, source=source, userid=f"{source}:user:preflight",
                     title=self._reply_title, save_history=False,
                 ).model_dump()) is None
                 for source in self._sources
@@ -220,6 +230,8 @@ class RelayNestProbe(TransportProbeMixin, _PluginBase):
             return self._text_result
 
     def post_medias_message(self, message, medias):
+        if self._capture_callback("media", message, medias):
+            return True
         if self._capture_candidate("media", message, medias):
             return True
         if not self._matches(message) or medias:
@@ -229,6 +241,8 @@ class RelayNestProbe(TransportProbeMixin, _PluginBase):
         return True
 
     def post_torrents_message(self, message, torrents):
+        if self._capture_callback("torrent", message, torrents):
+            return True
         if self._capture_candidate("torrent", message, torrents):
             return True
         if not self._matches(message) or torrents:
@@ -434,6 +448,7 @@ class RelayNestProbe(TransportProbeMixin, _PluginBase):
         with self._lock:
             return {"enabled": self._enabled, "messages": len(self._records), "calls": list(self._calls),
                     "text_replies": len(self._text_replies), "text_result": self._text_result,
+                    "callback_result": self._callback_result, "callback_calls": len(self._callback_calls),
                     "transport_active": self._transport is not None, "transport_result": self._transport_result,
                     "candidate_calls": len(self._candidate_calls), "candidate_result": self._candidate_result}
 
@@ -486,5 +501,8 @@ class RelayNestProbe(TransportProbeMixin, _PluginBase):
             self._candidate_pending.clear()
             self._candidate_calls.clear()
             self._candidate_result = None
-        self._transport = None
-        self._transport_result = None
+            self._transport = None
+            self._transport_result = None
+            self._callback_pending.clear()
+            self._callback_calls.clear()
+            self._callback_result = None

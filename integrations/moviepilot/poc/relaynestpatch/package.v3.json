@@ -1,0 +1,14 @@
+{
+  "RelayNestPatch": {
+    "name": "RelayNest 回调补丁助手",
+    "description": "仅适配已验证的 MoviePilot v3.1.5，提供回调文件补丁检查、应用与恢复。",
+    "labels": "RelayNest,本地补丁",
+    "version": "0.0.1",
+    "icon": "",
+    "author": "RelayNest",
+    "level": 1,
+    "system_version": "==3.1.5",
+    "release": false,
+    "history": {"v0.0.1": "固定源码指纹的一键回调补丁助手原型"}
+  }
+}
