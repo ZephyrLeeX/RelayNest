@@ -33,4 +33,6 @@ android {
 dependencies {
     // 唯一功能依赖：FCM 客户端 SDK（锁定 25.1.3）
     implementation("com.google.firebase:firebase-messaging:25.1.3")
+    // P02-02：补偿调度用 WorkManager（锁定 2.12.0）
+    implementation("androidx.work:work-runtime-ktx:2.12.0")
 }

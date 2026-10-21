@@ -8,8 +8,8 @@ import android.widget.TextView
 import com.google.firebase.messaging.FirebaseMessaging
 
 /**
- * P02-01 最小注册界面：刻意不引入任何 UI 框架（Compose 属正式工程 P03-03 范围），
- * 单个等宽滚动日志视图，只显示脱敏注册状态与收到的 data 提示。
+ * P02-01/02 最小界面：刻意不引入任何 UI 框架（Compose 属正式工程 P03-03 范围），
+ * 单个等宽滚动日志视图，只显示脱敏注册状态、接收记录与补偿时序。
  */
 class MainActivity : Activity() {
     private lateinit var view: TextView
@@ -23,7 +23,6 @@ class MainActivity : Activity() {
             setTextIsSelectable(true)
         }
         setContentView(ScrollView(this).apply { addView(view) })
-        PoCLog.log("App 启动，开始 FCM 注册")
 
         // 注册并获取当前 token：成功后全文只写入私有文件，日志仅记脱敏形态
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
@@ -41,11 +40,15 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        PoCLog.log("Activity onResume（前台）")
+        // 前台补偿：每次前台打开立即触发一次同步（T9.1）
+        SyncJobs.enqueueNow(this, "app-open")
         render()
         PoCLog.setListener { runOnUiThread { render() } }
     }
 
     override fun onPause() {
+        PoCLog.log("Activity onPause（离开前台）")
         PoCLog.setListener(null)
         super.onPause()
     }

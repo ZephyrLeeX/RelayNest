@@ -58,8 +58,8 @@ def main():
         }
     }
     if args.priority == "high":
-        # Android transport 优先级：high 走高优先级通道，仅在对照实验中使用
-        body["message"]["android"] = {"priority": "high"}
+        # AndroidConfig.Priority 枚举为大写 HIGH/NORMAL；high 走高优先级通道，仅对照实验用
+        body["message"]["android"] = {"priority": "HIGH"}
 
     resp = requests.post(
         FCM_ENDPOINT,

@@ -2,27 +2,48 @@ package top.jianxinli.relaynest
 
 import android.content.Context
 import android.util.Log
+import java.io.FileWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 /**
  * PoC 共享事件日志：进程内单例，Activity 与 FCM 服务共用。
- * 约束（P02-01 验收）：写入这里的内容必须已脱敏，不含 token 全文与任何秘密。
- * 同步镜像到 logcat（tag=RelayNestFCM），便于测试侧经 adb 留证据。
+ * 约束（P02-01/02 验收）：写入这里的内容必须已脱敏，不含 token 全文与任何秘密。
+ * 三路输出：内存（UI 显示）、logcat（tag=RelayNestFCM，adb 侧证据）、
+ * 应用私有文件 poc_log.txt（跨进程重启的证据时间线，P02-02 遗留项 2 的修复）。
  */
 object PoCLog {
     private const val TAG = "RelayNestFCM"
+    private const val FILE = "poc_log.txt"
+    private const val MAX_LINES = 400
+
     private val fmt = SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.US)
     private val lines = mutableListOf<String>()
     private var listener: ((String) -> Unit)? = null
+    private var writer: FileWriter? = null
+
+    /** 由 Application 初始化：打开追加文件并载入历史（最近 MAX_LINES 行）供界面连续展示。 */
+    @Synchronized
+    fun init(context: Context) {
+        val file = context.filesDir.resolve(FILE)
+        if (file.exists()) {
+            lines.addAll(file.readLines().takeLast(MAX_LINES))
+        }
+        writer = FileWriter(file, true)
+    }
 
     /** 追加一行事件；text 必须已脱敏。 */
     @Synchronized
     fun log(text: String) {
         val line = "${fmt.format(Date())}  $text"
         lines.add(line)
+        if (lines.size > MAX_LINES) lines.removeAt(0)
         Log.i(TAG, line)
+        writer?.let {
+            it.write(line + "\n")
+            it.flush()
+        }
         listener?.invoke(line)
     }
 

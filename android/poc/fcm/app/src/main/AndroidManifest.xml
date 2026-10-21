@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
+        android:name=".PoCApp"
         android:label="RelayNest FCM PoC"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:allowBackup="false">
