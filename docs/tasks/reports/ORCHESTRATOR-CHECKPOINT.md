@@ -13,10 +13,10 @@
 
 ## 当前恢复点（2026-10-22）
 
-最近确认主树 `main@82ebd62634ecf9025670a75aa956a45667c55ea7`。唯一台账仍registry，恢复时先核实际HEAD/agent/目录及未提交内容，不用本快照覆盖新状态。本轮持续执行，远未完成P3～P15。
+最近确认主树 `main@42cd918c01c34bb7baa918420dad0daa2b4d6a98`。唯一台账仍registry，恢复时先核实际HEAD/agent/目录及未提交内容，不用本快照覆盖新状态。本轮持续执行，远未完成P3～P15。
 
 - P00-01/02/04、P02-01～04、P03-01～06及08～12均已独立审计精确集成。G-GIT/G-MP/G-FCM=pass（历史PoC限定），G-API/CORE/DEPLOY/SHELF/SHELF-API/OPPO=pending。
-- P03-07父running；S01同步域已done，三子卡及八项父契约验收均通过独立审计和精确集成。S02设备域running；S03全局配置/健康/正式G-API收口尚未实施。
+- P03-07父running；S01同步域已done，三子卡及八项父契约验收均通过独立审计和精确集成。S02设备域已契约done；S03全局配置/健康/正式G-API收口running，首子卡在途。
 
 | S01子卡 | 最终实现 / 独立审计 | main集成 |
 | --- | --- | --- |
@@ -28,13 +28,12 @@ bootstrap原实现9cb95c4经A01 532ea26发现BS-A01-01（seed可冒充实际追�
 
 ## 在途工作区与下一步
 
-- 当前实现为`P03-07-S02-S03`通知偏好/设备设置变更/发送快照及父S02联合收口，owner `/root/notification_settings_dev`；独占`/home/lijx/.codex/worktrees/api-notification-settings/RelayNest`、`codex/api-notification-settings`，精确基线`82ebd62634ecf9025670a75aa956a45667c55ea7`。当前运行中、尚无实现提交/审计/集成结论，禁止先done。仅四API文件+本卡报告；最后worker简报为34操作/100Schema/897例待最终重跑，父八项三卡映射/基线比较与23项破坏探针已报通过，最终报告/提交尚在收尾，不能把简报当最终审计。
-- 原设备卡P03-07-S02-S01已done：最终F01 `a63bd59c8f50dcd83353e279b044f25f4383780c`，A02 `c05a5b93b64b5348bb98270ade4856fc23061fac` PASS，完整七提交main集成`876935a219c3a1bf828aeaabb2e8a82ca2bb5d4a`。DS-A01-01契约范围关闭，原负面审计保留，勿重做。指定撤销Session.id，device_id只是元数据，同设备可多Session；迟到旧S1不回退撤销S2，未新增单活/login替换规则。
-- 注册卡P03-07-S02-S02也已done：额度中断留下两文件修改后由新worker原地完成，最终`6901bc09de53995435102d11f2dfad9bd3f46059`经不同agent审计`14081bcb11a5ce8c7ce7b700b6b1ca6e10bdf1e1` PASS，main集成`82ebd62634ecf9025670a75aa956a45667c55ea7`。GET/PUT current/push与DELETE current/push/{provider}仅当前AndroidBearer，Session.id/provider隔离，初始CAS0、删除递增持久屏障，同版同值幂等，旧/未知结果不改新注册，token不回显。32操作/91Schema/765例、原29/84/687/100旧组件/两锁及19探针独立检查通过；源树保留审计SHA，勿把旧恢复点中的“未完成注册”当当前事实。
-- 当前通知卡按T6.3/T9.3核验设备偏好归属：设备Session.device_id共享偏好，注册仍Session.id/provider隔离；同设备多Session不得等同单活，跨设备同步过滤与撤销不误删偏好需独立审计。GET/PUT current/notifications、设置CAS/恢复/vendor服务器前置、SyncChange设备设置分支、DND及job快照/前后CAS/租约串行/未知结果模型均只在契约范围，不冒充实际worker。父S02原八验收需三卡联合审计集成后收口，再进入全局S03。
-- 当前共同契约冻结：32操作/91Schema/765例、全部旧组件/两requirements锁、Sequence SQLite64字符串/Version>=1、权限/no-store、H/epoch/floor/seed与真实sync完成来源、WS仅提示不可推进游标。后卡按实际基线重验，不依赖历史计数猜当前状态。
-- S02文档规划已独立审计集成main`d927abed945379e00548b01e7cecf7bbef59bac2`，三子卡：S02-S01会话→S02-S02完整provider注册生命周期/CAS/条件删除/恢复/持久版本屏障→S02-S03通知CAS/恢复/设置union/发送快照联合收口。会话/注册两卡已done，通知联合卡running；父S02保持原八验收，尚未收口。
-- S03文档规划已独立审计集成main`e6b0565ec3be85997d9b7daa66bce9ad7cec2ab8`，三子卡：S03-S01全局settings/CAS/changes→S03-S02根health与管理投影→S03-S03全T3/T8/父验收/G-API证据补缺收口。全部todo，实施等设备父完整收口，不提前冻结设备字段。
+- 当前实现为`P03-07-S03-S01`全局settings/CAS/清理边界及全局设置变更契约，owner `/root/global_settings_dev`，独占`/home/lijx/.codex/worktrees/api-global-settings/RelayNest`、`codex/api-global-settings`，精确基线`42cd918c01c34bb7baa918420dad0daa2b4d6a98`。启动树干净，尚无实现提交/检查结论；仅四API文件和本卡报告，后续health/管理投影及全G-API证据卡未实施。未确认产品政策如确需选择先证据/选项，普通有界实现可合理决定，不能默认新增产品参数。
+- 设备父P03-07-S02已done，三卡精确集成链/父八项契约验收经独立审计核对完整。设备会话最终F01`a63bd59c8f50dcd83353e279b044f25f4383780c`、A02`c05a5b93b64b5348bb98270ade4856fc23061fac`、main`876935a219c3a1bf828aeaabb2e8a82ca2bb5d4a`；注册实现`6901bc09de53995435102d11f2dfad9bd3f46059`、审计`14081bcb11a5ce8c7ce7b700b6b1ca6e10bdf1e1`、main`82ebd62634ecf9025670a75aa956a45667c55ea7`；通知联合实现`692e11964ea74cb84cf62470a08e4c3a1780a01f`、审计`36a05a2523a968f384e82de4eb599a10f31226eb`、main`42cd918c01c34bb7baa918420dad0daa2b4d6a98`。DS-A01-01契约关闭，原负面审计保留；读取输出/预算偏差如实保留，不声称流程全合规。不得按旧快照重跑已完成卡。
+- 设备冻结交接：撤销按Session.id，device_id不唯一Session；通知偏好按设备共享，注册按Session.id/provider隔离，初始CAS0、删除递增持久屏障，旧未知结果不改新注册，token不回显。GET/PUT current/notifications、配置CAS/恢复/vendor服务器前置、device.notifications.updated、DND/前后job快照CAS/租约串行仅契约及合成状态，真实worker/平台NOT_RUN。D1～D3/FCM边界保持，当前全局设置卡只补剩余全局变更，不弱化设备域。
+- 当前共同契约冻结：34操作/100Schema/899例、全部旧组件/两requirements锁、Sequence SQLite64字符串/Version>=1、权限/no-store、H/epoch/floor/seed与真实sync完成来源、WS仅提示不可推进游标。后卡按实际基线重验，不依赖历史计数猜当前状态。
+- S02文档规划已独立审计集成main`d927abed945379e00548b01e7cecf7bbef59bac2`，三子卡：S02-S01会话→S02-S02完整provider注册生命周期/CAS/条件删除/恢复/持久版本屏障→S02-S03通知CAS/恢复/设置union/发送快照联合收口。三卡已done；父S02原八项契约验收完整收口，运行时NOT_RUN。
+- S03文档规划已独立审计集成main`e6b0565ec3be85997d9b7daa66bce9ad7cec2ab8`，三子卡：S03-S01全局settings/CAS/changes→S03-S02根health与管理投影→S03-S03全T3/T8/父验收/G-API证据补缺收口。设备父已完整收口，S03-S01 running，S03-S02/S03-S03 todo，仍按精确实际基线串行。
 - 每卡实现独立提交→不同agent精确SHA审计→编号修复及重审→集成agent准确组合验证→root登记done→下一卡。S03最终和父P03-07实质验收后才评估G-API，之后P4～P10按真实DAG；不提前启动服务端实现绕过契约门槛。
 - 当前集成角色为`/root/integration_resume`，最近注册卡及恢复快照提交已完成、主树释放；旧`/root/integrate_next`会话不在实际列表。恢复时重新核对实际agent和锁，不根据名字猜运行状态。
 
@@ -45,5 +44,5 @@ bootstrap原实现9cb95c4经A01 532ea26发现BS-A01-01（seed可冒充实际追�
 - 用户确认OPPO账号/应用Push权限尚未准备，P02-05/G-OPPO受阻，仅阻厂商实测/激活；真机运行留正式验收，正式签名成功/安装界面/端到端NOT_RUN保留。不能将Schema/合成状态或阶段放行冒充HTTP/SQLite/Room/WS/通知实际运行验收。
 - 锁Python可先核`/tmp/relaynest-p0305-f01-locked/bin/python`，缺失依hash锁恢复不升级。Android/mise版本沿原锁；干净Go构建前先Web npm ci/build生成gitignored embed资源，不靠旧dist。SQLite已占0001，下一迁移0002；共享API/依赖/迁移串行。
 - 主树registry.json含用户原有修改及调度更新，`.directory`为用户未跟踪文件，均不stage/覆盖/丢弃。本摘要由root创建，Git提交必须交集成agent显式路径处理，禁止git add .。
-- 各已审源树及分支保留，旧/tmp可能消失但Git对象/管理引用不prune/remove/clean；恢复先核未提交内容与实际锁，不自动重置。当前仅通知偏好联合收口树具有API写入权。
+- 各已审源树及分支保留，旧/tmp可能消失但Git对象/管理引用不prune/remove/clean；恢复先核未提交内容与实际锁，不自动重置。当前仅全局设置树具有API写入权。
 - 本文件不是全部完成报告，不创建新聊天/定时任务/自动化，也不授权push、Release、真实部署或MP重建升级。P13～15虽已授权，仍等核心实际完成/G-SHELF实质门槛，不改RelayShelf后端/数据库。
