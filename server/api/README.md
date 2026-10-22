@@ -193,10 +193,10 @@ F01回归：verify合成声明的 `verified_cursor_purpose` 表示服务端已�
 | `GET /devices` / `listDeviceSessions` | Android 管理员 Bearer 或 Web Cookie | 200 `DeviceSessionPage`；400/401/403/429/503 |
 | `DELETE /devices/{id}/session` / `revokeDeviceSession` | Android 管理员 Bearer 或 Web Cookie + CSRF + 同源 Origin/Referer | 204 无正文；400/401/403/404/429/503 |
 
-`DeviceSessionPage` 是唯一新增 Schema，keys 为 `items: Session[]`、`next_cursor`、`has_more`。复用 `cursor`/`limit` 有界分页，只列当前管理员有效的 Web/Android 会话，过期或撤销会话不列出；分页不承诺跨页快照。列表拒绝 token、CSRF、密码摘要、推送凭据和其他未知字段。时间直接复用 `Session.idle_expires_at` / `absolute_expires_at`，均由服务端产生 UTC RFC3339，不能用客户端时间判定代次。全部成功/错误响应沿用 `Cache-Control: no-store`；错误复用 `Error`，401 `AUTHENTICATION_REQUIRED`、403 `FORBIDDEN`、未知或其他管理员设备统一404 `RESOURCE_NOT_FOUND`，不披露资源归属；400格式错误，429/503沿公共响应。
+`DeviceSessionPage` 是唯一新增 Schema，keys 为 `items: Session[]`、`next_cursor`、`has_more`。复用 `cursor`/`limit` 有界分页，只列当前管理员有效的 Web/Android 会话，过期或撤销会话不列出；分页不承诺跨页快照。列表拒绝 token、CSRF、密码摘要、推送凭据和其他未知字段。时间直接复用 `Session.idle_expires_at` / `absolute_expires_at`，均由服务端产生 UTC RFC3339，不能用客户端时间判定代次。全部成功/错误响应沿用 `Cache-Control: no-store`；错误复用 `Error`，401 `AUTHENTICATION_REQUIRED`、403 `FORBIDDEN`、未知或其他管理员会话统一404 `RESOURCE_NOT_FOUND`，不披露资源归属；400格式错误，429/503沿公共响应。
 
-后卡只需读取 `Session.id`、`device_id`、`client_type`、上述两个到期时间与两操作的 `x-device-session-policy`：路径 `{id}` 是 `Session.device_id`；`Session.id` 本身就是不可复用的会话身份/代次，每次重新登录必须生成新值，无需新增 generation 数字或修改旧 Session Schema。服务端事务选中并撤销该设备当前有效会话代次，使其所有 provider 映射与 WS 失效、阻止新发送；WS 继续已有 `session_revoked` / 停止同步、关闭及清理会话规则。旧回调、迟到外发结果在提交前必须比对会话身份及有效性，不得复活旧映射、解绑或覆盖重新登录的新会话。已经外发的通知无法追回，不把契约声明当作真实断连/外发撤回证据。
+后卡只需读取 `Session.id`、`device_id`、`client_type`、上述两个到期时间与两操作的 `x-device-session-policy`：路径 `{id}` 是列表条目的 `Session.id`，`device_id` 仅为元数据，同一 device_id 的多个有效 Session 均可列出并独立撤销；`Session.id` 本身就是不可复用的会话身份/代次，每次重新登录必须生成新值，无需新增 generation 数字或修改旧 Session Schema。服务端事务仅按所给 Session.id 定位并在提交前复核归属及有效性，撤销该会话代次，使其所有 provider 映射与 WS 失效、阻止新发送；WS 继续已有 `session_revoked` / 停止同步、关闭及清理会话规则。旧回调、迟到外发结果在提交前必须比对会话身份及有效性，不得复活旧映射、解绑或覆盖重新登录的新会话。已经外发的通知无法追回，不把契约声明当作真实断连/外发撤回证据。
 
-撤销自身 Web 会话时清 Cookie，撤销其他设备不清调用方 Cookie。`logout` 保持只撤销当前会话及其所有通道/WS，不影响其他设备或 Bot 凭据。已无有效会话的目标返回404；DELETE无请求体，不承诺跨重新登录的重试幂等，重试前可重读列表。后卡注册接口必须绑定当前认证设备/会话，不接受客户端选择其他设备/会话；本卡没有预造注册字段或 provider Schema。
+撤销自身 Web 会话时清 Cookie，撤销其他设备不清调用方 Cookie。`logout` 保持只撤销当前会话及其所有通道/WS，不影响其他设备或 Bot 凭据。同 device_id 的其他会话保持；未知、无权或已无有效会话的目标返回404，迟到或重试 DELETE 旧 S1 绝不回退选择新 S2；DELETE无请求体，不承诺跨重新登录的重试幂等，重试前可重读列表。后卡须按 T9.3 分别核验注册与偏好归属，不得假定 device_id 唯一对应 Session；注册接口必须绑定当前认证设备/会话，不接受客户端选择其他设备/会话；本卡没有预造注册字段或 provider Schema。
 
-`examples.json` 的 `device_session_state` 仅核对权限、撤销范围、迟到回调和重登隔离的合成状态声明；正反例和破坏探针不等于运行时撤销、真实 WS 断连、SDK、多 worker 或手机/NAS测试。父验收1及7/8会话部分由本段及本卡报告追溯，注册/通知及父卡完整收口仍由后两卡承担。
+`examples.json` 的 `device_session_state` 按步骤核对权限、完整会话快照、同设备双会话、撤销/登录交错、迟到回调和重登隔离的合成状态声明；正反例和破坏探针不等于运行时撤销、真实 WS 断连、SDK、多 worker 或手机/NAS测试。父验收1及7/8会话部分由本段及本卡报告追溯，注册/通知及父卡完整收口仍由后两卡承担。

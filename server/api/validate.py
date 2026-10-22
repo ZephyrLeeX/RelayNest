@@ -292,18 +292,42 @@ def ws_state_valid(state):
 
 
 def device_session_state_valid(state):
-    """核对合成权限和代次声明，不执行真实撤销、外发或WS断连。"""
-    status = (401 if not state['active'] else 403 if state['actor'] != 'admin'
-              or (state['credential'] == 'cookie' and not (state['csrf'] and state['same_origin']))
-              else 404 if state['target'] != 'owned' else 204)
-    callback = (state['active'] and not state['revoked']
-                and state['callback_session_id'] == state['session_id'])
-    target = state['current_session_id'] if state['action'] == 'logout' else state['session_id']
-    invalidated = ([target + ':' + kind for kind in ('fcm', 'oppo', 'ws')]
-                   if status == 204 else [])
-    return (status == state['expected_status'] and callback == state['expected_callback']
-            and invalidated == state['expected_invalidated']
-            and state['expected_untouched'] == ['other-session', 'bot-token'])
+    """执行合成序列并逐步比对完整快照；不执行HTTP、数据库或真实WS。"""
+    sessions = copy.deepcopy(state['sessions'])
+    for step in state['steps']:
+        action = step['action']
+        status, invalidated, accepted = None, [], None
+        if action == 'login':
+            # 登录只增加新身份，不能以device_id替换或注销已有会话。
+            session = step['session']
+            if session['id'] in sessions:
+                return False
+            sessions[session['id']] = copy.deepcopy(session)
+        elif action == 'callback':
+            target = sessions.get(step['id'])
+            accepted = bool(target and target['active']
+                            and step['source_session_id'] == target['id'])
+            if accepted:
+                target['results'].append(step['result'])
+        else:
+            # 路径只按Session.id选择；不存在/无权/失效不回退到同设备会话。
+            target_id = state['current_session_id'] if action == 'logout' else step['id']
+            target = sessions.get(target_id)
+            caller = sessions[state['current_session_id']]
+            status = (401 if not caller['active'] else 403
+                      if state['actor'] != 'admin' or state['credential'] not in ('bearer', 'cookie')
+                      or (state['credential'] == 'cookie'
+                          and not (state['csrf'] and state['same_origin']))
+                      else 404 if not target or not target['active']
+                      or target['owner'] != caller['owner'] else 204)
+            if status == 204:
+                invalidated = [target_id + ':' + resource for resource in target['resources']]
+                target['active'] = False
+                target['resources'] = []
+        if ({'status': status, 'invalidated': invalidated, 'callback': accepted,
+             'sessions': sessions, 'bot_credential_active': True} != step['expected']):
+            return False
+    return True
 
 
 def range_intervals(value, size):
@@ -331,7 +355,7 @@ def resolve(document, value):
     return value
 
 
-DEVICE_POLICY = {'identity': 'Session.device_id-target-Session.id-generation',
+DEVICE_POLICY = {'identity': 'Session.id-exact-target-and-generation',
  'generation': 'new-session-id-every-login-never-reuse',
  'scope': 'current-administrator-active-sessions-only',
  'cookie_write': 'csrf-and-same-origin-origin-or-referer',

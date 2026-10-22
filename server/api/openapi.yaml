@@ -156,7 +156,7 @@ paths:
     get:
       operationId: listDeviceSessions
       summary: 设备会话元数据列表
-      description: 列出当前管理员的有效Web/Android设备会话，复用Session；不返回任何凭据、密码摘要、CSRF或provider token。device_id用于撤销定位，id是不可复用的会话身份/代次；每次重新登录生成新id，不用客户端时间判代次。
+      description: 列出当前管理员的有效Web/Android设备会话，复用Session；不返回任何凭据、密码摘要、CSRF或provider token。id用于精确撤销定位，device_id仅为设备元数据，同device_id可有多个有效Session；id是不可复用的会话身份/代次；每次重新登录生成新id，不用客户端时间判代次。
       security:
       - AdminBearer: []
       - WebCookie: []
@@ -195,7 +195,7 @@ paths:
           minimum: 1
         description: 有界分页；服务端资源控制限制实际页大小，客户端沿 next_cursor 继续。
       x-device-session-policy:
-        identity: Session.device_id-target-Session.id-generation
+        identity: Session.id-exact-target-and-generation
         generation: new-session-id-every-login-never-reuse
         scope: current-administrator-active-sessions-only
         cookie_write: csrf-and-same-origin-origin-or-referer
@@ -205,9 +205,9 @@ paths:
   /devices/{id}/session:
     delete:
       operationId: revokeDeviceSession
-      summary: 撤销指定设备当前会话
-      description: id路径参数为Session.device_id。先鉴权并在提交前重新验证；仅当前管理员有权目标，未知/其他管理员设备统一404
-        RESOURCE_NOT_FOUND。事务内定位目标当前有效Session.id并撤销整个会话及所有provider映射，阻止新发送，关闭其全部WS（沿session_revoked）；旧提示不得展示缓存正文。操作只作用于事务所选代次，迟到provider回调/在途结果提交前必须比对会话身份与有效性，不得复活旧映射或改写重新登录的新代次。重新登录必须生成新Session.id；device_id可保持。logout仍仅撤销当前会话，不影响其他设备或Bot凭据。Cookie写须CSRF及同源Origin/Referer，Bearer无需CSRF。无请求体；204无正文。对已无有效会话目标返回404；重试前可重新列表，不承诺跨重新登录重试幂等。
+      summary: 撤销指定设备会话
+      description: id路径参数为列表条目的Session.id，device_id仅为元数据，不能作为替代选择键。先鉴权并在提交前重新验证；仅当前管理员有权目标，未知/其他管理员会话统一404
+        RESOURCE_NOT_FOUND。事务内仅按所给Session.id定位有效会话，在提交前复核归属与有效性，撤销整个会话及所有provider映射，阻止新发送，关闭其全部WS（沿session_revoked）；旧提示不得展示缓存正文。操作只作用于所给Session.id代次，同device_id其他有效会话保持；迟到或重试DELETE旧id绝不回退选择新会话，迟到provider回调/在途结果提交前必须比对会话身份与有效性，不得复活旧映射或改写重新登录的新代次。重新登录必须生成新Session.id；device_id可保持。logout仍仅撤销当前会话，不影响其他设备或Bot凭据。Cookie写须CSRF及同源Origin/Referer，Bearer无需CSRF。无请求体；204无正文。对已无有效会话目标返回404；重试前可重新列表，不承诺跨重新登录重试幂等。
       security:
       - AdminBearer: []
       - WebCookie: []
@@ -243,7 +243,7 @@ paths:
         required: true
         schema:
           $ref: '#/components/schemas/ID'
-        description: 目标Session.device_id；不是会话id或provider标识。
+        description: 目标列表条目的Session.id；device_id或provider标识不能替代。
       x-error-codes:
         '401':
         - AUTHENTICATION_REQUIRED
@@ -252,7 +252,7 @@ paths:
         '404':
         - RESOURCE_NOT_FOUND
       x-device-session-policy:
-        identity: Session.device_id-target-Session.id-generation
+        identity: Session.id-exact-target-and-generation
         generation: new-session-id-every-login-never-reuse
         scope: current-administrator-active-sessions-only
         cookie_write: csrf-and-same-origin-origin-or-referer
