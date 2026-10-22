@@ -44,6 +44,10 @@ def content_range(validator, enabled, instance, schema):
         start, end, size = map(int, match.groups())
         if not 0 <= start <= end < size:
             yield ValidationError('Content-Range 与实际区间大小矛盾')
+        return
+    # 星号形式同样要求完整匹配；解析失败必须拒绝，不能跳过语义门槛。
+    if not re.fullmatch(r'bytes \*/[0-9]+', instance):
+        yield ValidationError('Content-Range 字节语法错误')
 
 
 ContractValidator = validators.extend(Draft202012Validator, {
@@ -103,6 +107,11 @@ def main():
         actual = validator.is_valid(case['value'])
         if actual != case.get('schema_valid', case['valid']):
             failures.append(case['name'])
+        if case['schema'] == 'ContentRange':
+            # 独立执行扩展，防止共享 pattern 掩盖完整格式识别的回归。
+            standalone = ContractValidator({'type': 'string', 'x-content-range': True})
+            if standalone.is_valid(case['value']) != case.get('schema_valid', case['valid']):
+                failures.append(case['name'] + ' 独立 Content-Range 扩展')
         if 'range_size' in case:
             intervals = range_intervals(case['value'], case['range_size'])
             if intervals != case['intervals'] or (206 if intervals else 416) != case['status']:
