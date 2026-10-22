@@ -28,15 +28,15 @@ bootstrap原实现9cb95c4经A01 532ea26发现BS-A01-01（seed可冒充实际追�
 
 ## 在途工作区与下一步
 
-- 当前实现为`P03-07-S02-S03`通知偏好/设备设置变更/发送快照及父S02联合收口，owner `/root/notification_settings_dev`；独占`/home/lijx/.codex/worktrees/api-notification-settings/RelayNest`、`codex/api-notification-settings`，精确基线`82ebd62634ecf9025670a75aa956a45667c55ea7`。当前运行中、尚无实现提交/审计/集成结论，禁止先done。仅四API文件+本卡报告；最后worker简报为34操作/100Schema/876例主校验通过，父八验收证据/破坏探针/逐基线非回归尚在进行，不能把简报当最终审计。
+- 当前实现为`P03-07-S02-S03`通知偏好/设备设置变更/发送快照及父S02联合收口，owner `/root/notification_settings_dev`；独占`/home/lijx/.codex/worktrees/api-notification-settings/RelayNest`、`codex/api-notification-settings`，精确基线`82ebd62634ecf9025670a75aa956a45667c55ea7`。当前运行中、尚无实现提交/审计/集成结论，禁止先done。仅四API文件+本卡报告；最后worker简报为34操作/100Schema/897例待最终重跑，父八项三卡映射/基线比较与23项破坏探针已报通过，最终报告/提交尚在收尾，不能把简报当最终审计。
 - 原设备卡P03-07-S02-S01已done：最终F01 `a63bd59c8f50dcd83353e279b044f25f4383780c`，A02 `c05a5b93b64b5348bb98270ade4856fc23061fac` PASS，完整七提交main集成`876935a219c3a1bf828aeaabb2e8a82ca2bb5d4a`。DS-A01-01契约范围关闭，原负面审计保留，勿重做。指定撤销Session.id，device_id只是元数据，同设备可多Session；迟到旧S1不回退撤销S2，未新增单活/login替换规则。
 - 注册卡P03-07-S02-S02也已done：额度中断留下两文件修改后由新worker原地完成，最终`6901bc09de53995435102d11f2dfad9bd3f46059`经不同agent审计`14081bcb11a5ce8c7ce7b700b6b1ca6e10bdf1e1` PASS，main集成`82ebd62634ecf9025670a75aa956a45667c55ea7`。GET/PUT current/push与DELETE current/push/{provider}仅当前AndroidBearer，Session.id/provider隔离，初始CAS0、删除递增持久屏障，同版同值幂等，旧/未知结果不改新注册，token不回显。32操作/91Schema/765例、原29/84/687/100旧组件/两锁及19探针独立检查通过；源树保留审计SHA，勿把旧恢复点中的“未完成注册”当当前事实。
 - 当前通知卡按T6.3/T9.3核验设备偏好归属：设备Session.device_id共享偏好，注册仍Session.id/provider隔离；同设备多Session不得等同单活，跨设备同步过滤与撤销不误删偏好需独立审计。GET/PUT current/notifications、设置CAS/恢复/vendor服务器前置、SyncChange设备设置分支、DND及job快照/前后CAS/租约串行/未知结果模型均只在契约范围，不冒充实际worker。父S02原八验收需三卡联合审计集成后收口，再进入全局S03。
 - 当前共同契约冻结：32操作/91Schema/765例、全部旧组件/两requirements锁、Sequence SQLite64字符串/Version>=1、权限/no-store、H/epoch/floor/seed与真实sync完成来源、WS仅提示不可推进游标。后卡按实际基线重验，不依赖历史计数猜当前状态。
-- S02文档规划已独立审计集成main`d927abed945379e00548b01e7cecf7bbef59bac2`，三子卡：S02-S01会话→S02-S02完整provider注册生命周期/CAS/条件删除/恢复/持久版本屏障→S02-S03通知CAS/恢复/设置union/发送快照联合收口。两后卡todo；父S02保持原八验收。
+- S02文档规划已独立审计集成main`d927abed945379e00548b01e7cecf7bbef59bac2`，三子卡：S02-S01会话→S02-S02完整provider注册生命周期/CAS/条件删除/恢复/持久版本屏障→S02-S03通知CAS/恢复/设置union/发送快照联合收口。会话/注册两卡已done，通知联合卡running；父S02保持原八验收，尚未收口。
 - S03文档规划已独立审计集成main`e6b0565ec3be85997d9b7daa66bce9ad7cec2ab8`，三子卡：S03-S01全局settings/CAS/changes→S03-S02根health与管理投影→S03-S03全T3/T8/父验收/G-API证据补缺收口。全部todo，实施等设备父完整收口，不提前冻结设备字段。
 - 每卡实现独立提交→不同agent精确SHA审计→编号修复及重审→集成agent准确组合验证→root登记done→下一卡。S03最终和父P03-07实质验收后才评估G-API，之后P4～P10按真实DAG；不提前启动服务端实现绕过契约门槛。
-- 集成agent `/root/integrate_next` 最近WS集成已完成、主树释放；旧集成agent会话已不在实际列表；本checkpoint更新拟由`/root/integration_resume`作为SCHEDULER-SNAPSHOT-07单独提交。恢复时再核实际在途状态，不能根据名字猜运行中agent。
+- 当前集成角色为`/root/integration_resume`，最近注册卡及恢复快照提交已完成、主树释放；旧`/root/integrate_next`会话不在实际列表。恢复时重新核对实际agent和锁，不根据名字猜运行状态。
 
 ## 外部条件、环境与文件保护
 
