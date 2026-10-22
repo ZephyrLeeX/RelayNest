@@ -13,10 +13,10 @@
 
 ## 当前恢复点（2026-10-23）
 
-最近确认主树 `main@375a270c74080d9eb3ea8e975d8c79814afc091f`（最终契约证据精确集成及I01后，snapshot12前）。唯一任务台账仍registry；本轮持续执行，远未完成P4～P15。
+最近确认主树 `main@18d3f3ad5c5e3ca64ed3f7bfa45546bb86ac5d9e`（P04-01-PLAN01精确集成/I01后，snapshot13前）。唯一任务台账仍registry；本轮持续执行，远未完成P4～P15。
 
-- P00-01/02/04、P02-01～04、P03-01～06及08～12均已独立审计精确集成。G-GIT/G-MP/G-FCM=pass（历史PoC限定），G-API/CORE/DEPLOY/SHELF/SHELF-API/OPPO=pending。
-- P03-07同步/设备/全局配置/健康契约及最终综合证据均已独审精确集成。最终卡实施7ec2ae3、独审PASS34425b4、main组合981692f、I01 375a270；父五项/S03八项证据齐全。技术建议调度登记P03-07/S03契约收口与G-API门槛；本快照不替registry登记，G-API仍待root据证据更新。运行时/正式AC未验。
+- P00-01/02/04、P02-01～04、P03-01～06及08～12均已独立审计精确集成。G-GIT/G-MP/G-FCM/G-API=pass（MP/FCM为历史PoC限定，API仅契约）；CORE/DEPLOY/SHELF/SHELF-API/OPPO=pending。
+- P03-07同步/设备/全局配置/健康契约及最终综合证据均已独审精确集成。最终卡实施7ec2ae3、独审PASS34425b4、main组合981692f、I01 375a270；父五项/S03八项证据齐全。root已据最终独审及精确集成证据登记P03-07/S03/最终卡done与G-API契约pass，无需新用户授权。运行时/正式AC未验。
 
 | S01子卡 | 最终实现 / 独立审计 | main集成 |
 | --- | --- | --- |
@@ -38,7 +38,7 @@ bootstrap原实现9cb95c4经A01 532ea26发现BS-A01-01（seed可冒充实际追�
 - 当前共同契约冻结：39操作/115Schema/1229例、全部旧组件/两requirements锁、Sequence SQLite64字符串/Version>=1、权限/no-store、H/epoch/floor/seed与真实sync完成来源、WS仅提示不可推进游标；健康纯文本媒体例外仅限两根健康精确操作/状态。后卡按实际基线重验。
 - S02文档规划已独立审计集成main`d927abed945379e00548b01e7cecf7bbef59bac2`，三子卡：S02-S01会话→S02-S02完整provider注册生命周期/CAS/条件删除/恢复/持久版本屏障→S02-S03通知CAS/恢复/设置union/发送快照联合收口。三卡已done；父S02原八项契约验收完整收口，运行时NOT_RUN。
 - S03最终卡已完成：实施`7ec2ae3494088b4819830b46c23fd88d7e81560b`、独审`34425b492601045ffcd109a88246a73a1094542f`精确集成至main `981692f49663075aa553ce45aa645e75197b15ea`；API六文件与base b8c3c2相同，39/115/1229组合检查通过，11个前置main点均为当前祖先；独审35组/95路径映射证据保留。
-- 每卡实现独立提交→不同agent精确SHA审计→编号修复及重审→集成agent准确组合验证→root登记done→下一卡。S03最终和父P03-07实质验收后才评估G-API，之后P4～P10按真实DAG；不提前启动服务端实现绕过契约门槛。
+- 每卡实现独立提交→不同agent精确SHA审计→编号修复及重审→集成agent准确组合验证→root登记done→下一卡。G-API契约已实质收口，后续P4～P10按真实DAG；不以契约通过冒充运行时通过。
 - 恢复核查、健康/settings精确集成由`/root/recovery_verify`完成，两源树均已释放。集成角色从snapshot11后最终main准备api-contract-final树供P03-07-S03-S03，精确路径/分支/base依工具结果交接；准备不等于实施，实际owner/锁以registry为准。
 
 ## 外部条件、环境与文件保护
@@ -48,5 +48,12 @@ bootstrap原实现9cb95c4经A01 532ea26发现BS-A01-01（seed可冒充实际追�
 - 用户确认OPPO账号/应用Push权限尚未准备，P02-05/G-OPPO受阻，仅阻厂商实测/激活；真机运行留正式验收，正式签名成功/安装界面/端到端NOT_RUN保留。不能将Schema/合成状态或阶段放行冒充HTTP/SQLite/Room/WS/通知实际运行验收。
 - 锁Python可先核`/tmp/relaynest-p0305-f01-locked/bin/python`，缺失依hash锁恢复不升级。Android/mise版本沿原锁；干净Go构建前先Web npm ci/build生成gitignored embed资源，不靠旧dist。SQLite已占0001，下一迁移0002；共享API/依赖/迁移串行。
 - 主树registry.json含用户原有修改及调度更新，`.directory`为用户未跟踪文件，均不stage/覆盖/丢弃。本摘要由root创建，Git提交必须交集成agent显式路径处理，禁止git add .。
-- 各已审源树及分支保留，旧/tmp可能消失但Git对象/引用不prune/remove/clean，不重置。最终证据源树已释放；下一auth-init树仅用于规划，不授权认证源码实施。
+- 各已审源树及分支保留，旧/tmp可能消失但Git对象/引用不prune/remove/clean，不重置。auth-init规划源树已释放；新auth-init-impl树准备后由调度派发唯一开发者，迁移0002及共同依赖/CLI/storage测试文件串行独占。
 - 本文件不是全部完成报告，不创建新聊天/定时任务/自动化，也不授权push、Release、真实部署或MP重建升级。P13～15虽已授权，仍等核心实际完成/G-SHELF实质门槛，不改RelayShelf后端/数据库。
+
+## 当前P4派发点
+
+- P04-01-PLAN01规划73d4fa47c02a4478e3a81acf0f60f2740e63f252、独立A01 PASS 34acc46f40d425f5bda8296a4bd8f11b1c43caeb已无冲突精确集成；main组合c69d8304277fb9f1ab9a9409e708acac5a0573a6，I01报告18d3f3ad5c5e3ca64ed3f7bfa45546bb86ac5d9e。三文档blob与源一致、相对链接通过、原卡全部行/验收保留、server源码/API六文件未动。旧auth-init规划树保留释放；snapshot13后从最终main准备auth-init-impl干净新树，供新开发agent单卡实施P04-01，精确路径/branch/base依工具交接。
+- 只读准备确认：CLI main仅listen、尚无storage接线；auth未创建；storage.Open/Read/Write可复用；当前迁移仅0001，0002须独占串行分配。新增真实0002需维护原升级失败/回滚/锁夹具，不能删测试。设计Argon2id 64MiB/3/1；依赖具体版本由开发查证，不臆定升级。
+- 干净Go检查需先Web npm ci/build生成gitignored embed dist；Go1.27.3/Node22.23.2/npm10.9.8依既有mise锁核实际路径。P04-01必跑竞争init、重复初始化拒绝、密码摘要、无明文/参数日志、reset代次原子性，以及受影响storage/CLI回归。非源码规划阶段不跑业务测试。
+- 当前扫描其余核心todo依赖尚未齐备，不能为并发绕过前置；P04-01/02完成后按实际DAG重新扫描独立分支。
