@@ -1,0 +1,60 @@
+name: MoviePilot local checks
+
+on:
+  push:
+    paths:
+      - 'integrations/moviepilot/**'
+      - '.github/workflows/moviepilot*'
+      - 'mise.toml'
+  pull_request:
+    paths:
+      - 'integrations/moviepilot/**'
+      - '.github/workflows/moviepilot*'
+      - 'mise.toml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: 检出源码
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: 设置固定 Python
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        with:
+          python-version: '3.13.15'
+
+      - name: 验证 Python 版本及语法
+        run: |
+          python -I -B - <<'PY'
+          from pathlib import Path
+          import sys
+          import tomllib
+
+          assert sys.version_info[:3] == (3, 13, 15), sys.version
+          assert tomllib.loads(Path('mise.toml').read_text())['tools']['python'] == '3.13'
+          paths = sorted(Path('integrations/moviepilot').rglob('*.py'))
+          assert paths, '未发现插件 Python 源码'
+          # 只编译语法，不导入操作脚本、不连接 MP，也不生成字节码。
+          for path in paths:
+              compile(path.read_bytes(), str(path), 'exec')
+          print(f'PASS: Python {sys.version.split()[0]}，{len(paths)} 个文件语法检查')
+          PY
+
+      # 宿主桩和 loopback HTTP 仅证明本地拒绝边界，不代表真实 MP/Hub 验收。
+      - name: PoC 本地宿主桩及传输边界
+        run: python -I -B integrations/moviepilot/poc/verify_probe.py
+
+      # 不传 --source-root；补丁测试仅修改临时夹具，不能触达运行实例。
+      - name: 补丁助手本地夹具回归
+        run: python -I -B integrations/moviepilot/poc/verify_patch.py
