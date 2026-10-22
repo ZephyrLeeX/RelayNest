@@ -1,0 +1,100 @@
+name: Android checks
+
+on:
+  pull_request:
+    paths:
+      - 'android/**'
+      - '.github/workflows/android*'
+      - 'mise.toml'
+  push:
+    paths:
+      - 'android/**'
+      - '.github/workflows/android*'
+      - 'mise.toml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  debug:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+        working-directory: android
+    env:
+      # PR/fork 只运行 debug；显式清空发布配置，不引用任何 Secret。
+      RELAYNEST_ANDROID_KEYSTORE_PATH: ''
+      RELAYNEST_ANDROID_KEYSTORE_PASSWORD: ''
+      RELAYNEST_ANDROID_KEY_ALIAS: ''
+      RELAYNEST_ANDROID_KEY_PASSWORD: ''
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install fixed Android SDK packages
+        run: |
+          # ubuntu-24.04 提供命令行工具；仅安装工程固定的 SDK，不更新工具链。
+          test -n "$ANDROID_HOME"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install 'platforms;android-36' 'build-tools;36.0.0'
+
+      - name: Restore locked dependencies
+        id: gradle-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          # 不缓存整个 Gradle/Android 用户目录、签名、配置缓存或构建产物。
+          path: |
+            ~/.gradle/caches/modules-2
+            ~/.gradle/wrapper/dists
+          key: android-v1-${{ runner.os }}-${{ runner.arch }}-jdk21-${{ hashFiles('android/gradle/wrapper/gradle-wrapper.properties', 'android/gradle/libs.versions.toml', 'android/**/*.lockfile', 'android/**/*.gradle.kts', 'android/gradle.properties', 'mise.toml') }}
+
+      - name: Check Kotlin format
+        run: |
+          curl --fail --location --retry 3 \
+            https://github.com/ktlint/ktlint/releases/download/1.7.1/ktlint \
+            --output "$RUNNER_TEMP/ktlint"
+          echo "b596a05f09364e1997b644152683af12fef58944f3acfabdf78071f5a490eb98  $RUNNER_TEMP/ktlint" | sha256sum --check --strict
+          chmod +x "$RUNNER_TEMP/ktlint"
+          "$RUNNER_TEMP/ktlint" '*.gradle.kts' 'app/**/*.kt' 'app/**/*.gradle.kts'
+
+      - name: Lint and assemble debug
+        # 格式失败仍提供编译/Lint 结果，任一失败均保持作业失败。
+        if: ${{ !cancelled() }}
+        # 进程内 Kotlin 编译避免依赖跨构建残留的编译 daemon。
+        run: ./gradlew :app:lintDebug :app:assembleDebug -Pkotlin.compiler.execution.strategy=in-process --no-daemon --no-configuration-cache --console=plain --stacktrace
+
+      - name: Verify dependency locks were not rewritten
+        if: ${{ !cancelled() }}
+        run: git diff --exit-code -- '*.lockfile' 'gradle/libs.versions.toml' 'gradle/wrapper/gradle-wrapper.properties'
+
+      - name: Upload lint reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: android-lint-${{ github.run_id }}-${{ github.run_attempt }}
+          path: android/app/build/reports/lint-results-debug.*
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Save locked dependencies
+        # fork/PR 仅恢复缓存；成功 push 才写入完全匹配的锁版本缓存，无宽泛回退。
+        if: ${{ success() && github.event_name == 'push' && steps.gradle-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            ~/.gradle/caches/modules-2
+            ~/.gradle/wrapper/dists
+          key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
