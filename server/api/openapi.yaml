@@ -6,6 +6,107 @@ info:
 servers:
 - url: /api/v1
 paths:
+  /client/ws:
+    get:
+      operationId: connectClientWS
+      summary: Android 提交后同步提示 WebSocket
+      description: Authorization Bearer 仅当前 Android 设备会话；Web Cookie/Bot/Webhook 不可升级。原生无 Origin 可用，有 Origin
+        必须通过服务端配置策略；禁止查询串凭据及业务写入。101无JSON正文，后续frame按WSFrame单独校验。
+      security:
+      - AdminBearer: []
+      x-client-type: android
+      x-ws-frame-schema:
+        $ref: '#/components/schemas/WSFrame'
+      x-ws-policy:
+        supported_major: 1
+        origin: native-absent-allowed-present-must-pass-configured-origin-policy
+        authentication: current-android-device-session-before-upgrade-no-query-credentials
+        upgrade: http-101-no-json-body-frames-validated-separately
+        events: hello-first-latest-committed-change_seq-rest-hints-only-no-business-writes
+        ping_seconds: 25
+        no_response_timeout_seconds: 75
+        heartbeat: websocket-control-ping-pong-not-json-events
+        slow_client: coalesce-latest-changes_available-bounded-no-body-buffer
+        reconnect: exponential-with-jitter-cap-60-seconds
+        background: close
+        foreground: immediate-single-flight-rest-sync
+        window:
+        - connect-cache-hints-then-catch-up-from-persisted-cursor
+        - sync-then-recheck-hello-high-watermark
+        cursor: only-rest-batch-and-cursor-atomic-commit-never-hello-or-hints
+        recovery: epoch-mismatch-or-below-floor-rest-410-rebuild-bootstrap-verify-before-generation-switch
+        revoked: stop-sync-close-clear-session-no-cached-body-display
+        unknown_optional: ignore-only-unknown-optional-event-on-compatible-major
+        incompatible_major: explicit-failure-close-no-frame-application
+      parameters:
+      - name: Origin
+        in: header
+        required: false
+        schema:
+          type: string
+          format: uri
+      - name: Upgrade
+        in: header
+        required: true
+        schema:
+          type: string
+          const: websocket
+      - name: Connection
+        in: header
+        required: true
+        schema:
+          type: string
+          const: Upgrade
+      - name: Sec-WebSocket-Version
+        in: header
+        required: true
+        schema:
+          type: string
+          const: '13'
+      - name: Sec-WebSocket-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9+/]{22}==$
+      responses:
+        '101':
+          description: 升级成功；无HTTP JSON正文。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            Upgrade:
+              schema:
+                type: string
+                const: websocket
+            Connection:
+              schema:
+                type: string
+                const: Upgrade
+            Sec-WebSocket-Accept:
+              schema:
+                type: string
+                pattern: ^[A-Za-z0-9+/]{27}=$
+              description: 按握手请求key计算；Schema只验证形状，不证明真实握手。
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      x-error-codes:
+        '400':
+        - INVALID_WS_HANDSHAKE
+        '401':
+        - AUTHENTICATION_REQUIRED
+        '403':
+        - FORBIDDEN
   /auth/login:
     post:
       operationId: login
@@ -1659,6 +1760,80 @@ paths:
         - READ_SEQ_OUT_OF_RANGE
 components:
   schemas:
+
+    WSProtocolVersion:
+      type: object
+      properties:
+        major:
+          type: integer
+          minimum: 1
+        minor:
+          type: integer
+          minimum: 0
+      required:
+      - major
+      - minor
+      additionalProperties: false
+    WSHello:
+      type: object
+      properties:
+        type:
+          const: hello
+        epoch:
+          $ref: '#/components/schemas/SyncEpoch'
+        change_seq:
+          $ref: '#/components/schemas/Sequence'
+        protocol_version:
+          $ref: '#/components/schemas/WSProtocolVersion'
+      required:
+      - type
+      - epoch
+      - change_seq
+      - protocol_version
+      additionalProperties: false
+    WSChangesAvailable:
+      type: object
+      properties:
+        type:
+          const: changes_available
+        change_seq:
+          $ref: '#/components/schemas/Sequence'
+      required:
+      - type
+      - change_seq
+      additionalProperties: false
+    WSSessionRevoked:
+      type: object
+      properties:
+        type:
+          const: session_revoked
+      required:
+      - type
+      additionalProperties: false
+    WSUnknownOptional:
+      type: object
+      properties:
+        type:
+          type: string
+          pattern: ^[a-z][a-z0-9_]*$
+          not:
+            enum:
+            - hello
+            - changes_available
+            - session_revoked
+        optional:
+          const: true
+      required:
+      - type
+      - optional
+      additionalProperties: false
+    WSFrame:
+      description: 仅服务端JSON提示frame；已知事件严格封闭。未知可选事件仅允许无载荷envelope，忽略且不推进游标；控制ping/pong不是JSON frame。
+      oneOf:
+      - $ref: '#/components/schemas/WSHello'
+      - $ref: '#/components/schemas/WSChangesAvailable'
+      - $ref: '#/components/schemas/WSSessionRevoked'
+      - $ref: '#/components/schemas/WSUnknownOptional'
     ID:
       type: string
       format: uuid

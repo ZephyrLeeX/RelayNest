@@ -237,6 +237,60 @@ ContractValidator = validators.extend(Draft202012Validator, {
 })
 
 
+def ws_state_valid(state):
+    """合成连接/窗口/恢复声明；不模拟真实网络、时钟或持久化。"""
+    kind = state['kind']
+    if kind == 'handshake':
+        if state['identity'] != 'AdminBearer' or not state['session_active']:
+            status = 401
+        elif state['origin'] not in ('absent', 'trusted'):
+            status = 403
+        elif state['query_credentials'] or not state['upgrade_valid']:
+            status = 400
+        else:
+            status = 101
+        return status == state['expected_status']
+    if kind == 'event':
+        event = state['event']
+        if state['major'] != 1:
+            action = 'fail-close'
+        elif event == 'session_revoked':
+            action = 'stop-close-clear-session'
+        elif event in ('hello', 'changes_available'):
+            action = 'rest-sync'
+        else:
+            action = 'ignore' if state['optional'] else 'fail-close'
+        # 提示、hello、未知事件和不兼容事件全部不得更新持久游标。
+        return action == state['expected_action'] and not state['advance_cursor']
+    if kind == 'window':
+        # 两种顺序都比较缓存提示/hello；相同epoch内才比较水位。
+        if state['epoch'] != state['local_epoch']:
+            action = 'rest-reset-check'
+        else:
+            target = max(int(state['hello']), int(state['buffered_hint']))
+            action = 'rest-sync' if int(state['rest_position']) < target else 'caught-up'
+        return (state['strategy'] in ('connect-first', 'sync-first')
+                and action == state['expected_action'] and not state['hint_committed'])
+    if kind == 'recovery':
+        # 复用前卡的固定H/epoch/floor与真正sync完成来源检查，不复制或放宽。
+        sync = state['sync_state']
+        verify = state['bootstrap_state']
+        generation = state['generation_state']
+        return (bootstrap_state_valid(generation)
+                and generation['switch'] == (verify['expected_status'] == 200)
+                and sync_state_valid(sync) and bootstrap_state_valid(verify)
+                and sync['expected_status'] == 410
+                and verify['expected_status'] == state['expected_verify_status']
+                and not state['hint_committed'])
+    if kind == 'transport':
+        return (state['ping_seconds'] == 25 and state['disconnect_seconds'] == 75
+                and state['jitter'] and 0 <= state['retry_delay'] <= 60
+                and state['queued_hints'] <= 1 and not state['queued_body']
+                and state['background_action'] == 'close'
+                and state['foreground_action'] == 'immediate-rest-sync') == state['expected']
+    return False
+
+
 def range_intervals(value, size):
     """将合法示例映射至预期区间；只是契约边界计算，不验证文件服务。"""
     result = []
@@ -260,6 +314,84 @@ def resolve(document, value):
             target = target[segment]
         value = target
     return value
+
+
+WS_POLICY = {'supported_major': 1,
+ 'origin': 'native-absent-allowed-present-must-pass-configured-origin-policy',
+ 'authentication': 'current-android-device-session-before-upgrade-no-query-credentials',
+ 'upgrade': 'http-101-no-json-body-frames-validated-separately',
+ 'events': 'hello-first-latest-committed-change_seq-rest-hints-only-no-business-writes',
+ 'ping_seconds': 25,
+ 'no_response_timeout_seconds': 75,
+ 'heartbeat': 'websocket-control-ping-pong-not-json-events',
+ 'slow_client': 'coalesce-latest-changes_available-bounded-no-body-buffer',
+ 'reconnect': 'exponential-with-jitter-cap-60-seconds',
+ 'background': 'close',
+ 'foreground': 'immediate-single-flight-rest-sync',
+ 'window': ['connect-cache-hints-then-catch-up-from-persisted-cursor',
+            'sync-then-recheck-hello-high-watermark'],
+ 'cursor': 'only-rest-batch-and-cursor-atomic-commit-never-hello-or-hints',
+ 'recovery': 'epoch-mismatch-or-below-floor-rest-410-rebuild-bootstrap-verify-before-generation-switch',
+ 'revoked': 'stop-sync-close-clear-session-no-cached-body-display',
+ 'unknown_optional': 'ignore-only-unknown-optional-event-on-compatible-major',
+ 'incompatible_major': 'explicit-failure-close-no-frame-application'}
+WS_PARAMETERS = [{'name': 'Origin',
+  'in': 'header',
+  'required': False,
+  'schema': {'type': 'string', 'format': 'uri'}},
+ {'name': 'Upgrade',
+  'in': 'header',
+  'required': True,
+  'schema': {'type': 'string', 'const': 'websocket'}},
+ {'name': 'Connection',
+  'in': 'header',
+  'required': True,
+  'schema': {'type': 'string', 'const': 'Upgrade'}},
+ {'name': 'Sec-WebSocket-Version',
+  'in': 'header',
+  'required': True,
+  'schema': {'type': 'string', 'const': '13'}},
+ {'name': 'Sec-WebSocket-Key',
+  'in': 'header',
+  'required': True,
+  'schema': {'type': 'string', 'pattern': '^[A-Za-z0-9+/]{22}==$'}}]
+WS_ERRORS = {'400': ['INVALID_WS_HANDSHAKE'], '401': ['AUTHENTICATION_REQUIRED'], '403': ['FORBIDDEN']}
+WS_SCHEMAS = {'WSProtocolVersion': {'type': 'object',
+                       'properties': {'major': {'type': 'integer', 'minimum': 1},
+                                      'minor': {'type': 'integer', 'minimum': 0}},
+                       'required': ['major', 'minor'],
+                       'additionalProperties': False},
+ 'WSHello': {'type': 'object',
+             'properties': {'type': {'const': 'hello'},
+                            'epoch': {'$ref': '#/components/schemas/SyncEpoch'},
+                            'change_seq': {'$ref': '#/components/schemas/Sequence'},
+                            'protocol_version': {'$ref': '#/components/schemas/WSProtocolVersion'}},
+             'required': ['type', 'epoch', 'change_seq', 'protocol_version'],
+             'additionalProperties': False},
+ 'WSChangesAvailable': {'type': 'object',
+                        'properties': {'type': {'const': 'changes_available'},
+                                       'change_seq': {'$ref': '#/components/schemas/Sequence'}},
+                        'required': ['type', 'change_seq'],
+                        'additionalProperties': False},
+ 'WSSessionRevoked': {'type': 'object',
+                      'properties': {'type': {'const': 'session_revoked'}},
+                      'required': ['type'],
+                      'additionalProperties': False},
+ 'WSUnknownOptional': {'type': 'object',
+                       'properties': {'type': {'type': 'string',
+                                               'pattern': '^[a-z][a-z0-9_]*$',
+                                               'not': {'enum': ['hello',
+                                                                'changes_available',
+                                                                'session_revoked']}},
+                                      'optional': {'const': True}},
+                       'required': ['type', 'optional'],
+                       'additionalProperties': False},
+ 'WSFrame': {'description': '仅服务端JSON提示frame；已知事件严格封闭。未知可选事件仅允许无载荷envelope，忽略且不推进游标；控制ping/pong不是JSON '
+                            'frame。',
+             'oneOf': [{'$ref': '#/components/schemas/WSHello'},
+                       {'$ref': '#/components/schemas/WSChangesAvailable'},
+                       {'$ref': '#/components/schemas/WSSessionRevoked'},
+                       {'$ref': '#/components/schemas/WSUnknownOptional'}]}}
 
 
 def main():
@@ -298,6 +430,9 @@ def main():
                 failures.append(case['name'] + ' 区间/状态')
         if 'bootstrap_state' in case and not bootstrap_state_valid(case['bootstrap_state']):
             failures.append(case['name'] + ' bootstrap状态声明')
+        if ('ws_state' in case
+                and ws_state_valid(case['ws_state']) != case.get('state_valid', True)):
+            failures.append(case['name'] + ' WS状态声明')
         if 'sync_state' in case and not sync_state_valid(case['sync_state']):
             failures.append(case['name'] + ' 同步状态声明')
         if 'declaration' in case:
@@ -325,7 +460,7 @@ def main():
         'createClientMessage': ['AdminBearer'], 'createCallback': ['AdminBearer'],
         'listClientMessages': ['AdminBearer'], 'getClientMessage': ['AdminBearer'],
         'syncClientChanges': ['AdminBearer'], 'updateClientRead': ['AdminBearer'],
-        'bootstrapClient': ['AdminBearer'],
+        'bootstrapClient': ['AdminBearer'], 'connectClientWS': ['AdminBearer'],
         'uploadAttachment': ['AdminBearer', 'BotAPIToken'],
         'downloadAttachment': ['AdminBearer', 'BotAPIToken'],
     }
@@ -335,7 +470,7 @@ def main():
     idempotent = {'createBotMessage', 'editBotMessage', 'createWebhookMessage',
                   'createClientMessage', 'createCallback', 'uploadAttachment', 'retryDelivery'}
     reference_ops = set(new_security) - {'listClientMessages', 'getClientMessage',
-                                         'syncClientChanges', 'updateClientRead', 'bootstrapClient'} - delivery_ids
+                                         'syncClientChanges', 'updateClientRead', 'bootstrapClient', 'connectClientWS'} - delivery_ids
     for path, item in document['paths'].items():
         for method, operation in item.items():
             if method == 'parameters':
@@ -580,6 +715,21 @@ def main():
             'created_change_seq': {'$ref': '#/components/schemas/Sequence'},
             'message': {'$ref': '#/components/schemas/Message'}}:
         raise SystemExit('bootstrap必须复用当前Message投影及创建序号')
+    # WS frame独立于HTTP响应；精确声明只证明契约，不能替代真实连接验证。
+    ws = operation_map['connectClientWS']
+    if ws.get('x-ws-policy') != WS_POLICY or ws.get('x-client-type') != 'android':
+        raise SystemExit('WS权限/恢复/窗口/心跳声明错误')
+    if ws.get('x-ws-frame-schema') != {'$ref': '#/components/schemas/WSFrame'}:
+        raise SystemExit('WS frame必须独立引用严格Schema')
+    if 'content' in ws['responses']['101'] or 'requestBody' in ws:
+        raise SystemExit('WS升级不得返回JSON正文或接收业务写入')
+    if set(ws['responses']) != {'101', '400', '401', '403', '429', '503'}:
+        raise SystemExit('WS握手错误分支缺失')
+    if ws.get('parameters') != WS_PARAMETERS or ws.get('x-error-codes') != WS_ERRORS:
+        raise SystemExit('WS握手参数/错误契约不符')
+    for name, expected in WS_SCHEMAS.items():
+        if schemas[name] != expected:
+            raise SystemExit('WS frame Schema不符：' + name)
     schemes = document['components']['securitySchemes']
     for name in ('AdminBearer', 'BotAPIToken', 'WebhookKey'):
         if schemes[name]['type'] != 'http' or schemes[name]['scheme'] != 'bearer':

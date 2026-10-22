@@ -5528,5 +5528,1811 @@
 {"name": "bootstrap_catchup_new_event", "schema": "BootstrapPage", "value": {"kind": "page", "epoch": "epoch-one", "server_high_watermark": "9007199254740993", "retention_floor": "0", "bots": [{"id": "22222222-2222-4222-8222-222222222222", "name": "测试通知", "enabled": true, "capabilities": {"send": true, "receive": false}, "version": 1, "credentials": {"api_token": {"credential_id": "public-test-id", "generation": 1}, "webhook_key": {"credential_id": "other-public-id", "generation": 1}}, "connection": {"state": "unknown", "last_poll_at": null}}], "read_states": [{"bot_id": "22222222-2222-4222-8222-222222222222", "read_seq": "0", "version": 1, "updated_at": "2026-10-22T00:00:00Z"}], "messages": [{"created_change_seq": "9007199254740993", "message": {"id": "11111111-1111-4111-8111-111111111111", "bot_id": "22222222-2222-4222-8222-222222222222", "bot_seq": "9007199254740993", "revision": 1, "sender": "application", "format": "plain", "text": "合成文本", "attachments": [], "reply_to_message_id": null, "buttons": [], "created_at": "2026-10-22T00:00:00Z", "updated_at": "2026-10-22T00:00:00Z"}}], "page_token": "opaque-page-receipt", "next_token": null, "has_more": false, "sync_cursor": "opaque-sync-at-H", "issued_at": "2026-10-22T00:00:00Z", "expires_at": "2026-10-22T00:15:00Z", "server_time": "2026-10-22T00:00:01Z"}, "valid": true, "bootstrap_state": {"kind": "catchup", "h": "10", "current": "11", "seed_complete": true, "events": ["11"], "limit": 200, "returned": ["11"], "has_more": false, "next_position": "11", "verify": {"kind": "verify", "verified_cursor_purpose": "sync-result", "receipt": true, "all_pages_complete": true, "bootstrap_valid": true, "sync_integrity": true, "identity": "a1", "sync_identity": "a1", "epoch": "e1", "sync_epoch": "e1", "cycle_complete": true, "position": "12", "h": "10", "expected_status": 200, "expected_code": null}}},
 {"name": "bootstrap_catchup_unfinished", "schema": "BootstrapPage", "value": {"kind": "page", "epoch": "epoch-one", "server_high_watermark": "9007199254740993", "retention_floor": "0", "bots": [{"id": "22222222-2222-4222-8222-222222222222", "name": "测试通知", "enabled": true, "capabilities": {"send": true, "receive": false}, "version": 1, "credentials": {"api_token": {"credential_id": "public-test-id", "generation": 1}, "webhook_key": {"credential_id": "other-public-id", "generation": 1}}, "connection": {"state": "unknown", "last_poll_at": null}}], "read_states": [{"bot_id": "22222222-2222-4222-8222-222222222222", "read_seq": "0", "version": 1, "updated_at": "2026-10-22T00:00:00Z"}], "messages": [{"created_change_seq": "9007199254740993", "message": {"id": "11111111-1111-4111-8111-111111111111", "bot_id": "22222222-2222-4222-8222-222222222222", "bot_seq": "9007199254740993", "revision": 1, "sender": "application", "format": "plain", "text": "合成文本", "attachments": [], "reply_to_message_id": null, "buttons": [], "created_at": "2026-10-22T00:00:00Z", "updated_at": "2026-10-22T00:00:00Z"}}], "page_token": "opaque-page-receipt", "next_token": null, "has_more": false, "sync_cursor": "opaque-sync-at-H", "issued_at": "2026-10-22T00:00:00Z", "expires_at": "2026-10-22T00:15:00Z", "server_time": "2026-10-22T00:00:01Z"}, "valid": true, "bootstrap_state": {"kind": "catchup", "h": "10", "current": "12", "seed_complete": true, "events": ["11", "12"], "limit": 1, "returned": ["11"], "has_more": true, "next_position": "11", "verify": {"kind": "verify", "verified_cursor_purpose": "sync-result", "receipt": true, "all_pages_complete": true, "bootstrap_valid": true, "sync_integrity": true, "identity": "a1", "sync_identity": "a1", "epoch": "e1", "sync_epoch": "e1", "cycle_complete": true, "position": "12", "h": "10", "expected_status": 400, "expected_code": "INVALID_SYNC_CURSOR"}}},
 {"name": "bootstrap_verify_reset_before_invalid_sync", "schema": "BootstrapPage", "value": {"kind": "page", "epoch": "epoch-one", "server_high_watermark": "9007199254740993", "retention_floor": "0", "bots": [{"id": "22222222-2222-4222-8222-222222222222", "name": "测试通知", "enabled": true, "capabilities": {"send": true, "receive": false}, "version": 1, "credentials": {"api_token": {"credential_id": "public-test-id", "generation": 1}, "webhook_key": {"credential_id": "other-public-id", "generation": 1}}, "connection": {"state": "unknown", "last_poll_at": null}}], "read_states": [{"bot_id": "22222222-2222-4222-8222-222222222222", "read_seq": "0", "version": 1, "updated_at": "2026-10-22T00:00:00Z"}], "messages": [{"created_change_seq": "9007199254740993", "message": {"id": "11111111-1111-4111-8111-111111111111", "bot_id": "22222222-2222-4222-8222-222222222222", "bot_seq": "9007199254740993", "revision": 1, "sender": "application", "format": "plain", "text": "合成文本", "attachments": [], "reply_to_message_id": null, "buttons": [], "created_at": "2026-10-22T00:00:00Z", "updated_at": "2026-10-22T00:00:00Z"}}], "page_token": "opaque-page-receipt", "next_token": null, "has_more": false, "sync_cursor": "opaque-sync-at-H", "issued_at": "2026-10-22T00:00:00Z", "expires_at": "2026-10-22T00:15:00Z", "server_time": "2026-10-22T00:00:01Z"}, "valid": true, "bootstrap_state": {"kind": "verify", "verified_cursor_purpose": "sync-result", "receipt": true, "all_pages_complete": true, "bootstrap_valid": false, "sync_integrity": false, "identity": "a1", "sync_identity": "a1", "epoch": "e1", "sync_epoch": "e1", "cycle_complete": true, "position": "12", "h": "10", "expected_status": 410, "expected_code": "BOOTSTRAP_RESET_REQUIRED"}},
-{"name": "bootstrap_verify_receipt_before_reset", "schema": "BootstrapPage", "value": {"kind": "page", "epoch": "epoch-one", "server_high_watermark": "9007199254740993", "retention_floor": "0", "bots": [{"id": "22222222-2222-4222-8222-222222222222", "name": "测试通知", "enabled": true, "capabilities": {"send": true, "receive": false}, "version": 1, "credentials": {"api_token": {"credential_id": "public-test-id", "generation": 1}, "webhook_key": {"credential_id": "other-public-id", "generation": 1}}, "connection": {"state": "unknown", "last_poll_at": null}}], "read_states": [{"bot_id": "22222222-2222-4222-8222-222222222222", "read_seq": "0", "version": 1, "updated_at": "2026-10-22T00:00:00Z"}], "messages": [{"created_change_seq": "9007199254740993", "message": {"id": "11111111-1111-4111-8111-111111111111", "bot_id": "22222222-2222-4222-8222-222222222222", "bot_seq": "9007199254740993", "revision": 1, "sender": "application", "format": "plain", "text": "合成文本", "attachments": [], "reply_to_message_id": null, "buttons": [], "created_at": "2026-10-22T00:00:00Z", "updated_at": "2026-10-22T00:00:00Z"}}], "page_token": "opaque-page-receipt", "next_token": null, "has_more": false, "sync_cursor": "opaque-sync-at-H", "issued_at": "2026-10-22T00:00:00Z", "expires_at": "2026-10-22T00:15:00Z", "server_time": "2026-10-22T00:00:01Z"}, "valid": true, "bootstrap_state": {"kind": "verify", "verified_cursor_purpose": "sync-result", "receipt": false, "all_pages_complete": true, "bootstrap_valid": false, "sync_integrity": true, "identity": "a1", "sync_identity": "a1", "epoch": "e1", "sync_epoch": "e1", "cycle_complete": true, "position": "12", "h": "10", "expected_status": 400, "expected_code": "INVALID_BOOTSTRAP_TOKEN"}}
+{"name": "bootstrap_verify_receipt_before_reset", "schema": "BootstrapPage", "value": {"kind": "page", "epoch": "epoch-one", "server_high_watermark": "9007199254740993", "retention_floor": "0", "bots": [{"id": "22222222-2222-4222-8222-222222222222", "name": "测试通知", "enabled": true, "capabilities": {"send": true, "receive": false}, "version": 1, "credentials": {"api_token": {"credential_id": "public-test-id", "generation": 1}, "webhook_key": {"credential_id": "other-public-id", "generation": 1}}, "connection": {"state": "unknown", "last_poll_at": null}}], "read_states": [{"bot_id": "22222222-2222-4222-8222-222222222222", "read_seq": "0", "version": 1, "updated_at": "2026-10-22T00:00:00Z"}], "messages": [{"created_change_seq": "9007199254740993", "message": {"id": "11111111-1111-4111-8111-111111111111", "bot_id": "22222222-2222-4222-8222-222222222222", "bot_seq": "9007199254740993", "revision": 1, "sender": "application", "format": "plain", "text": "合成文本", "attachments": [], "reply_to_message_id": null, "buttons": [], "created_at": "2026-10-22T00:00:00Z", "updated_at": "2026-10-22T00:00:00Z"}}], "page_token": "opaque-page-receipt", "next_token": null, "has_more": false, "sync_cursor": "opaque-sync-at-H", "issued_at": "2026-10-22T00:00:00Z", "expires_at": "2026-10-22T00:15:00Z", "server_time": "2026-10-22T00:00:01Z"}, "valid": true, "bootstrap_state": {"kind": "verify", "verified_cursor_purpose": "sync-result", "receipt": false, "all_pages_complete": true, "bootstrap_valid": false, "sync_integrity": true, "identity": "a1", "sync_identity": "a1", "epoch": "e1", "sync_epoch": "e1", "cycle_complete": true, "position": "12", "h": "10", "expected_status": 400, "expected_code": "INVALID_BOOTSTRAP_TOKEN"}},
+
+  {
+    "name": "ws_hello",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "epoch-a",
+      "change_seq": "9007199254740993",
+      "protocol_version": {
+        "major": 1,
+        "minor": 0
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "ws_latest_max",
+    "schema": "WSFrame",
+    "value": {
+      "type": "changes_available",
+      "change_seq": "9223372036854775807"
+    },
+    "valid": true
+  },
+  {
+    "name": "ws_revoked",
+    "schema": "WSFrame",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true
+  },
+  {
+    "name": "ws_unknown_optional",
+    "schema": "WSFrame",
+    "value": {
+      "type": "future_hint",
+      "optional": true
+    },
+    "valid": true
+  },
+  {
+    "name": "ws_bad_seq_3",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "epoch-a",
+      "change_seq": 3,
+      "protocol_version": {
+        "major": 1,
+        "minor": 0
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_bad_seq_-1",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "epoch-a",
+      "change_seq": "-1",
+      "protocol_version": {
+        "major": 1,
+        "minor": 0
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_bad_seq_01",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "epoch-a",
+      "change_seq": "01",
+      "protocol_version": {
+        "major": 1,
+        "minor": 0
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_bad_seq_9223372036854775808",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "epoch-a",
+      "change_seq": "9223372036854775808",
+      "protocol_version": {
+        "major": 1,
+        "minor": 0
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_bad_version_0",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "epoch-a",
+      "change_seq": "9007199254740993",
+      "protocol_version": {
+        "major": 0,
+        "minor": 0
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_bad_version_-1",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "epoch-a",
+      "change_seq": "9007199254740993",
+      "protocol_version": {
+        "major": -1,
+        "minor": 0
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_bad_version_1",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "epoch-a",
+      "change_seq": "9007199254740993",
+      "protocol_version": {
+        "major": "1",
+        "minor": 0
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_bad_version_1.5",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "epoch-a",
+      "change_seq": "9007199254740993",
+      "protocol_version": {
+        "major": 1.5,
+        "minor": 0
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_hello_body",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "epoch-a",
+      "change_seq": "9007199254740993",
+      "protocol_version": {
+        "major": 1,
+        "minor": 0
+      },
+      "body": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_hint_body",
+    "schema": "WSFrame",
+    "value": {
+      "type": "changes_available",
+      "change_seq": "1",
+      "body": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_unknown_body",
+    "schema": "WSFrame",
+    "value": {
+      "type": "future_hint",
+      "optional": true,
+      "body": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_revoked_body",
+    "schema": "WSFrame",
+    "value": {
+      "type": "session_revoked",
+      "body": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_hello_token",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "epoch-a",
+      "change_seq": "9007199254740993",
+      "protocol_version": {
+        "major": 1,
+        "minor": 0
+      },
+      "token": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_hint_token",
+    "schema": "WSFrame",
+    "value": {
+      "type": "changes_available",
+      "change_seq": "1",
+      "token": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_unknown_token",
+    "schema": "WSFrame",
+    "value": {
+      "type": "future_hint",
+      "optional": true,
+      "token": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_revoked_token",
+    "schema": "WSFrame",
+    "value": {
+      "type": "session_revoked",
+      "token": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_hello_authorization",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "epoch-a",
+      "change_seq": "9007199254740993",
+      "protocol_version": {
+        "major": 1,
+        "minor": 0
+      },
+      "authorization": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_hint_authorization",
+    "schema": "WSFrame",
+    "value": {
+      "type": "changes_available",
+      "change_seq": "1",
+      "authorization": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_unknown_authorization",
+    "schema": "WSFrame",
+    "value": {
+      "type": "future_hint",
+      "optional": true,
+      "authorization": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_revoked_authorization",
+    "schema": "WSFrame",
+    "value": {
+      "type": "session_revoked",
+      "authorization": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_hello_message",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "epoch-a",
+      "change_seq": "9007199254740993",
+      "protocol_version": {
+        "major": 1,
+        "minor": 0
+      },
+      "message": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_hint_message",
+    "schema": "WSFrame",
+    "value": {
+      "type": "changes_available",
+      "change_seq": "1",
+      "message": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_unknown_message",
+    "schema": "WSFrame",
+    "value": {
+      "type": "future_hint",
+      "optional": true,
+      "message": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_revoked_message",
+    "schema": "WSFrame",
+    "value": {
+      "type": "session_revoked",
+      "message": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_hello_cursor",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "epoch-a",
+      "change_seq": "9007199254740993",
+      "protocol_version": {
+        "major": 1,
+        "minor": 0
+      },
+      "cursor": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_hint_cursor",
+    "schema": "WSFrame",
+    "value": {
+      "type": "changes_available",
+      "change_seq": "1",
+      "cursor": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_unknown_cursor",
+    "schema": "WSFrame",
+    "value": {
+      "type": "future_hint",
+      "optional": true,
+      "cursor": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_leak_revoked_cursor",
+    "schema": "WSFrame",
+    "value": {
+      "type": "session_revoked",
+      "cursor": "synthetic-forbidden"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_unknown_rejected_32",
+    "schema": "WSFrame",
+    "value": {
+      "type": "future_hint",
+      "optional": false
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_unknown_rejected_33",
+    "schema": "WSFrame",
+    "value": {
+      "type": "future_hint"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_unknown_rejected_34",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "optional": true
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_unknown_rejected_35",
+    "schema": "WSFrame",
+    "value": {
+      "type": "ping"
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_permission_AdminBearer",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "connectClientWS",
+      "security": {
+        "AdminBearer": []
+      }
+    }
+  },
+  {
+    "name": "ws_permission_WebCookie",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": false,
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "connectClientWS",
+      "security": {
+        "WebCookie": []
+      }
+    }
+  },
+  {
+    "name": "ws_permission_BotAPIToken",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": false,
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "connectClientWS",
+      "security": {
+        "BotAPIToken": []
+      }
+    }
+  },
+  {
+    "name": "ws_permission_WebhookKey",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": false,
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "connectClientWS",
+      "security": {
+        "WebhookKey": []
+      }
+    }
+  },
+  {
+    "name": "ws_http101_Upgrade",
+    "schema": "OpaqueCursor",
+    "value": "websocket",
+    "valid": true,
+    "operationId": "connectClientWS",
+    "status": 101,
+    "header": "Upgrade"
+  },
+  {
+    "name": "ws_http101_bad_Upgrade",
+    "schema": "OpaqueCursor",
+    "value": "invalid",
+    "valid": false,
+    "schema_valid": true,
+    "operationId": "connectClientWS",
+    "status": 101,
+    "header": "Upgrade"
+  },
+  {
+    "name": "ws_http101_Connection",
+    "schema": "OpaqueCursor",
+    "value": "Upgrade",
+    "valid": true,
+    "operationId": "connectClientWS",
+    "status": 101,
+    "header": "Connection"
+  },
+  {
+    "name": "ws_http101_bad_Connection",
+    "schema": "OpaqueCursor",
+    "value": "invalid",
+    "valid": false,
+    "schema_valid": true,
+    "operationId": "connectClientWS",
+    "status": 101,
+    "header": "Connection"
+  },
+  {
+    "name": "ws_http101_Sec-WebSocket-Accept",
+    "schema": "OpaqueCursor",
+    "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaa=",
+    "valid": true,
+    "operationId": "connectClientWS",
+    "status": 101,
+    "header": "Sec-WebSocket-Accept"
+  },
+  {
+    "name": "ws_http101_bad_Sec-WebSocket-Accept",
+    "schema": "OpaqueCursor",
+    "value": "invalid",
+    "valid": false,
+    "schema_valid": true,
+    "operationId": "connectClientWS",
+    "status": 101,
+    "header": "Sec-WebSocket-Accept"
+  },
+  {
+    "name": "ws_http101_Cache-Control",
+    "schema": "OpaqueCursor",
+    "value": "no-store",
+    "valid": true,
+    "operationId": "connectClientWS",
+    "status": 101,
+    "header": "Cache-Control"
+  },
+  {
+    "name": "ws_http101_bad_Cache-Control",
+    "schema": "OpaqueCursor",
+    "value": "invalid",
+    "valid": false,
+    "schema_valid": true,
+    "operationId": "connectClientWS",
+    "status": 101,
+    "header": "Cache-Control"
+  },
+  {
+    "name": "ws_http_error_400",
+    "schema": "Error",
+    "value": {
+      "error": {
+        "code": "INVALID_WS_HANDSHAKE",
+        "message": "\u5408\u6210\u63e1\u624b\u5931\u8d25",
+        "request_id": "ws-test",
+        "retryable": false
+      }
+    },
+    "valid": true,
+    "operationId": "connectClientWS",
+    "status": 400
+  },
+  {
+    "name": "ws_http_error_401",
+    "schema": "Error",
+    "value": {
+      "error": {
+        "code": "AUTHENTICATION_REQUIRED",
+        "message": "\u5408\u6210\u63e1\u624b\u5931\u8d25",
+        "request_id": "ws-test",
+        "retryable": false
+      }
+    },
+    "valid": true,
+    "operationId": "connectClientWS",
+    "status": 401
+  },
+  {
+    "name": "ws_http_error_403",
+    "schema": "Error",
+    "value": {
+      "error": {
+        "code": "FORBIDDEN",
+        "message": "\u5408\u6210\u63e1\u624b\u5931\u8d25",
+        "request_id": "ws-test",
+        "retryable": false
+      }
+    },
+    "valid": true,
+    "operationId": "connectClientWS",
+    "status": 403
+  },
+  {
+    "name": "ws_state_native",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "handshake",
+      "identity": "AdminBearer",
+      "session_active": true,
+      "origin": "absent",
+      "query_credentials": false,
+      "upgrade_valid": true,
+      "expected_status": 101
+    }
+  },
+  {
+    "name": "ws_state_trusted_origin",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "handshake",
+      "identity": "AdminBearer",
+      "session_active": true,
+      "origin": "trusted",
+      "query_credentials": false,
+      "upgrade_valid": true,
+      "expected_status": 101
+    }
+  },
+  {
+    "name": "ws_state_untrusted_origin",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "handshake",
+      "identity": "AdminBearer",
+      "session_active": true,
+      "origin": "untrusted",
+      "query_credentials": false,
+      "upgrade_valid": true,
+      "expected_status": 403
+    }
+  },
+  {
+    "name": "ws_state_revoked",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "handshake",
+      "identity": "AdminBearer",
+      "session_active": false,
+      "origin": "absent",
+      "query_credentials": false,
+      "upgrade_valid": true,
+      "expected_status": 401
+    }
+  },
+  {
+    "name": "ws_state_query_secret",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "handshake",
+      "identity": "AdminBearer",
+      "session_active": true,
+      "origin": "absent",
+      "query_credentials": true,
+      "upgrade_valid": true,
+      "expected_status": 400
+    }
+  },
+  {
+    "name": "ws_state_invalid_upgrade",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "handshake",
+      "identity": "AdminBearer",
+      "session_active": true,
+      "origin": "absent",
+      "query_credentials": false,
+      "upgrade_valid": false,
+      "expected_status": 400
+    }
+  },
+  {
+    "name": "ws_state_WebCookie",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "handshake",
+      "identity": "WebCookie",
+      "session_active": true,
+      "origin": "absent",
+      "query_credentials": false,
+      "upgrade_valid": true,
+      "expected_status": 401
+    }
+  },
+  {
+    "name": "ws_state_BotAPIToken",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "handshake",
+      "identity": "BotAPIToken",
+      "session_active": true,
+      "origin": "absent",
+      "query_credentials": false,
+      "upgrade_valid": true,
+      "expected_status": 401
+    }
+  },
+  {
+    "name": "ws_state_WebhookKey",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "handshake",
+      "identity": "WebhookKey",
+      "session_active": true,
+      "origin": "absent",
+      "query_credentials": false,
+      "upgrade_valid": true,
+      "expected_status": 401
+    }
+  },
+  {
+    "name": "ws_state_event_helloFalse1",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "event",
+      "event": "hello",
+      "optional": false,
+      "major": 1,
+      "advance_cursor": false,
+      "expected_action": "rest-sync"
+    }
+  },
+  {
+    "name": "ws_state_event_changes_availableFalse1",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "event",
+      "event": "changes_available",
+      "optional": false,
+      "major": 1,
+      "advance_cursor": false,
+      "expected_action": "rest-sync"
+    }
+  },
+  {
+    "name": "ws_state_event_session_revokedFalse1",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "event",
+      "event": "session_revoked",
+      "optional": false,
+      "major": 1,
+      "advance_cursor": false,
+      "expected_action": "stop-close-clear-session"
+    }
+  },
+  {
+    "name": "ws_state_event_future_hintTrue1",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "event",
+      "event": "future_hint",
+      "optional": true,
+      "major": 1,
+      "advance_cursor": false,
+      "expected_action": "ignore"
+    }
+  },
+  {
+    "name": "ws_state_event_future_hintFalse1",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "event",
+      "event": "future_hint",
+      "optional": false,
+      "major": 1,
+      "advance_cursor": false,
+      "expected_action": "fail-close"
+    }
+  },
+  {
+    "name": "ws_state_event_helloFalse2",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "event",
+      "event": "hello",
+      "optional": false,
+      "major": 2,
+      "advance_cursor": false,
+      "expected_action": "fail-close"
+    }
+  },
+  {
+    "name": "ws_future_major_structurally_valid",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "epoch-a",
+      "change_seq": "9007199254740993",
+      "protocol_version": {
+        "major": 2,
+        "minor": 0
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "ws_state_connect-first_gap",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "window",
+      "strategy": "connect-first",
+      "epoch": "e1",
+      "local_epoch": "e1",
+      "hello": "10",
+      "buffered_hint": "11",
+      "rest_position": "10",
+      "hint_committed": false,
+      "expected_action": "rest-sync"
+    }
+  },
+  {
+    "name": "ws_state_connect-first_caught",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "window",
+      "strategy": "connect-first",
+      "epoch": "e1",
+      "local_epoch": "e1",
+      "hello": "10",
+      "buffered_hint": "11",
+      "rest_position": "11",
+      "hint_committed": false,
+      "expected_action": "caught-up"
+    }
+  },
+  {
+    "name": "ws_state_connect-first_epoch",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "window",
+      "strategy": "connect-first",
+      "epoch": "e2",
+      "local_epoch": "e1",
+      "hello": "10",
+      "buffered_hint": "11",
+      "rest_position": "10",
+      "hint_committed": false,
+      "expected_action": "rest-reset-check"
+    }
+  },
+  {
+    "name": "ws_state_sync-first_gap",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "window",
+      "strategy": "sync-first",
+      "epoch": "e1",
+      "local_epoch": "e1",
+      "hello": "10",
+      "buffered_hint": "11",
+      "rest_position": "10",
+      "hint_committed": false,
+      "expected_action": "rest-sync"
+    }
+  },
+  {
+    "name": "ws_state_sync-first_caught",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "window",
+      "strategy": "sync-first",
+      "epoch": "e1",
+      "local_epoch": "e1",
+      "hello": "10",
+      "buffered_hint": "11",
+      "rest_position": "11",
+      "hint_committed": false,
+      "expected_action": "caught-up"
+    }
+  },
+  {
+    "name": "ws_state_sync-first_epoch",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "window",
+      "strategy": "sync-first",
+      "epoch": "e2",
+      "local_epoch": "e1",
+      "hello": "10",
+      "buffered_hint": "11",
+      "rest_position": "10",
+      "hint_committed": false,
+      "expected_action": "rest-reset-check"
+    }
+  },
+  {
+    "name": "ws_state_recovery_sync-result",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "recovery",
+      "sync_state": {
+        "kind": "cursor",
+        "identity": "a",
+        "cursor_identity": "a",
+        "epoch": "b",
+        "cursor_epoch": "a",
+        "position": "2",
+        "floor": "0",
+        "h": "6",
+        "server_h": "9",
+        "complete": false,
+        "expected_status": 410
+      },
+      "bootstrap_state": {
+        "kind": "verify",
+        "verified_cursor_purpose": "sync-result",
+        "receipt": true,
+        "all_pages_complete": true,
+        "bootstrap_valid": true,
+        "sync_integrity": true,
+        "identity": "a1",
+        "sync_identity": "a1",
+        "epoch": "e1",
+        "sync_epoch": "e1",
+        "cycle_complete": true,
+        "position": "12",
+        "h": "10",
+        "expected_status": 200,
+        "expected_code": null
+      },
+      "expected_verify_status": 200,
+      "hint_committed": false,
+      "generation_state": {
+        "kind": "generation",
+        "all_pages": true,
+        "sync_complete": true,
+        "catchup_position": "12",
+        "h": "10",
+        "epoch": "e1",
+        "initial_epoch": "e1",
+        "floor": "10",
+        "token_valid": true,
+        "switch": true,
+        "preserve_outbox": true,
+        "preserve_uploads": true,
+        "atomic": true,
+        "remove_old_cache": true,
+        "message_local": 5,
+        "message_incoming": 3,
+        "message_result": 5,
+        "bot_local": 4,
+        "bot_incoming": 2,
+        "bot_result": 4,
+        "hint_advances_cursor": false,
+        "expected": true
+      }
+    }
+  },
+  {
+    "name": "ws_state_recovery_bootstrap-seed",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "recovery",
+      "sync_state": {
+        "kind": "cursor",
+        "identity": "a",
+        "cursor_identity": "a",
+        "epoch": "b",
+        "cursor_epoch": "a",
+        "position": "2",
+        "floor": "0",
+        "h": "6",
+        "server_h": "9",
+        "complete": false,
+        "expected_status": 410
+      },
+      "bootstrap_state": {
+        "kind": "verify",
+        "verified_cursor_purpose": "bootstrap-seed",
+        "receipt": true,
+        "all_pages_complete": true,
+        "bootstrap_valid": true,
+        "sync_integrity": true,
+        "identity": "a1",
+        "sync_identity": "a1",
+        "epoch": "e1",
+        "sync_epoch": "e1",
+        "cycle_complete": true,
+        "position": "12",
+        "h": "10",
+        "expected_status": 400,
+        "expected_code": "INVALID_SYNC_CURSOR"
+      },
+      "expected_verify_status": 400,
+      "hint_committed": false,
+      "generation_state": {
+        "kind": "generation",
+        "all_pages": true,
+        "sync_complete": false,
+        "catchup_position": "12",
+        "h": "10",
+        "epoch": "e1",
+        "initial_epoch": "e1",
+        "floor": "10",
+        "token_valid": true,
+        "switch": false,
+        "preserve_outbox": true,
+        "preserve_uploads": true,
+        "atomic": true,
+        "remove_old_cache": true,
+        "message_local": 5,
+        "message_incoming": 3,
+        "message_result": 5,
+        "bot_local": 4,
+        "bot_incoming": 2,
+        "bot_result": 4,
+        "hint_advances_cursor": false,
+        "expected": true
+      }
+    }
+  },
+  {
+    "name": "ws_state_transport",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "transport",
+      "ping_seconds": 25,
+      "disconnect_seconds": 75,
+      "jitter": true,
+      "retry_delay": 60,
+      "queued_hints": 1,
+      "queued_body": false,
+      "background_action": "close",
+      "foreground_action": "immediate-rest-sync",
+      "expected": true
+    }
+  },
+  {
+    "name": "ws_state_transport_bad_ping_seconds",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "transport",
+      "ping_seconds": 26,
+      "disconnect_seconds": 75,
+      "jitter": true,
+      "retry_delay": 60,
+      "queued_hints": 1,
+      "queued_body": false,
+      "background_action": "close",
+      "foreground_action": "immediate-rest-sync",
+      "expected": false
+    }
+  },
+  {
+    "name": "ws_state_transport_bad_disconnect_seconds",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "transport",
+      "ping_seconds": 25,
+      "disconnect_seconds": 76,
+      "jitter": true,
+      "retry_delay": 60,
+      "queued_hints": 1,
+      "queued_body": false,
+      "background_action": "close",
+      "foreground_action": "immediate-rest-sync",
+      "expected": false
+    }
+  },
+  {
+    "name": "ws_state_transport_bad_jitter",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "transport",
+      "ping_seconds": 25,
+      "disconnect_seconds": 75,
+      "jitter": false,
+      "retry_delay": 60,
+      "queued_hints": 1,
+      "queued_body": false,
+      "background_action": "close",
+      "foreground_action": "immediate-rest-sync",
+      "expected": false
+    }
+  },
+  {
+    "name": "ws_state_transport_bad_retry_delay",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "transport",
+      "ping_seconds": 25,
+      "disconnect_seconds": 75,
+      "jitter": true,
+      "retry_delay": 61,
+      "queued_hints": 1,
+      "queued_body": false,
+      "background_action": "close",
+      "foreground_action": "immediate-rest-sync",
+      "expected": false
+    }
+  },
+  {
+    "name": "ws_state_transport_bad_queued_hints",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "transport",
+      "ping_seconds": 25,
+      "disconnect_seconds": 75,
+      "jitter": true,
+      "retry_delay": 60,
+      "queued_hints": 2,
+      "queued_body": false,
+      "background_action": "close",
+      "foreground_action": "immediate-rest-sync",
+      "expected": false
+    }
+  },
+  {
+    "name": "ws_state_transport_bad_queued_body",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "transport",
+      "ping_seconds": 25,
+      "disconnect_seconds": 75,
+      "jitter": true,
+      "retry_delay": 60,
+      "queued_hints": 1,
+      "queued_body": true,
+      "background_action": "close",
+      "foreground_action": "immediate-rest-sync",
+      "expected": false
+    }
+  },
+  {
+    "name": "ws_state_transport_bad_background_action",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "transport",
+      "ping_seconds": 25,
+      "disconnect_seconds": 75,
+      "jitter": true,
+      "retry_delay": 60,
+      "queued_hints": 1,
+      "queued_body": false,
+      "background_action": "keep",
+      "foreground_action": "immediate-rest-sync",
+      "expected": false
+    }
+  },
+  {
+    "name": "ws_state_transport_bad_foreground_action",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "transport",
+      "ping_seconds": 25,
+      "disconnect_seconds": 75,
+      "jitter": true,
+      "retry_delay": 60,
+      "queued_hints": 1,
+      "queued_body": false,
+      "background_action": "close",
+      "foreground_action": "wait",
+      "expected": false
+    }
+  },
+  {
+    "name": "ws_http_error_429",
+    "schema": "Error",
+    "value": {
+      "error": {
+        "code": "RATE_LIMITED",
+        "message": "\u5408\u6210\u6682\u6001\u63e1\u624b\u5931\u8d25",
+        "request_id": "ws-test",
+        "retryable": true
+      }
+    },
+    "valid": true,
+    "operationId": "connectClientWS",
+    "status": 429
+  },
+  {
+    "name": "ws_http_error_503",
+    "schema": "Error",
+    "value": {
+      "error": {
+        "code": "SERVICE_UNAVAILABLE",
+        "message": "\u5408\u6210\u6682\u6001\u63e1\u624b\u5931\u8d25",
+        "request_id": "ws-test",
+        "retryable": true
+      }
+    },
+    "valid": true,
+    "operationId": "connectClientWS",
+    "status": 503
+  },
+  {
+    "name": "ws_cache_400_no-store",
+    "schema": "OpaqueCursor",
+    "value": "no-store",
+    "valid": true,
+    "schema_valid": true,
+    "operationId": "connectClientWS",
+    "status": 400,
+    "header": "Cache-Control"
+  },
+  {
+    "name": "ws_cache_400_public",
+    "schema": "OpaqueCursor",
+    "value": "public",
+    "valid": false,
+    "schema_valid": true,
+    "operationId": "connectClientWS",
+    "status": 400,
+    "header": "Cache-Control"
+  },
+  {
+    "name": "ws_cache_401_no-store",
+    "schema": "OpaqueCursor",
+    "value": "no-store",
+    "valid": true,
+    "schema_valid": true,
+    "operationId": "connectClientWS",
+    "status": 401,
+    "header": "Cache-Control"
+  },
+  {
+    "name": "ws_cache_401_public",
+    "schema": "OpaqueCursor",
+    "value": "public",
+    "valid": false,
+    "schema_valid": true,
+    "operationId": "connectClientWS",
+    "status": 401,
+    "header": "Cache-Control"
+  },
+  {
+    "name": "ws_cache_403_no-store",
+    "schema": "OpaqueCursor",
+    "value": "no-store",
+    "valid": true,
+    "schema_valid": true,
+    "operationId": "connectClientWS",
+    "status": 403,
+    "header": "Cache-Control"
+  },
+  {
+    "name": "ws_cache_403_public",
+    "schema": "OpaqueCursor",
+    "value": "public",
+    "valid": false,
+    "schema_valid": true,
+    "operationId": "connectClientWS",
+    "status": 403,
+    "header": "Cache-Control"
+  },
+  {
+    "name": "ws_cache_429_no-store",
+    "schema": "OpaqueCursor",
+    "value": "no-store",
+    "valid": true,
+    "schema_valid": true,
+    "operationId": "connectClientWS",
+    "status": 429,
+    "header": "Cache-Control"
+  },
+  {
+    "name": "ws_cache_429_public",
+    "schema": "OpaqueCursor",
+    "value": "public",
+    "valid": false,
+    "schema_valid": true,
+    "operationId": "connectClientWS",
+    "status": 429,
+    "header": "Cache-Control"
+  },
+  {
+    "name": "ws_cache_503_no-store",
+    "schema": "OpaqueCursor",
+    "value": "no-store",
+    "valid": true,
+    "schema_valid": true,
+    "operationId": "connectClientWS",
+    "status": 503,
+    "header": "Cache-Control"
+  },
+  {
+    "name": "ws_cache_503_public",
+    "schema": "OpaqueCursor",
+    "value": "public",
+    "valid": false,
+    "schema_valid": true,
+    "operationId": "connectClientWS",
+    "status": 503,
+    "header": "Cache-Control"
+  },
+  {
+    "name": "ws_bad_frame_96",
+    "schema": "WSFrame",
+    "value": [],
+    "valid": false
+  },
+  {
+    "name": "ws_bad_frame_97",
+    "schema": "WSFrame",
+    "value": {
+      "type": "session_revoked",
+      "optional": true
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_bad_frame_98",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "",
+      "change_seq": "0",
+      "protocol_version": {
+        "major": 1,
+        "minor": 0
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_state_recovery_floor",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "recovery",
+      "sync_state": {
+        "kind": "cursor",
+        "identity": "a",
+        "cursor_identity": "a",
+        "epoch": "e1",
+        "cursor_epoch": "e1",
+        "position": "9",
+        "floor": "10",
+        "h": "6",
+        "server_h": "9",
+        "complete": false,
+        "expected_status": 410
+      },
+      "bootstrap_state": {
+        "kind": "verify",
+        "verified_cursor_purpose": "sync-result",
+        "receipt": true,
+        "all_pages_complete": true,
+        "bootstrap_valid": true,
+        "sync_integrity": true,
+        "identity": "a1",
+        "sync_identity": "a1",
+        "epoch": "e1",
+        "sync_epoch": "e1",
+        "cycle_complete": true,
+        "position": "12",
+        "h": "10",
+        "expected_status": 200,
+        "expected_code": null
+      },
+      "expected_verify_status": 200,
+      "hint_committed": false,
+      "generation_state": {
+        "kind": "generation",
+        "all_pages": true,
+        "sync_complete": true,
+        "catchup_position": "12",
+        "h": "10",
+        "epoch": "e1",
+        "initial_epoch": "e1",
+        "floor": "10",
+        "token_valid": true,
+        "switch": true,
+        "preserve_outbox": true,
+        "preserve_uploads": true,
+        "atomic": true,
+        "remove_old_cache": true,
+        "message_local": 5,
+        "message_incoming": 3,
+        "message_result": 5,
+        "bot_local": 4,
+        "bot_incoming": 2,
+        "bot_result": 4,
+        "hint_advances_cursor": false,
+        "expected": true
+      }
+    }
+  },
+  {
+    "name": "ws_state_recovery_epoch",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": true,
+    "ws_state": {
+      "kind": "recovery",
+      "sync_state": {
+        "kind": "cursor",
+        "identity": "a",
+        "cursor_identity": "a",
+        "epoch": "e2",
+        "cursor_epoch": "e1",
+        "position": "10",
+        "floor": "10",
+        "h": "6",
+        "server_h": "9",
+        "complete": false,
+        "expected_status": 410
+      },
+      "bootstrap_state": {
+        "kind": "verify",
+        "verified_cursor_purpose": "sync-result",
+        "receipt": true,
+        "all_pages_complete": true,
+        "bootstrap_valid": true,
+        "sync_integrity": true,
+        "identity": "a1",
+        "sync_identity": "a1",
+        "epoch": "e1",
+        "sync_epoch": "e1",
+        "cycle_complete": true,
+        "position": "12",
+        "h": "10",
+        "expected_status": 200,
+        "expected_code": null
+      },
+      "expected_verify_status": 200,
+      "hint_committed": false,
+      "generation_state": {
+        "kind": "generation",
+        "all_pages": true,
+        "sync_complete": true,
+        "catchup_position": "12",
+        "h": "10",
+        "epoch": "e1",
+        "initial_epoch": "e1",
+        "floor": "10",
+        "token_valid": true,
+        "switch": true,
+        "preserve_outbox": true,
+        "preserve_uploads": true,
+        "atomic": true,
+        "remove_old_cache": true,
+        "message_local": 5,
+        "message_incoming": 3,
+        "message_result": 5,
+        "bot_local": 4,
+        "bot_incoming": 2,
+        "bot_result": 4,
+        "hint_advances_cursor": false,
+        "expected": true
+      }
+    }
+  },
+  {
+    "name": "ws_zero_sequence_compatible_minor",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "epoch-a",
+      "change_seq": "0",
+      "protocol_version": {
+        "major": 1,
+        "minor": 17
+      }
+    },
+    "valid": true
+  },
+  {
+    "name": "ws_bad_minor_-1",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "epoch-a",
+      "change_seq": "0",
+      "protocol_version": {
+        "major": 1,
+        "minor": -1
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_bad_minor_0",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "epoch-a",
+      "change_seq": "0",
+      "protocol_version": {
+        "major": 1,
+        "minor": "0"
+      }
+    },
+    "valid": false
+  },
+  {
+    "name": "ws_bad_minor_True",
+    "schema": "WSFrame",
+    "value": {
+      "type": "hello",
+      "epoch": "epoch-a",
+      "change_seq": "0",
+      "protocol_version": {
+        "major": 1,
+        "minor": true
+      }
+    },
+    "valid": false
+  },
+
+  {
+    "name": "ws_forbidden_event_cursor_commit",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": false,
+    "schema_valid": true,
+    "state_valid": false,
+    "ws_state": {
+      "kind": "event",
+      "event": "hello",
+      "optional": false,
+      "major": 1,
+      "advance_cursor": true,
+      "expected_action": "rest-sync"
+    }
+  },
+  {
+    "name": "ws_forbidden_window_cursor_commit",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": false,
+    "schema_valid": true,
+    "state_valid": false,
+    "ws_state": {
+      "kind": "window",
+      "strategy": "connect-first",
+      "epoch": "e1",
+      "local_epoch": "e1",
+      "hello": "10",
+      "buffered_hint": "11",
+      "rest_position": "10",
+      "hint_committed": true,
+      "expected_action": "rest-sync"
+    }
+  },
+  {
+    "name": "ws_forbidden_recovery_cursor_commit",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": false,
+    "schema_valid": true,
+    "state_valid": false,
+    "ws_state": {
+      "kind": "recovery",
+      "sync_state": {
+        "kind": "cursor",
+        "identity": "a",
+        "cursor_identity": "a",
+        "epoch": "b",
+        "cursor_epoch": "a",
+        "position": "2",
+        "floor": "0",
+        "h": "6",
+        "server_h": "9",
+        "complete": false,
+        "expected_status": 410
+      },
+      "bootstrap_state": {
+        "kind": "verify",
+        "verified_cursor_purpose": "sync-result",
+        "receipt": true,
+        "all_pages_complete": true,
+        "bootstrap_valid": true,
+        "sync_integrity": true,
+        "identity": "a1",
+        "sync_identity": "a1",
+        "epoch": "e1",
+        "sync_epoch": "e1",
+        "cycle_complete": true,
+        "position": "12",
+        "h": "10",
+        "expected_status": 200,
+        "expected_code": null
+      },
+      "expected_verify_status": 200,
+      "hint_committed": true,
+      "generation_state": {
+        "kind": "generation",
+        "all_pages": true,
+        "sync_complete": true,
+        "catchup_position": "12",
+        "h": "10",
+        "epoch": "e1",
+        "initial_epoch": "e1",
+        "floor": "10",
+        "token_valid": true,
+        "switch": true,
+        "preserve_outbox": true,
+        "preserve_uploads": true,
+        "atomic": true,
+        "remove_old_cache": true,
+        "message_local": 5,
+        "message_incoming": 3,
+        "message_result": 5,
+        "bot_local": 4,
+        "bot_incoming": 2,
+        "bot_result": 4,
+        "hint_advances_cursor": false,
+        "expected": true
+      }
+    }
+  },
+  {
+    "name": "ws_forbidden_seed_generation_switch",
+    "schema": "WSSessionRevoked",
+    "value": {
+      "type": "session_revoked"
+    },
+    "valid": false,
+    "schema_valid": true,
+    "state_valid": false,
+    "ws_state": {
+      "kind": "recovery",
+      "sync_state": {
+        "kind": "cursor",
+        "identity": "a",
+        "cursor_identity": "a",
+        "epoch": "b",
+        "cursor_epoch": "a",
+        "position": "2",
+        "floor": "0",
+        "h": "6",
+        "server_h": "9",
+        "complete": false,
+        "expected_status": 410
+      },
+      "bootstrap_state": {
+        "kind": "verify",
+        "verified_cursor_purpose": "bootstrap-seed",
+        "receipt": true,
+        "all_pages_complete": true,
+        "bootstrap_valid": true,
+        "sync_integrity": true,
+        "identity": "a1",
+        "sync_identity": "a1",
+        "epoch": "e1",
+        "sync_epoch": "e1",
+        "cycle_complete": true,
+        "position": "12",
+        "h": "10",
+        "expected_status": 400,
+        "expected_code": "INVALID_SYNC_CURSOR"
+      },
+      "expected_verify_status": 400,
+      "hint_committed": false,
+      "generation_state": {
+        "kind": "generation",
+        "all_pages": true,
+        "sync_complete": false,
+        "catchup_position": "12",
+        "h": "10",
+        "epoch": "e1",
+        "initial_epoch": "e1",
+        "floor": "10",
+        "token_valid": true,
+        "switch": true,
+        "preserve_outbox": true,
+        "preserve_uploads": true,
+        "atomic": true,
+        "remove_old_cache": true,
+        "message_local": 5,
+        "message_incoming": 3,
+        "message_result": 5,
+        "bot_local": 4,
+        "bot_incoming": 2,
+        "bot_result": 4,
+        "hint_advances_cursor": false,
+        "expected": true
+      }
+    }
+  }
 ]

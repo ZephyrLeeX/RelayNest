@@ -142,3 +142,44 @@ ACK请求为 `{consumer_id,lease_token}`。提交时按当前凭据代次、Bot�
 新增 BootstrapMessage/BootstrapPage/BootstrapVerified/BootstrapResponse 四个严格 Schema，复用原 Message/Bot/ReadState/Sequence/Version/SyncEpoch/OpaqueCursor。`x-bootstrap-policy` 与两个 envelope 扩展及合成状态例核对快照、期限、分页、恢复门槛；不代表真实 SQLite 事务、HTTP鉴权/令牌实现、附件竞态或 Android/Room generation 已实现或实测。WS、设备通知/全局设置分支分别留后续 S01-S03、原 S02/S03，不放行 G-API。
 
 F01回归：verify合成声明的 `verified_cursor_purpose` 表示服务端已验证的签发用途，不是HTTP参数或客户端自报；`catchup` 将冻结sync游标/批次规则的结果接入verify，覆盖零变化、新增事件和多页未完成。这里只声明令牌用途隔离，真实签发与防篡改仍须运行时验证。
+
+## P03-07-S01-S03 WS 与父同步域联合交接
+
+`connectClientWS` 是 GET `/client/ws`，仅当前 Android 管理员设备 Bearer。握手前重新验证会话，禁止查询串凭据；原生不携带 Origin 可连接，携带 Origin 时必须通过服务端配置的 Origin 策略。Web Cookie、Bot API Token、Webhook Key 不能升级。请求使用标准 Upgrade/Connection、Sec-WebSocket-Version=13、Sec-WebSocket-Key；成功 HTTP 101 仅含升级头及 no-store，无 JSON 正文。400 INVALID_WS_HANDSHAKE、401 AUTHENTICATION_REQUIRED、403 FORBIDDEN、429、503 是升级前 HTTP 错误，仍用 Error/no-store；标准 Sec-WebSocket-Accept 必须由真实实现计算，形状例不证明握手算法。HTTP 101 与 JSON frame 通过独立验证通道检查。
+
+六个新增 Schema：WSProtocolVersion、WSHello、WSChangesAvailable、WSSessionRevoked、WSUnknownOptional、WSFrame。WSHello 的 keys 为 type=hello、epoch、change_seq（最新已提交水位）、protocol_version={major,minor}；WSChangesAvailable 为 type=changes_available、change_seq；WSSessionRevoked 仅 type=session_revoked。WSUnknownOptional 为未知 type、optional=true 的无载荷 envelope，已知事件不能借 optional 绕过严格 Schema。全部事件不携带正文、凭据、业务命令或游标。WSFrame 用 oneOf 联合四类；控制 ping/pong 是 WebSocket 控制帧，不能作为 JSON 事件。协议当前 major=1，minor 是非负整数；未知可选事件仅在主版本兼容时忽略；结构合法的 major=2 hello 仍须明确失败并关闭，不得处理其事件。撤销停止同步、关闭连接并清理会话，不展示缓存正文。
+
+25 秒 ping，75 秒无响应断开；慢端合并为最新 changes_available，有界缓存且不缓存正文。重连指数退避加抖动，实际等待不超过60秒。后台关闭连接，恢复前台立即通过同一单飞 SyncCoordinator REST同步。可先连接并缓存提示再从持久游标追赶，或先同步后立即复核 hello 高水位；同 epoch 内只要 hello/缓存提示高于 REST 完成位置就继续追赶，不同 epoch 交给 REST 重置检查。hello/提示不能直接推进持久游标，只有 REST批次与游标同事务提交。REST 410 后按 bootstrap重建/真正sync追赶/最终epoch和floor复核/原子generation切换；保留 outbox/上传。bootstrap-seed 的服务端受保护来源即使完成位为真也不能冒充实际 sync-result；本卡复用前卡判定，无更改 H/epoch/floor 或错误优先级。
+
+### 父 S01 八项验收映射（契约范围）
+
+| 父验收 | 已交付 Schema/例子/声明与联合检查 |
+| --- | --- |
+| 1 四路由和身份 | syncClientChanges、bootstrapClient、updateClientRead、connectClientWS；四操作严格 AdminBearer；各卡权限例及 ws_permission_*、ws_state_*握手；HTTP 101无content和 no-store检查 |
+| 2 固定H/epoch/floor/分页 | SyncEpoch/SyncPage、x-sync-envelope/x-sync-policy；冻结 sync_state cursor/batch 正反例；ws_state_recovery_epoch/floor 复用其410判定 |
+| 3 当前投影/类型/版本 | 六种 SyncChange 分支、现存Message/Bot/DeliveryMetadata；sync_state projection/apply；删除无正文，设置分支保留原S02/S03归属 |
+| 4 bootstrap与恢复 | BootstrapMessage/Page/Verified/Response、两个bootstrap扩展、x-bootstrap-policy；冻结token/page/verify/generation/catchup例；ws_state_recovery_sync-result/bootstrap-seed 联合验证来源隔离 |
+| 5 read max与未读 | UpdateReadRequest/Response、ReadState、x-read-policy；冻结read/unread状态、上界错误/旧值正反例及时间声明 |
+| 6 WS事件/窗口/生命周期 | 六个WS Schema、x-ws-policy、独立HTTP响应例、ws_state event/window/transport及握手正反例；明确主版本失败、提示不推进游标 |
+| 7 数字/版本/身份/恢复边界 | 所有前两卡例保留；本卡ws_bad_seq*/bad_version*/leak*/unknown*，主版本结构合法但处理失败例；全例校验和隔离声明破坏探针，不宣称运行时验证 |
+| 8 完整keys/时间/no-store/锁 | 下表与前两节，所有原组件/例子/操作/锁逐值或逐字节非回归；统一HTTP响应no-store，frame与HTTP分开；实体时间不决定并发次序 |
+
+### 四操作与全同步域 keys
+
+| 位置/Schema | keys或约束 |
+| --- | --- |
+| GET /client/sync | query cursor、limit；SyncPage={epoch,changes,next_cursor,has_more,server_high_watermark,server_time} |
+| PUT /client/bots/{id}/read | path id；UpdateReadRequest={through_seq}；UpdateReadResponse={read,server_time}；ReadState={bot_id,read_seq,version,updated_at} |
+| GET /client/bootstrap | query phase、token、sync_cursor、limit；BootstrapResponse 联合 page/verified |
+| BootstrapPage | kind、epoch、server_high_watermark、retention_floor、bots、read_states、messages、page_token、next_token、has_more、sync_cursor、issued_at、expires_at、server_time |
+| BootstrapMessage / BootstrapVerified | {created_change_seq,message} / {kind,epoch,server_high_watermark,retention_floor,catchup_position,server_time} |
+| SyncMessageUpsert / SyncMessageDelete | {type=message.upsert,change_seq,message} / {type=message.deleted,change_seq,id,bot_id,bot_seq,revision,deleted_at} |
+| SyncBotUpsert / SyncBotDelete | {type=bot.upsert,change_seq,bot} / {type=bot.deleted,change_seq,id,version,deleted_at} |
+| SyncReadUpdate / SyncDeliveryUpsert | {type=read.updated,change_seq,read} / {type=delivery.upsert,change_seq,delivery}；SyncChange oneOf六种 |
+| GET /client/ws / WSFrame | 握手头与四种frame keys见本节；HTTP与frame无交叉正文 |
+| 共用格式与错误 | Sequence为SQLite64非负规范十进制字符串；Version为>=1整数；SyncEpoch/OpaqueCursor不透明；Error={error:{code,message,request_id,retryable}}；400 INVALID_SYNC_CURSOR、400 INVALID_BOOTSTRAP_TOKEN、410 SYNC_RESET_REQUIRED、410 BOOTSTRAP_RESET_REQUIRED、404 RESOURCE_NOT_FOUND、422 READ_SEQ_OUT_OF_RANGE；WS握手错误见上文 |
+| 服务端时间位置 | SyncPage/UpdateReadResponse/BootstrapPage/BootstrapVerified.server_time是响应时间；BootstrapPage.issued_at/expires_at为固定15分钟签发/期限；ReadState.updated_at为已读前进时间；两个删除分支deleted_at为删除时间；内嵌Message.created_at/updated_at、Bot.connection.last_poll_at、DeliveryMetadata各时间沿原语义；WS不新增时间，水位仅是提示 |
+
+以上共22个同步域新增 Schema（前卡12+4，本卡6），复用 Message/Bot/DeliveryMetadata 与基础类型。原S02仍补设备注册/注销、FCM/通知配置及其所属设置资源/变更分支；原S03仍补全局配置资源及其变更分支，不能提前把任意 object 或未解析引用加进 SyncChange。父S01联合契约覆盖不等于完整 G-API，不改变P1/P2放行；手机/OPPO/NAS留正式验收。
+
+`ws_state` 是合成状态声明。OpenAPI、Schema、权限、恢复状态和破坏探针均不能证明真实 HTTP/WS握手、Origin部署配置、Token签发/防篡改、心跳计时、断网退避、SQLite事务/并发、Android/Room 或设备运行行为；这些仍为 NOT_RUN。
