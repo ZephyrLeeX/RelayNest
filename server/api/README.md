@@ -1,8 +1,8 @@
 # RelayNest API 契约
 
-`openapi.yaml` 是 OpenAPI 3.1.0 契约，统一前缀 `/api/v1`。当前已定义认证、Bot 管理、两套凭据、消息创建/编辑、独立 callback、标准 Webhook、Android 历史/详情及附件上传下载；不表示 Go 服务已实现这些路由。P03-06～07 继续串行补充投递、设备、设置、同步、已读与 WS。
+`openapi.yaml` 是 OpenAPI 3.1.0 契约，统一前缀 `/api/v1`。当前已定义认证、Bot 管理、两套凭据、消息创建/编辑、独立 callback、标准 Webhook、Android 历史/详情、附件及应用投递/失败管理；不表示 Go 服务已实现这些路由。P03-07 继续串行补充设备、设置、同步、已读与 WS。
 
-依据：`docs/TECHNICAL_DESIGN.md` §2、§3、§5.3、§7、§8；安全边界遵循 `docs/ARCHITECTURE.md` §1/§5。唯一管理员离线初始化/重置密码，不开放注册，不依赖 RelayShelf。
+依据：`docs/TECHNICAL_DESIGN.md` §2、§3、§4、§5.3、§7、§8；安全边界遵循 `docs/ARCHITECTURE.md` §1/§5。唯一管理员离线初始化/重置密码，不开放注册，不依赖 RelayShelf。
 
 ## 校验
 
@@ -68,7 +68,7 @@ Bot 停用覆盖 send/receive；写请求/Long Polling/ACK 提交前重新鉴权
 
 消息创建、编辑、Webhook、callback 和附件上传要求 UUID v4 `Idempotency-Key`。先鉴权，再以身份+路由类别查键，不依 Token 版本分区；新有效凭据可恢复未知结果，撤销凭据不能恢复。规范化摘要包括路径目标 Bot/资源 ID、有效字段、附件/引用/按钮，编辑版本、callback 点击目标/版本和上传元数据/实际内容摘要，不含 Authorization。同键同请求返回原状态及原结果，先恢复已成功编辑/点击，再判断新操作 CAS/按钮版本；不同内容 409 `IDEMPOTENCY_CONFLICT`。消息及投递存活期间保留记录；清理后最小墓碑保留 7 天，命中 410 `RESOURCE_EXPIRED`，不重新创建。受保护投递记录不按此窗口删除。窗口后客户端不可自动重放未知旧发送。
 
-`MessagePage` 延用前卡 `items/next_cursor/has_more`、`OpaqueCursor` 和正整数 limit；历史 cursor 绑定本 Bot 的 bot_seq 边界，不是管理列表游标，不使用 offset，不含同步 epoch。末页 cursor=null/has_more=false；服务有界处理，编辑不改变排序。管理员可继续读取停用 Bot 的历史。未添加投递 claim/ACK/renew、增量同步、已读、WS 或推送接口。
+`MessagePage` 延用前卡 `items/next_cursor/has_more`、`OpaqueCursor` 和正整数 limit；历史 cursor 绑定本 Bot 的 bot_seq 边界，不是管理列表游标，不使用 offset，不含同步 epoch。末页 cursor=null/has_more=false；服务有界处理，编辑不改变排序。管理员可继续读取停用 Bot 的历史。P03-05 未添加投递 claim/ACK/renew；这些由下节 P03-06 定义。增量同步、已读、WS 和推送留 P03-07。
 
 ## 大小及附件传输
 
@@ -81,3 +81,32 @@ Bot 停用覆盖 send/receive；写请求/Long Polling/ACK 提交前重新鉴权
 - If-None-Match 命中先返回无正文 304；If-Range 匹配强 ETag/HTTP 日期才处理 Range，弱 ETag或不匹配则完整 200。Range 的格式/区间扩展与资源大小夹具由校验器检查；真实HTTP条件处理、文件打开、清理竞态尚未实现/实测。
 
 错误继续复用统一 Error：400 格式、401 过期/撤销、403 能力不足、404 `RESOURCE_NOT_FOUND`（跨 Bot/无权/不存在不区分），409 `BOT_DISABLED/REVISION_CONFLICT/IDEMPOTENCY_CONFLICT/BUTTON_STALE`，410 `RESOURCE_EXPIRED`，413 `PAYLOAD_TOO_LARGE`，422 字段语义、429 限流及可重试 503 `STORAGE_UNAVAILABLE`。具体 operation 声明支持的状态；错误只含 code/message/request_id/retryable，不含正文、callback_data、SQL、路径或原始异常。契约权限声明检查和合法错误实例验证均不代表运行时鉴权、幂等事务或文件一致性已通过。
+
+
+## P03-06 投递与失败管理
+
+| 方法与路径 | 身份 | 成功响应 |
+| --- | --- | --- |
+| `POST /bot/events/claim` | 启用 Bot API receive | 200 `ClaimResponse`，含不可预测租约 Token 和不可变事件快照；超时空数组 |
+| `POST /bot/deliveries/{id}/ack` | 同 Bot API receive、consumer 与当前租约 | 200 `AckReceipt`；同一成功租约重试恢复原 `acked_at` |
+| `POST /bot/deliveries/{id}/renew` | 同 Bot API receive、consumer 与有效租约 | 200 `RenewReceipt`，更新服务端到期时间 |
+| `GET /admin/deliveries` | Android Bearer 或 Web Cookie 管理员 | 200 `DeliveryMetadataPage`，`state=failed` 为失败队列 |
+| `POST /admin/deliveries/{id}/retry` | Android 管理员，或 Web Cookie+CSRF+同源校验 | 200 `RetryDeliveryReceipt`，空 JSON 请求及必需 UUID v4 `Idempotency-Key` |
+
+receive-only 可以领取、ACK、续约和下载所领取事件的必要附件，不允许上传、发送/编辑消息、枚举历史或进入管理路由。send-only、Webhook Key 和管理员凭据均不能替代 Bot receive 身份。实例 `consumer_id` 是长度 1～128 的标识，不是授权。服务须每次提交/长轮询唤醒后重新验证 Bot 启用、凭据类型、能力和代次；重置 API Token 撤销旧等待/租约并重新排队，重置 Webhook Key 不影响它们。
+
+claim 的 `wait_seconds` 默认25，允许0～30；`limit` 默认20，本契约采用资源上限100。每 Bot 默认最多2个等待请求，超额429。短写事务按 `enqueue_seq` 领取到期 pending/retry_wait 并置 leased，等待发生在事务外；并发实例不可取得同一有效租约。200空列表只表示等待结束无数据；存储/查询失败返回503，不伪装空队列。领取有序不等于业务执行严格有序，领取响应丢失可能到期再投。claim 不使用幂等键。
+
+`delivery_id/event_id` 跨自动重投和手动重试稳定；`retry_generation` 初始 `"0"`、采用既有 `Sequence`，手动重试加一。`attempt` 在领取响应为本代当前尝试编号，从1起；本代未领取的管理元数据为0。只有实际领取后的租约到期才消耗该次尝试；停用/凭据重置撤销租约不额外消耗，回 pending 保持已消耗次数，因此下一领取可重用未消耗的尝试编号。纯等待/无消费者不耗尽次数。默认每代8次，退避 `min(5s × 2^(attempt-1),30min)` 加±20%抖动；扫描默认5秒，数据库状态及服务端UTC为权威。到期转 retry_wait，耗尽转 failed；failed 无自动TTL，事件及必要父消息/附件免于普通历史清理。
+
+普通输入的事件类型为 `message.created`，包含创建时的 `Message` 快照且 sender=administrator；callback 为独立 `button.callback`，包含点击时 message_id/revision、button_id、原样 callback_data、来源管理员/设备及时间。后续消息编辑不改投递快照，Hub 不解释参数、不执行 MCP。`event_id` 位于领取条目，与不可变 `event` 一起由应用持久化去重。
+
+ACK请求为 `{consumer_id,lease_token}`。提交时按当前凭据代次、Bot状态及同consumer的有效租约校验；旧租约、过期、其他consumer返回409 `LEASE_CONFLICT`，跨Bot或无权资源404 `RESOURCE_NOT_FOUND`。同一成功ACK先验证当前身份和授权，再凭已保存成功租约摘要恢复200原结果；原到期时间已过不误报租约过期，其他租约不能利用acked状态确认。凭据撤销、Bot停用/删除仍优先；撤销凭据不能恢复结果。应用须先持久化完整事件和必要附件字节再ACK，之后在本地执行业务。ACK表示可靠接收，区别于业务成功、用户已读或恰好执行一次；ACK后Hub可以按普通期限清理。
+
+初始租约默认120秒。renew另带 `extend_seconds`（1～120），在当前lease_until上延长；结果不得超过本次领取时刻+600秒，包含初始租约。超过总预算409 `LEASE_LIMIT_EXCEEDED`，不截断；已ACK、过期或错租约409 `LEASE_CONFLICT`。续约不更换租约Token，不增加领取次数，不承诺响应丢失的幂等恢复：同一请求重复可能再次延长，但始终受600秒上限约束。耗时业务应依赖持久Inbox。
+
+管理投影只有ID、状态、版本、次数/代次、时间和脱敏稳定错误码；严格 `additionalProperties:false`，禁止正文、callback_data、附件信息/地址、租约Token、consumer和原始异常。`error_code` 必须由服务映射，不能装入远端错误串。`lease_until/acked_at/next_attempt_at`分别只在leased/acked/retry_wait时非空。筛选支持bot_id/state及既有不透明cursor、正整数limit；它不是历史/同步游标。
+
+手动重试仅failed→pending：同事务代次加一、attempt重置0、清除错误/租约/退避，保留原投递/事件/载荷/幂等身份；非failed409 `DELIVERY_NOT_FAILED`。停用Bot重新排队后仍暂停，恢复启用才可领取。不同键并发只可一个转换成功。同键在当前有效管理员鉴权后先恢复原结果，再检查failed条件，不能重复加代次；摘要含路径目标及空对象，跨目标同键409 `IDEMPOTENCY_CONFLICT`。资源存活期间保留幂等记录，清理后7天墓碑410 `RESOURCE_EXPIRED`，受保护记录不按7天删除；版本/代次耗尽返回503且不回绕。重试传输不要求应用重跑业务，已有Inbox的应用可重新ACK。
+
+`x-lease-policy/x-claim-policy/x-ack-replay/x-max-total-lease-seconds/x-error-codes/x-management-projection/x-idempotency-policy` 是由本地校验器检查的契约声明；权限示例只检查声明组合，错误示例只检查响应结构及相应状态可用性。所有这些均不证明真实运行时鉴权、数据库原子领取、ACK/重试事务、竞争和即时撤销已经实测。

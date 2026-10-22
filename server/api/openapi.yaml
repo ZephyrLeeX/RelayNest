@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: RelayNest 核心 API
   version: 1.0.0
-  description: P03-04～05：认证/Bot与消息、独立callback、标准Webhook、附件及客户端历史契约。仅契约，不代表运行时路由已实现；P03-06～07继续投递/同步/设备。JSON拒绝未知字段，受保护响应no-store。Web仅管理元数据，无正文/附件/历史；Hub不解释业务命令或执行MCP。
+  description: P03-04～06：认证/Bot、消息/callback/Webhook/附件/历史、应用投递及失败管理契约。仅契约，不代表运行时路由已实现；P03-07继续同步/设备。JSON拒绝未知字段，受保护响应no-store。Web仅管理元数据，无正文/附件/历史；Hub不解释业务命令或执行MCP。
 servers:
 - url: /api/v1
 paths:
@@ -1045,6 +1045,324 @@ paths:
       x-client-type: android-or-bot
       x-bot-capability: send-authorized-or-receive-claimed-event
       x-reference-policy: same-bot-authorized-ready
+  /bot/events/claim:
+    post:
+      operationId: claimEvents
+      summary: 有界Long Polling领取本Bot事件
+      description: 仅启用且receive的Bot API Token；send-only、管理员和Webhook凭据拒绝。consumer_id不是身份。网络等待在事务外；按enqueue_seq选择到期pending/retry_wait，短事务条件更新leased，多个实例不能共享有效租约；提交和每次唤醒重新检查Bot启用、能力及API凭据代次。等待默认25秒最多30秒，每Bot默认2个等待请求，超额429。默认租约120秒；默认批次20上限100，只保证领取排序，不保证业务执行严格有序。无数据超时200空数组，存储失败503。返回丢失依租约到期重投，claim不具有幂等重放保证。只有实际领取后的租约超时才消耗一次尝试；默认每代最多8次，退避min(5s×2^(attempt-1),30min)加±20%抖动，扫描默认5秒。耗尽转failed，事件及必要父消息/附件没有自动TTL，不被普通历史清理。停用撤销租约回pending并暂停计时；API凭据重置撤销旧租约重新排队，均不额外消耗尝试。
+      security:
+      - BotAPIToken: []
+      responses:
+        '200':
+          description: 成功；仅在必要状态事务提交后返回。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimResponse'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      requestBody:
+        required: true
+        x-max-bytes: 262144
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimRequest'
+      x-bot-capability: receive
+      x-lease-policy: current-bot-consumer-credential-generation
+      x-claim-policy: atomic-due-enqueue-order-outside-wait
+      x-initial-lease-seconds: 120
+      x-error-codes:
+        '401':
+        - AUTHENTICATION_REQUIRED
+        '403':
+        - BOT_CAPABILITY_REQUIRED
+        '409':
+        - BOT_DISABLED
+  /bot/deliveries/{id}/ack:
+    post:
+      x-ack-replay: authorized-same-successful-lease
+      operationId: ackDelivery
+      summary: 确认应用已可靠接收
+      description: 先验证当前Bot身份、receive、启用及凭据代次；Bot删除/撤销优先于重放。路径投递必须属于本Bot，否则404 RESOURCE_NOT_FOUND。请求consumer_id与本次lease_token必须匹配；旧租约/其他consumer/过期409
+        LEASE_CONFLICT。有效租约事务转acked并保存成功租约摘要。相同成功ACK重试200恢复原结果，即使原租约已过期；不以acked状态接受其他Token。应用先持久化event_id、完整载荷和必要附件字节再ACK，随后自行执行业务；ACK后Hub可按普通期限清理。
+      security:
+      - BotAPIToken: []
+      responses:
+        '200':
+          description: 成功；仅在必要状态事务提交后返回。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AckReceipt'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      requestBody:
+        required: true
+        x-max-bytes: 262144
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaseRequest'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ID'
+        description: ''
+      x-bot-capability: receive
+      x-lease-policy: current-bot-consumer-credential-generation
+      x-error-codes:
+        '401':
+        - AUTHENTICATION_REQUIRED
+        '403':
+        - BOT_CAPABILITY_REQUIRED
+        '409':
+        - BOT_DISABLED
+        - LEASE_CONFLICT
+        '404':
+        - RESOURCE_NOT_FOUND
+  /bot/deliveries/{id}/renew:
+    post:
+      x-max-total-lease-seconds: 600
+      operationId: renewDelivery
+      summary: 续约当前有效领取
+      description: 同ACK身份、Bot范围、consumer、API凭据代次与有效租约检查；旧租约/其他consumer/过期/已ACK409 LEASE_CONFLICT。只能延长当前租约；单次最多120秒，领取起累计含初始租约最长600秒，超出409
+        LEASE_LIMIT_EXCEEDED。长耗时业务依应用持久Inbox，不无限持有租约。网络超时先重新核对本地租约预算，重复请求可能再次续期；不承诺响应丢失的幂等恢复。
+      security:
+      - BotAPIToken: []
+      responses:
+        '200':
+          description: 成功；仅在必要状态事务提交后返回。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RenewReceipt'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      requestBody:
+        required: true
+        x-max-bytes: 262144
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenewRequest'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ID'
+        description: ''
+      x-bot-capability: receive
+      x-lease-policy: current-bot-consumer-credential-generation
+      x-error-codes:
+        '401':
+        - AUTHENTICATION_REQUIRED
+        '403':
+        - BOT_CAPABILITY_REQUIRED
+        '409':
+        - BOT_DISABLED
+        - LEASE_CONFLICT
+        - LEASE_LIMIT_EXCEEDED
+        '404':
+        - RESOURCE_NOT_FOUND
+  /admin/deliveries:
+    get:
+      operationId: listDeliveries
+      summary: 投递及失败队列脱敏元数据
+      description: Android Bearer或Web Cookie管理员；Bot及Webhook均拒绝。无state筛选时返回所有投递状态；state=failed用于失败列表。只返回DeliveryMetadata允许列表，不访问或返回正文/callback_data/附件地址/原始异常；error_code为服务映射脱敏稳定码。只读列表不要求CSRF；cursor绑定筛选条件，有界分页，无offset。列表和重试均不取消未完成/失败事件及必要附件的清理保护。
+      security:
+      - AdminBearer: []
+      - WebCookie: []
+      responses:
+        '200':
+          description: 成功；仅在必要状态事务提交后返回。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryMetadataPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - name: bot_id
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/ID'
+        description: ''
+      - name: state
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/DeliveryState'
+        description: ''
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/OpaqueCursor'
+        description: ''
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+        description: 服务有界返回，沿用元数据分页约定。
+      x-management-projection: delivery-metadata-only
+      x-error-codes:
+        '403':
+        - PERMISSION_DENIED
+  /admin/deliveries/{id}/retry:
+    post:
+      operationId: retryDelivery
+      summary: 管理员手动重试失败投递
+      description: Android管理员或Web Cookie+CSRF且同源Origin/Referer。仅failed→pending；非failed409 DELIVERY_NOT_FAILED。同事务retry_generation+1、attempt=0、清除失败/租约/退避时间，保留原delivery_id/event_id、不可变载荷及幂等身份。停用Bot可重新排队但维持暂停，启用后才可领取；不绕过receive或停用控制。Idempotency-Key作用域=管理员身份+手动重试路由类别，摘要含路径目标id及空请求，不按会话/Token代次分区。先鉴权后恢复同键原成功结果，再检查新操作failed条件；同键不同目标409
+        IDEMPOTENCY_CONFLICT；并发不同键只能一个成功转换。同键不能重复增加代次，资源清理后7天墓碑命中410 RESOURCE_EXPIRED，不重建。generation或state_version耗尽不得回绕，503
+        STORAGE_UNAVAILABLE且事务不变。手动重试不是业务重跑，应用用稳定event_id去重、已有Inbox可重新ACK。
+      security:
+      - AdminBearer: []
+      - WebCookie: []
+        CSRF: []
+      responses:
+        '200':
+          description: 成功；仅在必要状态事务提交后返回。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetryDeliveryReceipt'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '410':
+          $ref: '#/components/responses/410'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      requestBody:
+        required: true
+        x-max-bytes: 262144
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetryDeliveryRequest'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ID'
+        description: ''
+      - $ref: '#/components/parameters/IdempotencyKey'
+      x-management-projection: delivery-metadata-only
+      x-idempotency-policy: authorized-replay-before-state-check
+      x-error-codes:
+        '409':
+        - DELIVERY_NOT_FAILED
+        - IDEMPOTENCY_CONFLICT
+        '410':
+        - RESOURCE_EXPIRED
+        '404':
+        - RESOURCE_NOT_FOUND
+        '403':
+        - PERMISSION_DENIED
 components:
   schemas:
     ID:
@@ -1757,6 +2075,323 @@ components:
       minLength: 66
       maxLength: 66
       description: ready 文件 SHA-256 的带双引号强 ETag。
+    ConsumerID:
+      type: string
+      minLength: 1
+      maxLength: 128
+      description: 应用实例标识；不是授权，不能替代当前Bot凭据或租约Token。
+    LeaseToken:
+      type: string
+      minLength: 1
+      description: 服务生成不可预测的不透明租约Token，只返回获准领取者；服务保存摘要。绑定Bot、consumer、API凭据代次及本次领取，客户端不得推导或复用到下一租约。
+    ClaimRequest:
+      type: object
+      properties:
+        consumer_id:
+          $ref: '#/components/schemas/ConsumerID'
+        wait_seconds:
+          type: integer
+          minimum: 0
+          maximum: 30
+          default: 25
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      required:
+      - consumer_id
+      additionalProperties: false
+    MessageDeliveryEvent:
+      type: object
+      properties:
+        type:
+          const: message.created
+        message:
+          allOf:
+          - $ref: '#/components/schemas/Message'
+          - properties:
+              sender:
+                const: administrator
+      required:
+      - type
+      - message
+      additionalProperties: false
+      description: Android消息创建时的不可变载荷快照，不按后来编辑重建；不是Android同步change事件。
+    CallbackDeliveryEvent:
+      type: object
+      properties:
+        type:
+          const: button.callback
+        message_id:
+          $ref: '#/components/schemas/ID'
+        message_revision:
+          $ref: '#/components/schemas/Version'
+        button_id:
+          type: string
+          minLength: 1
+        callback_data:
+          $ref: '#/components/schemas/CallbackData'
+        administrator_id:
+          $ref: '#/components/schemas/ID'
+        device_id:
+          $ref: '#/components/schemas/ID'
+        created_at:
+          $ref: '#/components/schemas/UTCDateTime'
+      required:
+      - type
+      - message_id
+      - message_revision
+      - button_id
+      - callback_data
+      - administrator_id
+      - device_id
+      - created_at
+      additionalProperties: false
+      description: 点击时不可变参数及来源身份快照；Hub不解释callback_data。关联父消息/必要附件受保护，附件仅按本Bot领取事件授权下载。
+    DeliveryEvent:
+      oneOf:
+      - $ref: '#/components/schemas/MessageDeliveryEvent'
+      - $ref: '#/components/schemas/CallbackDeliveryEvent'
+    ClaimedDelivery:
+      type: object
+      properties:
+        delivery_id:
+          $ref: '#/components/schemas/ID'
+        event_id:
+          $ref: '#/components/schemas/ID'
+        attempt:
+          type: integer
+          minimum: 1
+        retry_generation:
+          $ref: '#/components/schemas/Sequence'
+        lease_token:
+          $ref: '#/components/schemas/LeaseToken'
+        lease_until:
+          $ref: '#/components/schemas/UTCDateTime'
+        event:
+          $ref: '#/components/schemas/DeliveryEvent'
+      required:
+      - delivery_id
+      - event_id
+      - attempt
+      - retry_generation
+      - lease_token
+      - lease_until
+      - event
+      additionalProperties: false
+      description: attempt为当前代实际领取序号（从1起），只有租约到期才消耗本次尝试；retry_generation初始为字符串0，手动重试递增。事件/投递ID跨重投及手动重试稳定。lease_until是服务端UTC，默认领取起120秒。
+    ClaimResponse:
+      type: object
+      properties:
+        deliveries:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/ClaimedDelivery'
+      required:
+      - deliveries
+      additionalProperties: false
+      description: 最多请求limit条；等待超时200空数组，查询/存储失败不得伪装为空队列。
+    LeaseRequest:
+      type: object
+      properties:
+        consumer_id:
+          $ref: '#/components/schemas/ConsumerID'
+        lease_token:
+          $ref: '#/components/schemas/LeaseToken'
+      required:
+      - consumer_id
+      - lease_token
+      additionalProperties: false
+    RenewRequest:
+      type: object
+      properties:
+        consumer_id:
+          $ref: '#/components/schemas/ConsumerID'
+        lease_token:
+          $ref: '#/components/schemas/LeaseToken'
+        extend_seconds:
+          type: integer
+          minimum: 1
+          maximum: 120
+      required:
+      - consumer_id
+      - lease_token
+      - extend_seconds
+      additionalProperties: false
+      description: 在当前lease_until上延长指定秒数；新到期不得超过本次领取时间+600秒（包括初始租约）。超限409 LEASE_LIMIT_EXCEEDED，不截断；重复续约仍须有效租约且计入累计时限，无Idempotency-Key保证。
+    AckReceipt:
+      type: object
+      properties:
+        delivery_id:
+          $ref: '#/components/schemas/ID'
+        event_id:
+          $ref: '#/components/schemas/ID'
+        state:
+          const: acked
+        acked_at:
+          $ref: '#/components/schemas/UTCDateTime'
+      required:
+      - delivery_id
+      - event_id
+      - state
+      - acked_at
+      additionalProperties: false
+      description: 只确认传输已可靠接收，不代表已读、业务执行成功或恰好执行一次。同成功租约重试200返回原acked_at。
+    RenewReceipt:
+      type: object
+      properties:
+        delivery_id:
+          $ref: '#/components/schemas/ID'
+        lease_until:
+          $ref: '#/components/schemas/UTCDateTime'
+      required:
+      - delivery_id
+      - lease_until
+      additionalProperties: false
+      description: 当前有效租约续约成功；不轮换lease_token、不改变event_id、不增加实际领取次数。
+    DeliveryState:
+      enum:
+      - pending
+      - leased
+      - retry_wait
+      - acked
+      - failed
+    DeliveryMetadata:
+      type: object
+      properties:
+        delivery_id:
+          $ref: '#/components/schemas/ID'
+        event_id:
+          $ref: '#/components/schemas/ID'
+        bot_id:
+          $ref: '#/components/schemas/ID'
+        state:
+          $ref: '#/components/schemas/DeliveryState'
+        state_version:
+          $ref: '#/components/schemas/Version'
+        attempt:
+          type: integer
+          minimum: 0
+        retry_generation:
+          $ref: '#/components/schemas/Sequence'
+        created_at:
+          $ref: '#/components/schemas/UTCDateTime'
+        updated_at:
+          $ref: '#/components/schemas/UTCDateTime'
+        lease_until:
+          oneOf:
+          - $ref: '#/components/schemas/UTCDateTime'
+          - type: 'null'
+        next_attempt_at:
+          oneOf:
+          - $ref: '#/components/schemas/UTCDateTime'
+          - type: 'null'
+        acked_at:
+          oneOf:
+          - $ref: '#/components/schemas/UTCDateTime'
+          - type: 'null'
+        error_code:
+          oneOf:
+          - type: string
+            pattern: ^[A-Z][A-Z0-9_]*(?![\s\S])
+          - type: 'null'
+      required:
+      - delivery_id
+      - event_id
+      - bot_id
+      - state
+      - state_version
+      - attempt
+      - retry_generation
+      - created_at
+      - updated_at
+      - lease_until
+      - next_attempt_at
+      - acked_at
+      - error_code
+      additionalProperties: false
+      description: 管理专用允许列表。error_code只来自服务端脱敏稳定码映射，不能拼接远端输入。禁止正文、callback_data、附件信息/地址、租约Token、consumer、原始异常。attempt为本代已领取序号（未领取为0），retry_generation初始0；acked_at仅acked非空、lease_until仅leased非空、next_attempt_at仅retry_wait非空。无消费者/纯等待/停用不消耗尝试。
+      allOf:
+      - if:
+          properties:
+            state:
+              const: acked
+        then:
+          properties:
+            acked_at:
+              $ref: '#/components/schemas/UTCDateTime'
+        else:
+          properties:
+            acked_at:
+              type: 'null'
+      - if:
+          properties:
+            state:
+              const: leased
+        then:
+          properties:
+            lease_until:
+              $ref: '#/components/schemas/UTCDateTime'
+        else:
+          properties:
+            lease_until:
+              type: 'null'
+      - if:
+          properties:
+            state:
+              const: retry_wait
+        then:
+          properties:
+            next_attempt_at:
+              $ref: '#/components/schemas/UTCDateTime'
+        else:
+          properties:
+            next_attempt_at:
+              type: 'null'
+    DeliveryMetadataPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeliveryMetadata'
+        next_cursor:
+          oneOf:
+          - $ref: '#/components/schemas/OpaqueCursor'
+          - type: 'null'
+        has_more:
+          type: boolean
+      required:
+      - items
+      - next_cursor
+      - has_more
+      additionalProperties: false
+      description: 有界管理分页，cursor绑定筛选条件和位置；不能复用于消息历史或同步。末页next_cursor=null且has_more=false。
+    RetryDeliveryRequest:
+      type: object
+      properties: {}
+      required: []
+      additionalProperties: false
+      description: 空JSON对象；不接收新载荷、不执行或重跑业务。
+    RetryDeliveryReceipt:
+      type: object
+      properties:
+        delivery:
+          allOf:
+          - $ref: '#/components/schemas/DeliveryMetadata'
+          - properties:
+              state:
+                const: pending
+              attempt:
+                const: 0
+              error_code:
+                type: 'null'
+      required:
+      - delivery
+      additionalProperties: false
+      description: failed→pending后的元数据快照；新retry_generation，attempt重置0；同键恢复原结果，即使随后状态已变化。
   responses:
     '400':
       description: 格式错误

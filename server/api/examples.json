@@ -3281,5 +3281,2093 @@
     "schema": "ContentRange",
     "valid": false,
     "value": "bytes 0-101/100"
+  },
+  {
+    "name": "领取默认参数",
+    "schema": "ClaimRequest",
+    "valid": true,
+    "value": {
+      "consumer_id": "worker-a"
+    }
+  },
+  {
+    "name": "领取明确参数",
+    "schema": "ClaimRequest",
+    "valid": true,
+    "value": {
+      "consumer_id": "worker-a",
+      "wait_seconds": 25,
+      "limit": 20
+    }
+  },
+  {
+    "name": "领取合法边界wait_seconds0",
+    "schema": "ClaimRequest",
+    "valid": true,
+    "value": {
+      "consumer_id": "worker-a",
+      "wait_seconds": 0,
+      "limit": 20
+    }
+  },
+  {
+    "name": "领取合法边界wait_seconds30",
+    "schema": "ClaimRequest",
+    "valid": true,
+    "value": {
+      "consumer_id": "worker-a",
+      "wait_seconds": 30,
+      "limit": 20
+    }
+  },
+  {
+    "name": "领取合法边界limit1",
+    "schema": "ClaimRequest",
+    "valid": true,
+    "value": {
+      "consumer_id": "worker-a",
+      "wait_seconds": 25,
+      "limit": 1
+    }
+  },
+  {
+    "name": "领取合法边界limit100",
+    "schema": "ClaimRequest",
+    "valid": true,
+    "value": {
+      "consumer_id": "worker-a",
+      "wait_seconds": 25,
+      "limit": 100
+    }
+  },
+  {
+    "name": "领取非法边界wait_seconds-1",
+    "schema": "ClaimRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "worker-a",
+      "wait_seconds": -1,
+      "limit": 20
+    }
+  },
+  {
+    "name": "领取非法边界wait_seconds31",
+    "schema": "ClaimRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "worker-a",
+      "wait_seconds": 31,
+      "limit": 20
+    }
+  },
+  {
+    "name": "领取非法边界wait_seconds1.5",
+    "schema": "ClaimRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "worker-a",
+      "wait_seconds": 1.5,
+      "limit": 20
+    }
+  },
+  {
+    "name": "领取非法边界wait_seconds25",
+    "schema": "ClaimRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "worker-a",
+      "wait_seconds": "25",
+      "limit": 20
+    }
+  },
+  {
+    "name": "领取非法边界limit0",
+    "schema": "ClaimRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "worker-a",
+      "wait_seconds": 25,
+      "limit": 0
+    }
+  },
+  {
+    "name": "领取非法边界limit101",
+    "schema": "ClaimRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "worker-a",
+      "wait_seconds": 25,
+      "limit": 101
+    }
+  },
+  {
+    "name": "领取非法边界limit1.5",
+    "schema": "ClaimRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "worker-a",
+      "wait_seconds": 25,
+      "limit": 1.5
+    }
+  },
+  {
+    "name": "领取非法边界limit20",
+    "schema": "ClaimRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "worker-a",
+      "wait_seconds": 25,
+      "limit": "20"
+    }
+  },
+  {
+    "name": "领取非法边界consumer_id",
+    "schema": "ClaimRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "",
+      "wait_seconds": 25,
+      "limit": 20
+    }
+  },
+  {
+    "name": "领取非法边界consumer_id42",
+    "schema": "ClaimRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": 42,
+      "wait_seconds": 25,
+      "limit": 20
+    }
+  },
+  {
+    "name": "领取不允许客户端伪造凭据代次",
+    "schema": "ClaimRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "worker-a",
+      "wait_seconds": 25,
+      "limit": 20,
+      "credential_generation": 1
+    }
+  },
+  {
+    "name": "领取缺consumer",
+    "schema": "ClaimRequest",
+    "valid": false,
+    "value": {}
+  },
+  {
+    "name": "空队列正常超时",
+    "schema": "ClaimResponse",
+    "valid": true,
+    "value": {
+      "deliveries": []
+    },
+    "operationId": "claimEvents",
+    "status": 200
+  },
+  {
+    "name": "普通消息领取不可变载荷",
+    "schema": "ClaimResponse",
+    "valid": true,
+    "value": {
+      "deliveries": [
+        {
+          "delivery_id": "12345678-1234-4234-8234-123456789abc",
+          "event_id": "12345678-1234-4234-8234-123456789abd",
+          "attempt": 1,
+          "retry_generation": "0",
+          "lease_token": "synthetic-lease-token-only-for-fixtures",
+          "lease_until": "2026-10-22T01:00:00Z",
+          "event": {
+            "type": "message.created",
+            "message": {
+              "id": "11111111-1111-4111-8111-111111111111",
+              "bot_id": "22222222-2222-4222-8222-222222222222",
+              "bot_seq": "9007199254740993",
+              "revision": 1,
+              "sender": "administrator",
+              "format": "plain",
+              "text": "合成文本",
+              "attachments": [],
+              "reply_to_message_id": null,
+              "buttons": [],
+              "created_at": "2026-10-22T00:00:00Z",
+              "updated_at": "2026-10-22T00:00:00Z"
+            }
+          }
+        }
+      ]
+    },
+    "operationId": "claimEvents",
+    "status": 200
+  },
+  {
+    "name": "回调领取独立快照",
+    "schema": "ClaimResponse",
+    "valid": true,
+    "value": {
+      "deliveries": [
+        {
+          "delivery_id": "12345678-1234-4234-8234-123456789abc",
+          "event_id": "12345678-1234-4234-8234-123456789abd",
+          "attempt": 1,
+          "retry_generation": "0",
+          "lease_token": "synthetic-lease-token-only-for-fixtures",
+          "lease_until": "2026-10-22T01:00:00Z",
+          "event": {
+            "type": "button.callback",
+            "message_id": "12345678-1234-4234-8234-123456789abc",
+            "message_revision": 1,
+            "button_id": "confirm",
+            "callback_data": "",
+            "administrator_id": "12345678-1234-4234-8234-123456789abc",
+            "device_id": "12345678-1234-4234-8234-123456789abd",
+            "created_at": "2026-10-22T01:00:00Z"
+          }
+        }
+      ]
+    },
+    "operationId": "claimEvents",
+    "status": 200
+  },
+  {
+    "name": "领取代次超JS精度",
+    "schema": "ClaimedDelivery",
+    "valid": true,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "attempt": 1,
+      "retry_generation": "9007199254740993",
+      "lease_token": "synthetic-lease-token-only-for-fixtures",
+      "lease_until": "2026-10-22T01:00:00Z",
+      "event": {
+        "type": "message.created",
+        "message": {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "bot_id": "22222222-2222-4222-8222-222222222222",
+          "bot_seq": "9007199254740993",
+          "revision": 1,
+          "sender": "administrator",
+          "format": "plain",
+          "text": "合成文本",
+          "attachments": [],
+          "reply_to_message_id": null,
+          "buttons": [],
+          "created_at": "2026-10-22T00:00:00Z",
+          "updated_at": "2026-10-22T00:00:00Z"
+        }
+      }
+    }
+  },
+  {
+    "name": "领取代次SQLite上限",
+    "schema": "ClaimedDelivery",
+    "valid": true,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "attempt": 1,
+      "retry_generation": "9223372036854775807",
+      "lease_token": "synthetic-lease-token-only-for-fixtures",
+      "lease_until": "2026-10-22T01:00:00Z",
+      "event": {
+        "type": "message.created",
+        "message": {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "bot_id": "22222222-2222-4222-8222-222222222222",
+          "bot_seq": "9007199254740993",
+          "revision": 1,
+          "sender": "administrator",
+          "format": "plain",
+          "text": "合成文本",
+          "attachments": [],
+          "reply_to_message_id": null,
+          "buttons": [],
+          "created_at": "2026-10-22T00:00:00Z",
+          "updated_at": "2026-10-22T00:00:00Z"
+        }
+      }
+    }
+  },
+  {
+    "name": "领取记录非法attempt0",
+    "schema": "ClaimedDelivery",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "attempt": 0,
+      "retry_generation": "0",
+      "lease_token": "synthetic-lease-token-only-for-fixtures",
+      "lease_until": "2026-10-22T01:00:00Z",
+      "event": {
+        "type": "message.created",
+        "message": {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "bot_id": "22222222-2222-4222-8222-222222222222",
+          "bot_seq": "9007199254740993",
+          "revision": 1,
+          "sender": "administrator",
+          "format": "plain",
+          "text": "合成文本",
+          "attachments": [],
+          "reply_to_message_id": null,
+          "buttons": [],
+          "created_at": "2026-10-22T00:00:00Z",
+          "updated_at": "2026-10-22T00:00:00Z"
+        }
+      }
+    }
+  },
+  {
+    "name": "领取记录非法lease_token''",
+    "schema": "ClaimedDelivery",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "attempt": 1,
+      "retry_generation": "0",
+      "lease_token": "",
+      "lease_until": "2026-10-22T01:00:00Z",
+      "event": {
+        "type": "message.created",
+        "message": {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "bot_id": "22222222-2222-4222-8222-222222222222",
+          "bot_seq": "9007199254740993",
+          "revision": 1,
+          "sender": "administrator",
+          "format": "plain",
+          "text": "合成文本",
+          "attachments": [],
+          "reply_to_message_id": null,
+          "buttons": [],
+          "created_at": "2026-10-22T00:00:00Z",
+          "updated_at": "2026-10-22T00:00:00Z"
+        }
+      }
+    }
+  },
+  {
+    "name": "领取记录非法retry_generation0",
+    "schema": "ClaimedDelivery",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "attempt": 1,
+      "retry_generation": 0,
+      "lease_token": "synthetic-lease-token-only-for-fixtures",
+      "lease_until": "2026-10-22T01:00:00Z",
+      "event": {
+        "type": "message.created",
+        "message": {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "bot_id": "22222222-2222-4222-8222-222222222222",
+          "bot_seq": "9007199254740993",
+          "revision": 1,
+          "sender": "administrator",
+          "format": "plain",
+          "text": "合成文本",
+          "attachments": [],
+          "reply_to_message_id": null,
+          "buttons": [],
+          "created_at": "2026-10-22T00:00:00Z",
+          "updated_at": "2026-10-22T00:00:00Z"
+        }
+      }
+    }
+  },
+  {
+    "name": "领取记录非法retry_generation'01'",
+    "schema": "ClaimedDelivery",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "attempt": 1,
+      "retry_generation": "01",
+      "lease_token": "synthetic-lease-token-only-for-fixtures",
+      "lease_until": "2026-10-22T01:00:00Z",
+      "event": {
+        "type": "message.created",
+        "message": {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "bot_id": "22222222-2222-4222-8222-222222222222",
+          "bot_seq": "9007199254740993",
+          "revision": 1,
+          "sender": "administrator",
+          "format": "plain",
+          "text": "合成文本",
+          "attachments": [],
+          "reply_to_message_id": null,
+          "buttons": [],
+          "created_at": "2026-10-22T00:00:00Z",
+          "updated_at": "2026-10-22T00:00:00Z"
+        }
+      }
+    }
+  },
+  {
+    "name": "领取记录非法retry_generation'9223372036854775808'",
+    "schema": "ClaimedDelivery",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "attempt": 1,
+      "retry_generation": "9223372036854775808",
+      "lease_token": "synthetic-lease-token-only-for-fixtures",
+      "lease_until": "2026-10-22T01:00:00Z",
+      "event": {
+        "type": "message.created",
+        "message": {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "bot_id": "22222222-2222-4222-8222-222222222222",
+          "bot_seq": "9007199254740993",
+          "revision": 1,
+          "sender": "administrator",
+          "format": "plain",
+          "text": "合成文本",
+          "attachments": [],
+          "reply_to_message_id": null,
+          "buttons": [],
+          "created_at": "2026-10-22T00:00:00Z",
+          "updated_at": "2026-10-22T00:00:00Z"
+        }
+      }
+    }
+  },
+  {
+    "name": "领取应用发送消息不属于入站事件",
+    "schema": "ClaimedDelivery",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "attempt": 1,
+      "retry_generation": "0",
+      "lease_token": "synthetic-lease-token-only-for-fixtures",
+      "lease_until": "2026-10-22T01:00:00Z",
+      "event": {
+        "type": "message.created",
+        "message": {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "bot_id": "22222222-2222-4222-8222-222222222222",
+          "bot_seq": "9007199254740993",
+          "revision": 1,
+          "sender": "application",
+          "format": "plain",
+          "text": "合成文本",
+          "attachments": [],
+          "reply_to_message_id": null,
+          "buttons": [],
+          "created_at": "2026-10-22T00:00:00Z",
+          "updated_at": "2026-10-22T00:00:00Z"
+        }
+      }
+    }
+  },
+  {
+    "name": "回调缺来源设备",
+    "schema": "DeliveryEvent",
+    "valid": false,
+    "value": {
+      "type": "button.callback",
+      "message_id": "12345678-1234-4234-8234-123456789abc",
+      "message_revision": 1,
+      "button_id": "confirm",
+      "callback_data": "",
+      "administrator_id": "12345678-1234-4234-8234-123456789abc",
+      "created_at": "2026-10-22T01:00:00Z"
+    }
+  },
+  {
+    "name": "回调拒绝业务执行结果",
+    "schema": "DeliveryEvent",
+    "valid": false,
+    "value": {
+      "type": "button.callback",
+      "message_id": "12345678-1234-4234-8234-123456789abc",
+      "message_revision": 1,
+      "button_id": "confirm",
+      "callback_data": "",
+      "administrator_id": "12345678-1234-4234-8234-123456789abc",
+      "device_id": "12345678-1234-4234-8234-123456789abd",
+      "created_at": "2026-10-22T01:00:00Z",
+      "business_success": true
+    }
+  },
+  {
+    "name": "ACK合法当前租约",
+    "schema": "LeaseRequest",
+    "valid": true,
+    "value": {
+      "consumer_id": "worker-a",
+      "lease_token": "synthetic-lease-token-only-for-fixtures"
+    }
+  },
+  {
+    "name": "ACK缺少consumer_id",
+    "schema": "LeaseRequest",
+    "valid": false,
+    "value": {
+      "lease_token": "synthetic-lease-token-only-for-fixtures"
+    }
+  },
+  {
+    "name": "ACK缺少lease_token",
+    "schema": "LeaseRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "worker-a"
+    }
+  },
+  {
+    "name": "ACK拒绝客户端字段event_id",
+    "schema": "LeaseRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "worker-a",
+      "lease_token": "synthetic-lease-token-only-for-fixtures",
+      "event_id": "12345678-1234-4234-8234-123456789abc"
+    }
+  },
+  {
+    "name": "ACK拒绝客户端字段retry_generation",
+    "schema": "LeaseRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "worker-a",
+      "lease_token": "synthetic-lease-token-only-for-fixtures",
+      "retry_generation": "12345678-1234-4234-8234-123456789abc"
+    }
+  },
+  {
+    "name": "ACK拒绝客户端字段business_success",
+    "schema": "LeaseRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "worker-a",
+      "lease_token": "synthetic-lease-token-only-for-fixtures",
+      "business_success": "12345678-1234-4234-8234-123456789abc"
+    }
+  },
+  {
+    "name": "ACK与同成功租约重放响应",
+    "schema": "AckReceipt",
+    "valid": true,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "state": "acked",
+      "acked_at": "2026-10-22T01:00:00Z"
+    },
+    "operationId": "ackDelivery",
+    "status": 200
+  },
+  {
+    "name": "ACK不能声称业务成功",
+    "schema": "AckReceipt",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "state": "acked",
+      "acked_at": "2026-10-22T01:00:00Z",
+      "business_success": true
+    },
+    "operationId": "ackDelivery",
+    "status": 200
+  },
+  {
+    "name": "续约合法边界1",
+    "schema": "RenewRequest",
+    "valid": true,
+    "value": {
+      "consumer_id": "worker-a",
+      "lease_token": "synthetic-lease-token-only-for-fixtures",
+      "extend_seconds": 1
+    }
+  },
+  {
+    "name": "续约合法边界120",
+    "schema": "RenewRequest",
+    "valid": true,
+    "value": {
+      "consumer_id": "worker-a",
+      "lease_token": "synthetic-lease-token-only-for-fixtures",
+      "extend_seconds": 120
+    }
+  },
+  {
+    "name": "续约非法边界0",
+    "schema": "RenewRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "worker-a",
+      "lease_token": "synthetic-lease-token-only-for-fixtures",
+      "extend_seconds": 0
+    }
+  },
+  {
+    "name": "续约非法边界121",
+    "schema": "RenewRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "worker-a",
+      "lease_token": "synthetic-lease-token-only-for-fixtures",
+      "extend_seconds": 121
+    }
+  },
+  {
+    "name": "续约非法边界-1",
+    "schema": "RenewRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "worker-a",
+      "lease_token": "synthetic-lease-token-only-for-fixtures",
+      "extend_seconds": -1
+    }
+  },
+  {
+    "name": "续约非法边界120",
+    "schema": "RenewRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "worker-a",
+      "lease_token": "synthetic-lease-token-only-for-fixtures",
+      "extend_seconds": "120"
+    }
+  },
+  {
+    "name": "续约非法边界1.5",
+    "schema": "RenewRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "worker-a",
+      "lease_token": "synthetic-lease-token-only-for-fixtures",
+      "extend_seconds": 1.5
+    }
+  },
+  {
+    "name": "续约不允许指定到期时间",
+    "schema": "RenewRequest",
+    "valid": false,
+    "value": {
+      "consumer_id": "worker-a",
+      "lease_token": "synthetic-lease-token-only-for-fixtures",
+      "extend_seconds": 1,
+      "lease_until": "2026-10-22T01:00:00Z"
+    }
+  },
+  {
+    "name": "续约回执",
+    "schema": "RenewReceipt",
+    "valid": true,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "lease_until": "2026-10-22T01:00:00Z"
+    },
+    "operationId": "renewDelivery",
+    "status": 200
+  },
+  {
+    "name": "投递元数据状态pending",
+    "schema": "DeliveryMetadata",
+    "valid": true,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "pending",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": null
+    }
+  },
+  {
+    "name": "投递元数据状态leased",
+    "schema": "DeliveryMetadata",
+    "valid": true,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "leased",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": "2026-10-22T01:00:00Z",
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": null
+    }
+  },
+  {
+    "name": "投递时间不能缺失leased",
+    "schema": "DeliveryMetadata",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "leased",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": null
+    }
+  },
+  {
+    "name": "投递元数据状态retry_wait",
+    "schema": "DeliveryMetadata",
+    "valid": true,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "retry_wait",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": "2026-10-22T01:00:00Z",
+      "acked_at": null,
+      "error_code": "LEASE_EXPIRED"
+    }
+  },
+  {
+    "name": "投递时间不能缺失retry_wait",
+    "schema": "DeliveryMetadata",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "retry_wait",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": "LEASE_EXPIRED"
+    }
+  },
+  {
+    "name": "投递元数据状态acked",
+    "schema": "DeliveryMetadata",
+    "valid": true,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "acked",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": "2026-10-22T01:00:00Z",
+      "error_code": null
+    }
+  },
+  {
+    "name": "投递时间不能缺失acked",
+    "schema": "DeliveryMetadata",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "acked",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": null
+    }
+  },
+  {
+    "name": "投递元数据状态failed",
+    "schema": "DeliveryMetadata",
+    "valid": true,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "failed",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": "LEASE_EXPIRED"
+    }
+  },
+  {
+    "name": "管理投影禁止text",
+    "schema": "DeliveryMetadata",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "failed",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": "LEASE_EXPIRED",
+      "text": "secret-body"
+    }
+  },
+  {
+    "name": "管理投影禁止callback_data",
+    "schema": "DeliveryMetadata",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "failed",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": "LEASE_EXPIRED",
+      "callback_data": "opaque"
+    }
+  },
+  {
+    "name": "管理投影禁止attachment_url",
+    "schema": "DeliveryMetadata",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "failed",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": "LEASE_EXPIRED",
+      "attachment_url": "https://example.org/file"
+    }
+  },
+  {
+    "name": "管理投影禁止attachments",
+    "schema": "DeliveryMetadata",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "failed",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": "LEASE_EXPIRED",
+      "attachments": []
+    }
+  },
+  {
+    "name": "管理投影禁止raw_error",
+    "schema": "DeliveryMetadata",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "failed",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": "LEASE_EXPIRED",
+      "raw_error": "internal path"
+    }
+  },
+  {
+    "name": "管理投影禁止error_message",
+    "schema": "DeliveryMetadata",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "failed",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": "LEASE_EXPIRED",
+      "error_message": "remote response"
+    }
+  },
+  {
+    "name": "管理投影禁止lease_token",
+    "schema": "DeliveryMetadata",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "failed",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": "LEASE_EXPIRED",
+      "lease_token": "secret"
+    }
+  },
+  {
+    "name": "管理投影禁止consumer_id",
+    "schema": "DeliveryMetadata",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "failed",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": "LEASE_EXPIRED",
+      "consumer_id": "worker"
+    }
+  },
+  {
+    "name": "管理投影禁止event",
+    "schema": "DeliveryMetadata",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "failed",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": "LEASE_EXPIRED",
+      "event": {
+        "type": "button.callback",
+        "message_id": "12345678-1234-4234-8234-123456789abc",
+        "message_revision": 1,
+        "button_id": "confirm",
+        "callback_data": "",
+        "administrator_id": "12345678-1234-4234-8234-123456789abc",
+        "device_id": "12345678-1234-4234-8234-123456789abd",
+        "created_at": "2026-10-22T01:00:00Z"
+      }
+    }
+  },
+  {
+    "name": "错误码不可混入原始异常",
+    "schema": "DeliveryMetadata",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "failed",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": "remote failed /private/path"
+    }
+  },
+  {
+    "name": "元数据非法attempt",
+    "schema": "DeliveryMetadata",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "failed",
+      "state_version": 1,
+      "attempt": -1,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": "LEASE_EXPIRED"
+    }
+  },
+  {
+    "name": "元数据非法state_version",
+    "schema": "DeliveryMetadata",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "failed",
+      "state_version": 0,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": "LEASE_EXPIRED"
+    }
+  },
+  {
+    "name": "元数据非法retry_generation",
+    "schema": "DeliveryMetadata",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "failed",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "9223372036854775808",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": "LEASE_EXPIRED"
+    }
+  },
+  {
+    "name": "元数据非法state",
+    "schema": "DeliveryMetadata",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "executed",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": null,
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": "LEASE_EXPIRED"
+    }
+  },
+  {
+    "name": "元数据非法lease_until",
+    "schema": "DeliveryMetadata",
+    "valid": false,
+    "value": {
+      "delivery_id": "12345678-1234-4234-8234-123456789abc",
+      "event_id": "12345678-1234-4234-8234-123456789abd",
+      "bot_id": "12345678-1234-4234-8234-123456789abc",
+      "state": "failed",
+      "state_version": 1,
+      "attempt": 8,
+      "retry_generation": "0",
+      "created_at": "2026-10-22T01:00:00Z",
+      "updated_at": "2026-10-22T01:00:00Z",
+      "lease_until": "2026-10-22T01:00:00Z",
+      "next_attempt_at": null,
+      "acked_at": null,
+      "error_code": "LEASE_EXPIRED"
+    }
+  },
+  {
+    "name": "失败队列列表",
+    "schema": "DeliveryMetadataPage",
+    "valid": true,
+    "value": {
+      "items": [
+        {
+          "delivery_id": "12345678-1234-4234-8234-123456789abc",
+          "event_id": "12345678-1234-4234-8234-123456789abd",
+          "bot_id": "12345678-1234-4234-8234-123456789abc",
+          "state": "failed",
+          "state_version": 1,
+          "attempt": 8,
+          "retry_generation": "0",
+          "created_at": "2026-10-22T01:00:00Z",
+          "updated_at": "2026-10-22T01:00:00Z",
+          "lease_until": null,
+          "next_attempt_at": null,
+          "acked_at": null,
+          "error_code": "LEASE_EXPIRED"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "operationId": "listDeliveries",
+    "status": 200
+  },
+  {
+    "name": "失败列表不能返回正文",
+    "schema": "DeliveryMetadataPage",
+    "valid": false,
+    "value": {
+      "items": [
+        {
+          "delivery_id": "12345678-1234-4234-8234-123456789abc",
+          "event_id": "12345678-1234-4234-8234-123456789abd",
+          "bot_id": "12345678-1234-4234-8234-123456789abc",
+          "state": "failed",
+          "state_version": 1,
+          "attempt": 8,
+          "retry_generation": "0",
+          "created_at": "2026-10-22T01:00:00Z",
+          "updated_at": "2026-10-22T01:00:00Z",
+          "lease_until": null,
+          "next_attempt_at": null,
+          "acked_at": null,
+          "error_code": "LEASE_EXPIRED",
+          "text": "secret"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "operationId": "listDeliveries",
+    "status": 200
+  },
+  {
+    "name": "手动重试空请求",
+    "schema": "RetryDeliveryRequest",
+    "valid": true,
+    "value": {}
+  },
+  {
+    "name": "手动重试不能注入新载荷",
+    "schema": "RetryDeliveryRequest",
+    "valid": false,
+    "value": {
+      "text": "run-again"
+    }
+  },
+  {
+    "name": "手动重试成功及同键原结果",
+    "schema": "RetryDeliveryReceipt",
+    "valid": true,
+    "value": {
+      "delivery": {
+        "delivery_id": "12345678-1234-4234-8234-123456789abc",
+        "event_id": "12345678-1234-4234-8234-123456789abd",
+        "bot_id": "12345678-1234-4234-8234-123456789abc",
+        "state": "pending",
+        "state_version": 2,
+        "attempt": 0,
+        "retry_generation": "1",
+        "created_at": "2026-10-22T01:00:00Z",
+        "updated_at": "2026-10-22T01:00:00Z",
+        "lease_until": null,
+        "next_attempt_at": null,
+        "acked_at": null,
+        "error_code": null
+      }
+    },
+    "operationId": "retryDelivery",
+    "status": 200
+  },
+  {
+    "name": "重试回执非法state",
+    "schema": "RetryDeliveryReceipt",
+    "valid": false,
+    "value": {
+      "delivery": {
+        "delivery_id": "12345678-1234-4234-8234-123456789abc",
+        "event_id": "12345678-1234-4234-8234-123456789abd",
+        "bot_id": "12345678-1234-4234-8234-123456789abc",
+        "state": "failed",
+        "state_version": 2,
+        "attempt": 0,
+        "retry_generation": "1",
+        "created_at": "2026-10-22T01:00:00Z",
+        "updated_at": "2026-10-22T01:00:00Z",
+        "lease_until": null,
+        "next_attempt_at": null,
+        "acked_at": null,
+        "error_code": null
+      }
+    },
+    "operationId": "retryDelivery",
+    "status": 200
+  },
+  {
+    "name": "重试回执非法attempt",
+    "schema": "RetryDeliveryReceipt",
+    "valid": false,
+    "value": {
+      "delivery": {
+        "delivery_id": "12345678-1234-4234-8234-123456789abc",
+        "event_id": "12345678-1234-4234-8234-123456789abd",
+        "bot_id": "12345678-1234-4234-8234-123456789abc",
+        "state": "pending",
+        "state_version": 2,
+        "attempt": 8,
+        "retry_generation": "1",
+        "created_at": "2026-10-22T01:00:00Z",
+        "updated_at": "2026-10-22T01:00:00Z",
+        "lease_until": null,
+        "next_attempt_at": null,
+        "acked_at": null,
+        "error_code": null
+      }
+    },
+    "operationId": "retryDelivery",
+    "status": 200
+  },
+  {
+    "name": "重试回执非法error_code",
+    "schema": "RetryDeliveryReceipt",
+    "valid": false,
+    "value": {
+      "delivery": {
+        "delivery_id": "12345678-1234-4234-8234-123456789abc",
+        "event_id": "12345678-1234-4234-8234-123456789abd",
+        "bot_id": "12345678-1234-4234-8234-123456789abc",
+        "state": "pending",
+        "state_version": 2,
+        "attempt": 0,
+        "retry_generation": "1",
+        "created_at": "2026-10-22T01:00:00Z",
+        "updated_at": "2026-10-22T01:00:00Z",
+        "lease_until": null,
+        "next_attempt_at": null,
+        "acked_at": null,
+        "error_code": "LEASE_EXPIRED"
+      }
+    },
+    "operationId": "retryDelivery",
+    "status": 200
+  },
+  {
+    "name": "投递错误claimEventsAUTHENTICATION_REQUIRED",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "AUTHENTICATION_REQUIRED",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false
+      }
+    },
+    "operationId": "claimEvents",
+    "status": 401
+  },
+  {
+    "name": "投递错误禁止异常泄漏claimEventsAUTHENTICATION_REQUIRED",
+    "schema": "Error",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "AUTHENTICATION_REQUIRED",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false,
+        "raw_exception": "sensitive"
+      }
+    },
+    "operationId": "claimEvents",
+    "status": 401
+  },
+  {
+    "name": "投递错误claimEventsBOT_CAPABILITY_REQUIRED",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "BOT_CAPABILITY_REQUIRED",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false
+      }
+    },
+    "operationId": "claimEvents",
+    "status": 403
+  },
+  {
+    "name": "投递错误禁止异常泄漏claimEventsBOT_CAPABILITY_REQUIRED",
+    "schema": "Error",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "BOT_CAPABILITY_REQUIRED",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false,
+        "raw_exception": "sensitive"
+      }
+    },
+    "operationId": "claimEvents",
+    "status": 403
+  },
+  {
+    "name": "投递错误claimEventsBOT_DISABLED",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "BOT_DISABLED",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false
+      }
+    },
+    "operationId": "claimEvents",
+    "status": 409
+  },
+  {
+    "name": "投递错误禁止异常泄漏claimEventsBOT_DISABLED",
+    "schema": "Error",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "BOT_DISABLED",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false,
+        "raw_exception": "sensitive"
+      }
+    },
+    "operationId": "claimEvents",
+    "status": 409
+  },
+  {
+    "name": "投递错误claimEventsSTORAGE_UNAVAILABLE",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "STORAGE_UNAVAILABLE",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": true
+      }
+    },
+    "operationId": "claimEvents",
+    "status": 503
+  },
+  {
+    "name": "投递错误禁止异常泄漏claimEventsSTORAGE_UNAVAILABLE",
+    "schema": "Error",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "STORAGE_UNAVAILABLE",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": true,
+        "raw_exception": "sensitive"
+      }
+    },
+    "operationId": "claimEvents",
+    "status": 503
+  },
+  {
+    "name": "投递错误ackDeliveryLEASE_CONFLICT",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "LEASE_CONFLICT",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false
+      }
+    },
+    "operationId": "ackDelivery",
+    "status": 409
+  },
+  {
+    "name": "投递错误禁止异常泄漏ackDeliveryLEASE_CONFLICT",
+    "schema": "Error",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "LEASE_CONFLICT",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false,
+        "raw_exception": "sensitive"
+      }
+    },
+    "operationId": "ackDelivery",
+    "status": 409
+  },
+  {
+    "name": "投递错误ackDeliveryBOT_DISABLED",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "BOT_DISABLED",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false
+      }
+    },
+    "operationId": "ackDelivery",
+    "status": 409
+  },
+  {
+    "name": "投递错误禁止异常泄漏ackDeliveryBOT_DISABLED",
+    "schema": "Error",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "BOT_DISABLED",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false,
+        "raw_exception": "sensitive"
+      }
+    },
+    "operationId": "ackDelivery",
+    "status": 409
+  },
+  {
+    "name": "投递错误ackDeliveryRESOURCE_NOT_FOUND",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "RESOURCE_NOT_FOUND",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false
+      }
+    },
+    "operationId": "ackDelivery",
+    "status": 404
+  },
+  {
+    "name": "投递错误禁止异常泄漏ackDeliveryRESOURCE_NOT_FOUND",
+    "schema": "Error",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "RESOURCE_NOT_FOUND",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false,
+        "raw_exception": "sensitive"
+      }
+    },
+    "operationId": "ackDelivery",
+    "status": 404
+  },
+  {
+    "name": "投递错误renewDeliveryLEASE_CONFLICT",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "LEASE_CONFLICT",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false
+      }
+    },
+    "operationId": "renewDelivery",
+    "status": 409
+  },
+  {
+    "name": "投递错误禁止异常泄漏renewDeliveryLEASE_CONFLICT",
+    "schema": "Error",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "LEASE_CONFLICT",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false,
+        "raw_exception": "sensitive"
+      }
+    },
+    "operationId": "renewDelivery",
+    "status": 409
+  },
+  {
+    "name": "投递错误renewDeliveryLEASE_LIMIT_EXCEEDED",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "LEASE_LIMIT_EXCEEDED",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false
+      }
+    },
+    "operationId": "renewDelivery",
+    "status": 409
+  },
+  {
+    "name": "投递错误禁止异常泄漏renewDeliveryLEASE_LIMIT_EXCEEDED",
+    "schema": "Error",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "LEASE_LIMIT_EXCEEDED",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false,
+        "raw_exception": "sensitive"
+      }
+    },
+    "operationId": "renewDelivery",
+    "status": 409
+  },
+  {
+    "name": "投递错误retryDeliveryDELIVERY_NOT_FAILED",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "DELIVERY_NOT_FAILED",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false
+      }
+    },
+    "operationId": "retryDelivery",
+    "status": 409
+  },
+  {
+    "name": "投递错误禁止异常泄漏retryDeliveryDELIVERY_NOT_FAILED",
+    "schema": "Error",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "DELIVERY_NOT_FAILED",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false,
+        "raw_exception": "sensitive"
+      }
+    },
+    "operationId": "retryDelivery",
+    "status": 409
+  },
+  {
+    "name": "投递错误retryDeliveryIDEMPOTENCY_CONFLICT",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "IDEMPOTENCY_CONFLICT",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false
+      }
+    },
+    "operationId": "retryDelivery",
+    "status": 409
+  },
+  {
+    "name": "投递错误禁止异常泄漏retryDeliveryIDEMPOTENCY_CONFLICT",
+    "schema": "Error",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "IDEMPOTENCY_CONFLICT",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false,
+        "raw_exception": "sensitive"
+      }
+    },
+    "operationId": "retryDelivery",
+    "status": 409
+  },
+  {
+    "name": "投递错误retryDeliveryRESOURCE_EXPIRED",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "RESOURCE_EXPIRED",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false
+      }
+    },
+    "operationId": "retryDelivery",
+    "status": 410
+  },
+  {
+    "name": "投递错误禁止异常泄漏retryDeliveryRESOURCE_EXPIRED",
+    "schema": "Error",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "RESOURCE_EXPIRED",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false,
+        "raw_exception": "sensitive"
+      }
+    },
+    "operationId": "retryDelivery",
+    "status": 410
+  },
+  {
+    "name": "投递错误listDeliveriesPERMISSION_DENIED",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "PERMISSION_DENIED",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false
+      }
+    },
+    "operationId": "listDeliveries",
+    "status": 403
+  },
+  {
+    "name": "投递错误禁止异常泄漏listDeliveriesPERMISSION_DENIED",
+    "schema": "Error",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "PERMISSION_DENIED",
+        "message": "合成脱敏错误",
+        "request_id": "contract-fixture",
+        "retryable": false,
+        "raw_exception": "sensitive"
+      }
+    },
+    "operationId": "listDeliveries",
+    "status": 403
+  },
+  {
+    "name": "投递权限声明claimEvents['AdminBearer']",
+    "schema": "RetryDeliveryRequest",
+    "valid": false,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "claimEvents",
+      "security": {
+        "AdminBearer": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明claimEvents['BotAPIToken']",
+    "schema": "RetryDeliveryRequest",
+    "valid": true,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "claimEvents",
+      "security": {
+        "BotAPIToken": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明claimEvents['WebhookKey']",
+    "schema": "RetryDeliveryRequest",
+    "valid": false,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "claimEvents",
+      "security": {
+        "WebhookKey": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明claimEvents['WebCookie']",
+    "schema": "RetryDeliveryRequest",
+    "valid": false,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "claimEvents",
+      "security": {
+        "WebCookie": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明claimEvents['WebCookie', 'CSRF']",
+    "schema": "RetryDeliveryRequest",
+    "valid": false,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "claimEvents",
+      "security": {
+        "WebCookie": [],
+        "CSRF": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明ackDelivery['AdminBearer']",
+    "schema": "RetryDeliveryRequest",
+    "valid": false,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "ackDelivery",
+      "security": {
+        "AdminBearer": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明ackDelivery['BotAPIToken']",
+    "schema": "RetryDeliveryRequest",
+    "valid": true,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "ackDelivery",
+      "security": {
+        "BotAPIToken": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明ackDelivery['WebhookKey']",
+    "schema": "RetryDeliveryRequest",
+    "valid": false,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "ackDelivery",
+      "security": {
+        "WebhookKey": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明ackDelivery['WebCookie']",
+    "schema": "RetryDeliveryRequest",
+    "valid": false,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "ackDelivery",
+      "security": {
+        "WebCookie": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明ackDelivery['WebCookie', 'CSRF']",
+    "schema": "RetryDeliveryRequest",
+    "valid": false,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "ackDelivery",
+      "security": {
+        "WebCookie": [],
+        "CSRF": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明renewDelivery['AdminBearer']",
+    "schema": "RetryDeliveryRequest",
+    "valid": false,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "renewDelivery",
+      "security": {
+        "AdminBearer": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明renewDelivery['BotAPIToken']",
+    "schema": "RetryDeliveryRequest",
+    "valid": true,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "renewDelivery",
+      "security": {
+        "BotAPIToken": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明renewDelivery['WebhookKey']",
+    "schema": "RetryDeliveryRequest",
+    "valid": false,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "renewDelivery",
+      "security": {
+        "WebhookKey": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明renewDelivery['WebCookie']",
+    "schema": "RetryDeliveryRequest",
+    "valid": false,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "renewDelivery",
+      "security": {
+        "WebCookie": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明renewDelivery['WebCookie', 'CSRF']",
+    "schema": "RetryDeliveryRequest",
+    "valid": false,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "renewDelivery",
+      "security": {
+        "WebCookie": [],
+        "CSRF": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明listDeliveries['AdminBearer']",
+    "schema": "RetryDeliveryRequest",
+    "valid": true,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "listDeliveries",
+      "security": {
+        "AdminBearer": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明listDeliveries['BotAPIToken']",
+    "schema": "RetryDeliveryRequest",
+    "valid": false,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "listDeliveries",
+      "security": {
+        "BotAPIToken": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明listDeliveries['WebhookKey']",
+    "schema": "RetryDeliveryRequest",
+    "valid": false,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "listDeliveries",
+      "security": {
+        "WebhookKey": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明listDeliveries['WebCookie']",
+    "schema": "RetryDeliveryRequest",
+    "valid": true,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "listDeliveries",
+      "security": {
+        "WebCookie": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明listDeliveries['WebCookie', 'CSRF']",
+    "schema": "RetryDeliveryRequest",
+    "valid": false,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "listDeliveries",
+      "security": {
+        "WebCookie": [],
+        "CSRF": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明retryDelivery['AdminBearer']",
+    "schema": "RetryDeliveryRequest",
+    "valid": true,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "retryDelivery",
+      "security": {
+        "AdminBearer": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明retryDelivery['BotAPIToken']",
+    "schema": "RetryDeliveryRequest",
+    "valid": false,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "retryDelivery",
+      "security": {
+        "BotAPIToken": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明retryDelivery['WebhookKey']",
+    "schema": "RetryDeliveryRequest",
+    "valid": false,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "retryDelivery",
+      "security": {
+        "WebhookKey": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明retryDelivery['WebCookie']",
+    "schema": "RetryDeliveryRequest",
+    "valid": false,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "retryDelivery",
+      "security": {
+        "WebCookie": []
+      }
+    }
+  },
+  {
+    "name": "投递权限声明retryDelivery['WebCookie', 'CSRF']",
+    "schema": "RetryDeliveryRequest",
+    "valid": true,
+    "value": {},
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "retryDelivery",
+      "security": {
+        "WebCookie": [],
+        "CSRF": []
+      }
+    }
+  },
+  {
+    "name": "ACK不能返回手动重试状态错误码",
+    "schema": "Error",
+    "schema_valid": true,
+    "valid": false,
+    "operationId": "ackDelivery",
+    "status": 409,
+    "value": {
+      "error": {
+        "code": "DELIVERY_NOT_FAILED",
+        "message": "合成错误",
+        "request_id": "contract-fixture",
+        "retryable": false
+      }
+    }
   }
 ]

@@ -116,12 +116,21 @@ def main():
             intervals = range_intervals(case['value'], case['range_size'])
             if intervals != case['intervals'] or (206 if intervals else 416) != case['status']:
                 failures.append(case['name'] + ' 区间/状态')
+        if 'declaration' in case:
+            declaration = case['declaration']
+            allowed = declaration['security'] in operation_map[declaration['operationId']]['security']
+            if allowed != case['valid']:
+                failures.append(case['name'] + ' 权限声明')
         if 'operationId' in case:
             response = resolve(document, operation_map[case['operationId']]['responses'][str(case['status'])])
             response_schema = (response['headers'][case['header']]['schema'] if 'header' in case
                                else response['content']['application/json']['schema'])
             wrapped = {**response_schema, 'components': {'schemas': schemas}}
-            if ContractValidator(wrapped, format_checker=FormatChecker()).is_valid(case['value']) != case['valid']:
+            response_valid = ContractValidator(wrapped, format_checker=FormatChecker()).is_valid(case['value'])
+            code_rules = operation_map[case['operationId']].get('x-error-codes', {}).get(str(case['status']))
+            if code_rules and 'error' in case['value']:
+                response_valid = response_valid and case['value']['error'].get('code') in code_rules
+            if response_valid != case['valid']:
                 failures.append(case['name'] + ' 操作响应')
     if failures:
         raise SystemExit('示例校验与预期不符：' + '、'.join(failures))
@@ -134,9 +143,12 @@ def main():
         'uploadAttachment': ['AdminBearer', 'BotAPIToken'],
         'downloadAttachment': ['AdminBearer', 'BotAPIToken'],
     }
+    delivery_ids = {'claimEvents', 'ackDelivery', 'renewDelivery', 'listDeliveries', 'retryDelivery'}
+    new_security.update({'claimEvents': ['BotAPIToken'], 'ackDelivery': ['BotAPIToken'],
+                         'renewDelivery': ['BotAPIToken'], 'listDeliveries': ['AdminBearer', 'WebCookie']})
     idempotent = {'createBotMessage', 'editBotMessage', 'createWebhookMessage',
-                  'createClientMessage', 'createCallback', 'uploadAttachment'}
-    reference_ops = set(new_security) - {'listClientMessages', 'getClientMessage'}
+                  'createClientMessage', 'createCallback', 'uploadAttachment', 'retryDelivery'}
+    reference_ops = set(new_security) - {'listClientMessages', 'getClientMessage'} - delivery_ids
     for path, item in document['paths'].items():
         for method, operation in item.items():
             if method == 'parameters':
@@ -173,7 +185,7 @@ def main():
                     raise SystemExit('JSON 大小限制缺失：' + oid)
     baseline_ids = {'login', 'getSession', 'logout', 'listBots', 'createBot',
                     'patchBot', 'deleteBot', 'resetAPIToken', 'resetWebhookKey'}
-    if set(operation_map) != baseline_ids | set(new_security):
+    if set(operation_map) != baseline_ids | set(new_security) | delivery_ids:
         raise SystemExit('冻结操作集合不符')
     if any(method in document['paths']['/client/messages/{id}'] for method in ('put', 'patch')):
         raise SystemExit('不得提供 Android 编辑接口')
@@ -192,6 +204,57 @@ def main():
     upload_body = operation_map['uploadAttachment']['requestBody']
     if upload_body.get('x-default-max-bytes') != {'image': 10485760, 'file': 52428800} or not upload_body.get('x-configurable-max-bytes'):
         raise SystemExit('附件默认/可配置字节限制缺失')
+    # 投递权限、租约和管理投影是契约声明，不能以此冒充运行时事务验证。
+    for oid in ('claimEvents', 'ackDelivery', 'renewDelivery'):
+        if operation_map[oid].get('x-bot-capability') != 'receive':
+            raise SystemExit('投递必须 Bot receive：' + oid)
+        if operation_map[oid].get('x-lease-policy') != 'current-bot-consumer-credential-generation':
+            raise SystemExit('租约缺少consumer/凭据代次约束：' + oid)
+    if operation_map['claimEvents'].get('x-claim-policy') != 'atomic-due-enqueue-order-outside-wait':
+        raise SystemExit('领取事务/等待边界缺失')
+    for oid, schema_name in [('claimEvents', 'ClaimResponse'), ('ackDelivery', 'AckReceipt'),
+                             ('renewDelivery', 'RenewReceipt'), ('listDeliveries', 'DeliveryMetadataPage'),
+                             ('retryDelivery', 'RetryDeliveryReceipt')]:
+        operation = operation_map[oid]
+        response = resolve(document, operation['responses']['200'])
+        if response['content']['application/json']['schema'] != {'$ref': '#/components/schemas/' + schema_name}:
+            raise SystemExit('投递响应类型错误：' + oid)
+    for oid in ('listDeliveries', 'retryDelivery'):
+        if operation_map[oid].get('x-management-projection') != 'delivery-metadata-only':
+            raise SystemExit('管理投影边界缺失：' + oid)
+    if operation_map['retryDelivery'].get('x-idempotency-policy') != 'authorized-replay-before-state-check':
+        raise SystemExit('手动重试必须先鉴权再恢复同键结果')
+    metadata = schemas['DeliveryMetadata']
+    allowed_metadata = {'delivery_id', 'event_id', 'bot_id', 'state', 'state_version', 'attempt',
+                        'retry_generation', 'created_at', 'updated_at', 'lease_until',
+                        'next_attempt_at', 'acked_at', 'error_code'}
+    if set(metadata['properties']) != allowed_metadata or metadata.get('additionalProperties') is not False:
+        raise SystemExit('管理元数据允许列表被改变')
+    for oid, codes in {'ackDelivery': {'LEASE_CONFLICT', 'BOT_DISABLED'},
+                       'renewDelivery': {'LEASE_CONFLICT', 'BOT_DISABLED', 'LEASE_LIMIT_EXCEEDED'},
+                       'retryDelivery': {'DELIVERY_NOT_FAILED', 'IDEMPOTENCY_CONFLICT'}}.items():
+        if set(operation_map[oid].get('x-error-codes', {}).get('409', [])) != codes:
+            raise SystemExit('状态错误码声明错误：' + oid)
+    if operation_map['claimEvents'].get('x-initial-lease-seconds') != 120:
+        raise SystemExit('默认领取租约错误')
+    if operation_map['renewDelivery'].get('x-max-total-lease-seconds') != 600:
+        raise SystemExit('累计租约上限缺失')
+    if operation_map['ackDelivery'].get('x-ack-replay') != 'authorized-same-successful-lease':
+        raise SystemExit('ACK缺少同成功租约幂等重放约束')
+    if schemas['ClaimedDelivery']['properties']['retry_generation'] != {'$ref': '#/components/schemas/Sequence'}:
+        raise SystemExit('投递代次必须保持64位十进制字符串')
+    wait = schemas['ClaimRequest']['properties']['wait_seconds']
+    limit = schemas['ClaimRequest']['properties']['limit']
+    if (wait.get('default'), wait.get('minimum'), wait.get('maximum')) != (25, 0, 30):
+        raise SystemExit('Long Polling等待边界错误')
+    if (limit.get('default'), limit.get('minimum'), limit.get('maximum')) != (20, 1, 100):
+        raise SystemExit('领取批次必须有界')
+    if schemas['RenewRequest']['properties']['extend_seconds'].get('maximum') != 120:
+        raise SystemExit('续约单次限制缺失')
+    for oid in ('ackDelivery', 'renewDelivery', 'retryDelivery'):
+        body = operation_map[oid]['requestBody']
+        if body.get('x-max-bytes') != 262144:
+            raise SystemExit('投递JSON大小限制缺失：' + oid)
     schemes = document['components']['securitySchemes']
     for name in ('AdminBearer', 'BotAPIToken', 'WebhookKey'):
         if schemes[name]['type'] != 'http' or schemes[name]['scheme'] != 'bearer':
