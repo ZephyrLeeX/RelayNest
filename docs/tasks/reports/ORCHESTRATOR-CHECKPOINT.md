@@ -11,51 +11,32 @@
 - 用户明确“真机运行留到最后验收的时候”：P03-03初始化不因真机E01阻塞，但安装/冷启动/深浅色/系统栏NOT_RUN须移交P09/P11/P12正式验收。真实正式签名成功路径也仍NOT_RUN。
 - 现网部署、MP重建升级、破坏性数据、公开发布、远端推送/Release最后一步须具体结果审查确认。未创建新聊天、自动化或定时监控。
 
-## 已集成基线
+## 当前恢复点（2026-10-22）
 
-主目录 `/home/lijx/Projects/RelayNest`，`main@38d52c3bae74010167d4defe0e681e843d497fc8`。
+主目录 `/home/lijx/Projects/RelayNest`，最近已确认 main `99db13e5a0426f8e19407a43500b17ebb8390058`。后续集成进行中，恢复时先查实际 HEAD、agent 和 registry，不能以本快照覆盖更新状态。
 
-| 原任务 | 状态 | 实现/最终实现 | 集成报告提交 |
-| --- | --- | --- | --- |
-| P00-01 | done | `522dbeb3cb96c645a1351e05452a01df54100093` | `b0b614723d8055247d77fbeaa9c6dd88214d3c27` |
-| P00-02 | done | `a2f3c3dc6cff6bcfe2265118c7e1a7019f01365c` | `1f0ea95004062e9ef3b88ea9ce6d4cbb30695484` |
-| P00-04 | done | `7cf1a3148ffebfd05cc8f4d6d5a6ae9b5ed6fadc` | `fefad6f1ced17aa7a2dd328f8683d1ae8397f1fe` |
-| P02-01 | done | `c49acb359e9170fc9263c2649322d62261092d95` | `dd6d6fc15eb1f5a71b0cf39752907751ed97198a` |
-| P02-02 | done | `bcc42505b8a0335d328d1ac42f1f647c5e7759c4` | `6bdd6ef540494321ed6e22015212f9a93bfd6bdc` |
-| P03-01 | done | `47d33bb7f5ca356947f4107d81429b9ace66dac1` | `f3dbe794f8afe32573435a94e363eb7a3761924f` |
-| P03-02 | done | `6e9171946099457aad4f7696700927bd5751e77d` | `6d4ac84dd8d1b083b927505a9a97c975aa3e9d44` |
-| P03-03 | done | `e002339fb085a6f5f8ac349c6b077d5751b3708f` | `1e16cffa3c6d15d8f01ab8e8bc501a0c0232aef6` |
-| P03-04 | done | `6eac6bfdd0f2e27e899269e07b4a7746dc0d8958` | `30efad4f16234c07f42a2dd6e746d9d980b7dadf` |
-| P03-05 | done | `5d170b84ef77cb6560d594341fa35bb0dab5bd7c` | `38d52c3bae74010167d4defe0e681e843d497fc8` |
-| P03-08 | done | `e2d56baedad2d28c6d4b8fda0d018df49c274062` | `abd45c273b4d6feb0cd1c701ce742036dd04add3` |
+- P00-01/02/04、P02-01～04、P03-01～06及08～12均已独立审计并集成。各精确实现/审计/集成SHA以registry及对应报告为准。
+- P03-07-PLAN01：实现 `2fa5e97b8fb165ef0df3333ce9575bdacbb6167e`，独立审计 `ccbf114f4b6c82e4fcb73420281096596a7e7817` PASS，集成 `ca56c5e3a4c98f3ba88b089b2059024a6e93b324`。三个串行子卡S01同步/已读/WS、S02设备注册/通知、S03全局配置/健康投影及全契约收口已登记。父卡和G-API尚未完成。
+- S01首轮只预读，API未改，预算退出checkpoint提交 `e1a0d78aaa68318a4063725f05e79272507fd993`。不能将其算实现完成。
+- G-GIT=pass、G-MP=pass、G-FCM=pass（仅历史PoC限定范围）；G-API/CORE/DEPLOY/SHELF/SHELF-API/OPPO=pending。G-FCM不代表正式同步或AC验收；原E01～E07/NOT_RUN保留。
+- 用户已明确OPPO账号/应用权限尚未准备，P02-05及G-OPPO受阻。仅阻相关分支，不自动注册/提交材料/读取凭据，不阻本地核心开发。
 
-P03-03含签名修复F01经A02 PASS；P03-08含WAL并发初始化修复F01经A02 PASS。历史负面审计不改写。PUSH-PLAN-01、PUSH-DECISION-01及P03-03/P03-08/P03-05修复规划均已精确审计集成；不代表未实现功能通过。
+## 在途任务与目录归属
 
-当前门槛：G-GIT=pass；G-API=pending；G-MP=pass；G-FCM=pending；G-CORE=pending；G-DEPLOY=pending；G-SHELF=pending；G-SHELF-API=pending；G-OPPO=pending。
+| 任务及owner | 目录/基线 | 下一步 |
+| --- | --- | --- |
+| P03-07-S01-PLAN01 / `/root/sync_s01_plan` | `/home/lijx/.codex/worktrees/api-delivery/RelayNest`；`ccbf114f4b6c82e4fcb73420281096596a7e7817` | 精简派发输入或保留父验收细分S01，独立审计集成后重启实现；禁止修改共同API |
+| P00-03报告已集成 | main集成`bf1421383abd46bfaa1e803c1ecfdf63e80a9c46` | 报告实现`46fdca5ff0788e4e8b51750ac73a3e2bca10e022`、审计`d91e6ae0ac30d770d6621d194fb5b861d4802368`；完整环境BLOCKED |
+| P00-05报告已集成`99db13e5a0426f8e19407a43500b17ebb8390058` | `/home/lijx/.codex/worktrees/p2-evidence/RelayNest`；报告`50bf88d3c133bf564415ad03ebf0220a429d81d6`、独立审计`5faf52c42725d0d0bf9ee765af6523e6a3a20dd0` | 报告PASS，环境BLOCKED；不能据此放行部署 |
+| S01已释放实现树 | `/home/lijx/.codex/worktrees/api-sync-s01/RelayNest`；HEAD `e1a0d78aaa68318a4063725f05e79272507fd993` | API未改，checkpoint已提交；恢复时先确认无写入者，新实现取最终main基线 |
 
-## 在途工作区
+P00-03缺RepoDigest、完整重建证据、独立隔离实例及当前现场确认，不因此撤销P1用户例外。P00-05缺可信只读入口、独立测试资源及HTTPS Origin清单；当前无已配置SSH入口/fnos工具，未尝试猜连接或变更现网。真正TLS/WS/上传/LongPolling等继续NOT_RUN移交P11/P12。
 
-恢复时先重新核对实际agent/worktree。当前两个在途agent及下一张已准备卡如下；总调度正在仅提交本checkpoint，不会提交registry用户差异。
+## 继续执行与保护事项
 
-| 任务/owner | 工作树 | 精确基线 | 状态/下一步 |
-| --- | --- | --- | --- |
-| P03-09 / `/root/go_ci_dev_r3` | `/home/lijx/.codex/worktrees/go-ci/RelayNest` | `6d4ac84dd8d1b083b927505a9a97c975aa3e9d44` | running；GoCI开发，同job先Web构建再Go检查；远端GH NOT_RUN |
-| P03-11-A01 / `/root/android_ci_audit_r3` | `/tmp/relaynest-run3/android-ci` | `491fc873657006f3f037b57175b35783a2ea388f` | running；Android debug CI独立审计，远端GH NOT_RUN |
-| P03-06 / `None` | `/home/lijx/.codex/worktrees/api-delivery/RelayNest` | `38d52c3bae74010167d4defe0e681e843d497fc8` | ready；待派新worker，投递与失败管理OpenAPI；不得越过依赖提前冻结同步设备契约 |
-
-## 下一批与阻塞
-
-- P03-05最终实现5d170b84ef77cb6560d594341fa35bb0dab5bd7c经A02 b7b02d023da5c25d0031d39bc833ec265a77b761 PASS后精确集成，F01关闭；旧负面审计保留。契约不等于运行时HTTP/事务通过。
-- P03-06依P03-05最终集成，P03-07后才评估G-API。P4～P6不越过契约冻结门槛。
-- Web交接确认Go构建必须先npm --prefix web ci --no-audit --no-fund，再npm --prefix web run build生成server/internal/webui/dist；P03-09/10实现须待P03-02审计/集成组合，不能靠旧dist缓存假通过。
-- SQLite迁移已分配0001_initial.sql，下一编号0002；共同契约/依赖/迁移串行。
-- P02-03/04仍review，仅缺必要独立历史证据审计/集成，不重跑真机矩阵。旧实现分别f65efaed77a3f772c2bd6e12e0f03680b7a3f945、879aaebffb1e312db78caac1978e4fea23b80d4d；G-FCM仍pending，未测项保留移交正式验收。
-- P02-05/G-OPPO缺资格、应用与Push权限、受控配置安全引用及实际能力证据，只阻OPPO分支。P00-03/05环境收口、后续CI和插件检查等仍按DAG派发。
-
-## 文件保护与环境恢复
-
-- 主目录registry.json启动前已有用户未提交修改，本次总调度元数据叠加保存；不整文件擅自提交。用户.directory未跟踪，不提交。此checkpoint为总调度创建，交SCHEDULER-SNAPSHOT-01集成agent单独提交；不得git add .。
-- 旧/tmp/relaynest-run2及更早工作树已实际缺失，旧分支/Git对象/管理引用全部保留，未prune/remove/clean。当前新审计树在/tmp/relaynest-run3；GoCI与P03-06已使用create_worktree持久受管目录，路径见表。
-- 旧CI分支codex/ci-run2无新增提交、无暂存差异、stash空，旧目录缺失无法恢复未提交内容；新CI卡按真实现场重做，不能伪称此前完成。
-- 当前任何在途目录可能因环境切换消失；先核对Git对象/agent/未提交内容再恢复，不能覆盖工作或重跑已完成PoC。必要工具先核查既有mise绝对路径，不凭历史报告声称当前可用。
-- 历史辅助RECOVERY-01/WORKSPACE-01尚未单独归档证据，不凭聊天伪填审计或实现SHA；已核对的P0正式任务闭环不受影响。
+- 先恢复实际在途agent及工作树，依次S01规划/审计/集成→S01实现/独立审计/集成→S02→S03→父卡G-API收口；之后按真实DAG启动P4～P10。局部外部阻塞不影响独立分支。
+- Web静态资源为Go embed输入；干净Go构建前必须先`npm --prefix web ci --no-audit --no-fund`及`npm --prefix web run build`，不得借旧dist缓存假通过。
+- SQLite已分配`0001_initial.sql`，下一迁移编号0002；API、依赖和迁移写入串行。
+- 主目录registry.json包含用户既有未提交内容及调度更新，不整文件擅自stage/提交；`.directory`属于用户未跟踪文件，不动。root仅更新台账及本短摘要，Git提交交集成agent显式路径处理。
+- 旧/tmp工作树可能已消失，Git对象/分支/管理引用保留，不prune/remove/clean；新工作优先持久受管worktree。不能据旧锁自动抹除工作。
+- 本文件只是恢复快照，不代表全部完成、无人值守自动运行或Release授权。任何源代码变更必须重新独立审计精确SHA，集成确认后才done。
