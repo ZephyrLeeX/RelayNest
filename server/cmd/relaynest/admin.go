@@ -32,11 +32,14 @@ func runAdmin(ctx context.Context, args []string, input io.Reader, output io.Wri
 	if err := flags.Parse(args[1:]); err != nil || flags.NArg() != 0 || *path == "" || (args[0] == "init" && username == "") {
 		return errors.New(adminUsage)
 	}
-	password, err := readPassword(input, output)
+	password, err := readPassword(ctx, input, output)
 	if err != nil {
 		return errors.New("admin: password input failed")
 	}
 	defer clear(password)
+	if ctx.Err() != nil {
+		return errors.New("admin: password input failed")
+	}
 	if len(password) == 0 {
 		return errors.New("admin: password required")
 	}
@@ -61,15 +64,22 @@ func runAdmin(ctx context.Context, args []string, input io.Reader, output io.Wri
 	return err
 }
 
-func readPassword(input io.Reader, output io.Writer) ([]byte, error) {
+func readPassword(ctx context.Context, input io.Reader, output io.Writer) ([]byte, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if file, ok := input.(*os.File); ok && term.IsTerminal(int(file.Fd())) {
 		if _, err := fmt.Fprint(output, "密码: "); err != nil {
 			return nil, err
 		}
-		password, err := term.ReadPassword(int(file.Fd()))
+		password, err := readTerminalPassword(ctx, file)
 		fmt.Fprintln(output)
 		return password, err
 	}
+	return readPasswordLine(input)
+}
+
+func readPasswordLine(input io.Reader) ([]byte, error) {
 	// stdin 只移除一个 LF/CRLF 行结束符；空格、大小写和其他字符保持原样。
 	password, err := bufio.NewReader(input).ReadBytes('\n')
 	if err != nil && !errors.Is(err, io.EOF) {

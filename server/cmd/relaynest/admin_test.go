@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -69,9 +70,22 @@ func TestAdminInputFailureIsSafe(t *testing.T) {
 
 func TestPasswordLineEndings(t *testing.T) {
 	for _, value := range []struct{ input, want string }{{" space \n", " space "}, {" a\r\n", " a"}, {"a\r", "a\r"}, {"a", "a"}, {"\n", ""}, {"a\nb\n", "a"}} {
-		got, err := readPassword(strings.NewReader(value.input), io.Discard)
+		got, err := readPassword(context.Background(), strings.NewReader(value.input), io.Discard)
 		if err != nil || string(got) != value.want {
 			t.Fatal("line ending handling changed password", err)
 		}
+	}
+}
+
+func TestAdminCancelledBeforePasswordDoesNotOpenDatabase(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	path := filepath.Join(t.TempDir(), "cancelled.sqlite")
+	err := runAdmin(ctx, []string{"init", "--db", path, "--username", "Admin"}, strings.NewReader("SYNTHETIC_SECRET\n"), io.Discard)
+	if err == nil || strings.Contains(err.Error(), "SYNTHETIC_SECRET") {
+		t.Fatalf("unsafe cancellation error: %v", err)
+	}
+	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("cancelled init touched database: %v", err)
 	}
 }
