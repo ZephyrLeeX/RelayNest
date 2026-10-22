@@ -11,45 +11,36 @@
 - 用户明确“真机运行留到最后验收的时候”：P03-03初始化不因真机E01阻塞，但安装/冷启动/深浅色/系统栏NOT_RUN须移交P09/P11/P12正式验收。真实正式签名成功路径也仍NOT_RUN。
 - 现网部署、MP重建升级、破坏性数据、公开发布、远端推送/Release最后一步须具体结果审查确认。未创建新聊天、自动化或定时监控。
 
-## 最新接续补记（覆盖下方旧快照状态）
-
-额度恢复后已重新核验：主树 `main@d927abed945379e00548b01e7cecf7bbef59bac2`，仅用户原有及调度叠加的registry未提交，`.directory`未跟踪，均未覆盖/暂存。下方旧快照为历史，实际唯一台账仍registry。
-
-- P03-07-S01细分规划已独立审计集成`8e85887934d37777ec7f5cd2c9fa340f36c5f3ed`。三个串行子卡：sync+read→bootstrap→WS/父验收联合收口。
-- 首子卡P03-07-S01-S01已done：实现`966066831a6b1b75720cae131b2e5d17c22e6e35`、独立审计`d51bceebcf4a81637920efd9c60b802a36943ee1` PASS、main集成`33cc7585e873a5debaddc5b93c8657b60d5a73a8`。冻结25操作/73Schema/446例，原23/61/369保留。
-- bootstrap实现`9cb95c41488fdf29895900b8288b7c15aacc5abe`、负面审计`532ea26e791b9774bcd6c6246769499a40823b26`，CHANGES_REQUIRED：BS-A01-01 P2初始seed与实际sync追赶完成来源未区分，verify不能区分。原实现尚未入main，不得沿用旧检查放行。
-- bootstrap修复规划`7922f0f6704a6b52df7f2b290b4595cf6d50fc68`仅新增F01卡和规划报告，API未改；`/root/bootstrap_fix_plan_audit`当前独占`/home/lijx/.codex/worktrees/api-bootstrap/RelayNest`、`codex/api-bootstrap`做独立规划审计。通过后取实际HEAD派F01修复，再由不同agent进行原卡A02，PASS后精确集成全部准确组合。零变化实际sync完成position=H必须合法；不允许初始seed冒充，不改已审sync/read；确需改前卡则停止该部分并报影响/重审。
-- 原P03-07-S02设备域已预规划并独立审计集成至当前main`d927abe`：规划`1122c739a692835657807e9c3cd2d3f59810d8a5`、审计`a16ea8a663861ff6a607c7a1689198a6c9dc90bd`。拆为会话→完整注册生命周期/版本屏障→通知CAS/union/发送快照联合收口，三子卡已登记todo，仍须等待S01父完整收口；真正实施读取最终main/S01摘要，不拿25/73/446冒充未来基数。
-- 用户最新确认NAS/反代可信只读入口、独立测试环境与HTTPS Origin尚未准备，部署验收前提供；P00-05继续blocked，不重复索取、不阻本地开发。OPPO账号/权限未准备及真机留最终验收决定保持。
-- 实现/审计旧树及Git对象全部保留；S01-S01源树`api-sync-read`在`d51bcee`、S02规划树`api-device-plan`在`a16ea8a`，无在途写入者。集成agent`/root/integrate_next`最近任务完成、主树写入权已释放，后续派发前核对实际状态。
-- 下一步：F01规划审计→F01实现→A02→原bootstrap精确集成→WS子卡→S01父收口→设备三子卡→全局设置/health及G-API总收口。P4以后仍按真正DAG，不绕过G-API；本轮远未全部完成。
-
 ## 当前恢复点（2026-10-22）
 
-主目录 `/home/lijx/Projects/RelayNest`，最近已确认 main `99db13e5a0426f8e19407a43500b17ebb8390058`。后续集成进行中，恢复时先查实际 HEAD、agent 和 registry，不能以本快照覆盖更新状态。
+最近确认主树 `main@5cdaf15f7e01b663dd0f2b68fc044d9e875aaa79`。唯一台账仍registry，恢复时先核实际HEAD/agent/目录及未提交内容，不用本快照覆盖新状态。本轮持续执行，远未完成P3～P15。
 
-- P00-01/02/04、P02-01～04、P03-01～06及08～12均已独立审计并集成。各精确实现/审计/集成SHA以registry及对应报告为准。
-- P03-07-PLAN01：实现 `2fa5e97b8fb165ef0df3333ce9575bdacbb6167e`，独立审计 `ccbf114f4b6c82e4fcb73420281096596a7e7817` PASS，集成 `ca56c5e3a4c98f3ba88b089b2059024a6e93b324`。三个串行子卡S01同步/已读/WS、S02设备注册/通知、S03全局配置/健康投影及全契约收口已登记。父卡和G-API尚未完成。
-- S01首轮只预读，API未改，预算退出checkpoint提交 `e1a0d78aaa68318a4063725f05e79272507fd993`。不能将其算实现完成。
-- G-GIT=pass、G-MP=pass、G-FCM=pass（仅历史PoC限定范围）；G-API/CORE/DEPLOY/SHELF/SHELF-API/OPPO=pending。G-FCM不代表正式同步或AC验收；原E01～E07/NOT_RUN保留。
-- 用户已明确OPPO账号/应用权限尚未准备，P02-05及G-OPPO受阻。仅阻相关分支，不自动注册/提交材料/读取凭据，不阻本地核心开发。
+- P00-01/02/04、P02-01～04、P03-01～06及08～12均已独立审计精确集成。G-GIT/G-MP/G-FCM=pass（历史PoC限定），G-API/CORE/DEPLOY/SHELF/SHELF-API/OPPO=pending。
+- P03-07父running；S01同步域已done，三子卡及八项父契约验收均通过独立审计和精确集成。S02设备域running；S03全局配置/健康/正式G-API收口尚未实施。
 
-## 在途任务与目录归属
-
-| 任务及owner | 目录/基线 | 下一步 |
+| S01子卡 | 最终实现 / 独立审计 | main集成 |
 | --- | --- | --- |
-| P03-07-S01-PLAN01 / `/root/sync_s01_plan` | `/home/lijx/.codex/worktrees/api-delivery/RelayNest`；`ccbf114f4b6c82e4fcb73420281096596a7e7817` | 精简派发输入或保留父验收细分S01，独立审计集成后重启实现；禁止修改共同API |
-| P00-03报告已集成 | main集成`bf1421383abd46bfaa1e803c1ecfdf63e80a9c46` | 报告实现`46fdca5ff0788e4e8b51750ac73a3e2bca10e022`、审计`d91e6ae0ac30d770d6621d194fb5b861d4802368`；完整环境BLOCKED |
-| P00-05报告已集成`99db13e5a0426f8e19407a43500b17ebb8390058` | `/home/lijx/.codex/worktrees/p2-evidence/RelayNest`；报告`50bf88d3c133bf564415ad03ebf0220a429d81d6`、独立审计`5faf52c42725d0d0bf9ee765af6523e6a3a20dd0` | 报告PASS，环境BLOCKED；不能据此放行部署 |
-| S01已释放实现树 | `/home/lijx/.codex/worktrees/api-sync-s01/RelayNest`；HEAD `e1a0d78aaa68318a4063725f05e79272507fd993` | API未改，checkpoint已提交；恢复时先确认无写入者，新实现取最终main基线 |
+| sync/read | `966066831a6b1b75720cae131b2e5d17c22e6e35` / `d51bceebcf4a81637920efd9c60b802a36943ee1` | `33cc7585e873a5debaddc5b93c8657b60d5a73a8` |
+| bootstrap含F01 | `a379d9620c9a0b616c575d749fd05030376437c3` / A02 `0993016dd18b120ce4c300c7b86087474e5eee9e` | `3cdb5e228b7d124890d45250728b260b2091a6db` |
+| WS及父联合收口 | `169fd8043e48e37762f11e845f00f56ce8024933` / `91215226a724679ca163be5279c049cb6bba3ad7` | `5cdaf15f7e01b663dd0f2b68fc044d9e875aaa79` |
 
-P00-03缺RepoDigest、完整重建证据、独立隔离实例及当前现场确认，不因此撤销P1用户例外。P00-05缺可信只读入口、独立测试资源及HTTPS Origin清单；当前无已配置SSH入口/fnos工具，未尝试猜连接或变更现网。真正TLS/WS/上传/LongPolling等继续NOT_RUN移交P11/P12。
+bootstrap原实现9cb95c4经A01 532ea26发现BS-A01-01（seed可冒充实际追赶完成）；F01规划/独立审计/分支集成后修复，A02独立重现旧问题并验证来源对照/零变化追赶/新事件链，最终准确七提交链入main，原负面报告保留。问题仅在契约范围关闭，运行时NOT_RUN。WS开发/审计读取输出预算偏差如实记载，不假称流程完全合规。不得因这些已闭环工作被旧快照描述为未完成而重跑。
 
-## 继续执行与保护事项
+## 在途工作区与下一步
 
-- 先恢复实际在途agent及工作树，依次S01规划/审计/集成→S01实现/独立审计/集成→S02→S03→父卡G-API收口；之后按真实DAG启动P4～P10。局部外部阻塞不影响独立分支。
-- Web静态资源为Go embed输入；干净Go构建前必须先`npm --prefix web ci --no-audit --no-fund`及`npm --prefix web run build`，不得借旧dist缓存假通过。
-- SQLite已分配`0001_initial.sql`，下一迁移编号0002；API、依赖和迁移写入串行。
-- 主目录registry.json包含用户既有未提交内容及调度更新，不整文件擅自stage/提交；`.directory`属于用户未跟踪文件，不动。root仅更新台账及本短摘要，Git提交交集成agent显式路径处理。
-- 旧/tmp工作树可能已消失，Git对象/分支/管理引用保留，不prune/remove/clean；新工作优先持久受管worktree。不能据旧锁自动抹除工作。
-- 本文件只是恢复快照，不代表全部完成、无人值守自动运行或Release授权。任何源代码变更必须重新独立审计精确SHA，集成确认后才done。
+- 当前实现：`P03-07-S02-S01`，owner `/root/device_session_dev`；独占 `/home/lijx/.codex/worktrees/api-device-session/RelayNest`，分支`codex/api-device-session`，精确基线`5cdaf15f7e01b663dd0f2b68fc044d9e875aaa79`。只写API四文件及本卡报告，定义GET devices/DELETE指定会话、代次隔离；原provider注册/通知分支留后两卡。启动时树干净，正在实现，尚无实现SHA/检查结论。
+- 当前共同契约冻结：27操作/83Schema/637例、全部旧组件/两requirements锁、Sequence SQLite64字符串/Version>=1、权限/no-store、H/epoch/floor/seed与真实sync完成来源、WS仅提示不可推进游标。后卡按实际基线重验，不依赖历史计数猜当前状态。
+- S02文档规划已独立审计集成main`d927abed945379e00548b01e7cecf7bbef59bac2`，三子卡：S02-S01会话→S02-S02完整provider注册生命周期/CAS/条件删除/恢复/持久版本屏障→S02-S03通知CAS/恢复/设置union/发送快照联合收口。两后卡todo；父S02保持原八验收。
+- S03文档规划已独立审计集成main`e6b0565ec3be85997d9b7daa66bce9ad7cec2ab8`，三子卡：S03-S01全局settings/CAS/changes→S03-S02根health与管理投影→S03-S03全T3/T8/父验收/G-API证据补缺收口。全部todo，实施等设备父完整收口，不提前冻结设备字段。
+- 每卡实现独立提交→不同agent精确SHA审计→编号修复及重审→集成agent准确组合验证→root登记done→下一卡。S03最终和父P03-07实质验收后才评估G-API，之后P4～P10按真实DAG；不提前启动服务端实现绕过契约门槛。
+- 集成agent `/root/integrate_next` 最近WS集成已完成、主树释放；本checkpoint拟由其作为SCHEDULER-SNAPSHOT-04单独提交。恢复时再核实际在途状态，不能根据名字猜运行中agent。
+
+## 外部条件、环境与文件保护
+
+- P00-03环境报告/独立审计已集成main`bf1421383abd46bfaa1e803c1ecfdf63e80a9c46`，完整环境仍BLOCKED：缺RepoDigest/重建证据/独立实例/当前现场，不撤销P1用户例外。
+- P00-05报告/独立审计已集成main`99db13e5a0426f8e19407a43500b17ebb8390058`，用户最新确认可信NAS只读入口、独立测试资源及HTTPS Origin尚未准备，部署验收前提供。不要重复索取/猜连接/自动登录；不阻本地开发。TLS/WS/上传/LongPolling现场实测NOT_RUN。
+- 用户确认OPPO账号/应用Push权限尚未准备，P02-05/G-OPPO受阻，仅阻厂商实测/激活；真机运行留正式验收，正式签名成功/安装界面/端到端NOT_RUN保留。不能将Schema/合成状态或阶段放行冒充HTTP/SQLite/Room/WS/通知实际运行验收。
+- 锁Python可先核`/tmp/relaynest-p0305-f01-locked/bin/python`，缺失依hash锁恢复不升级。Android/mise版本沿原锁；干净Go构建前先Web npm ci/build生成gitignored embed资源，不靠旧dist。SQLite已占0001，下一迁移0002；共享API/依赖/迁移串行。
+- 主树registry.json含用户原有修改及调度更新，`.directory`为用户未跟踪文件，均不stage/覆盖/丢弃。本摘要由root创建，Git提交必须交集成agent显式路径处理，禁止git add .。
+- 各已审源树及分支保留，旧/tmp可能消失但Git对象/管理引用不prune/remove/clean；恢复先核未提交内容与实际锁，不自动重置。当前仅设备会话树具有API写入权。
+- 本文件不是全部完成报告，不创建新聊天/定时任务/自动化，也不授权push、Release、真实部署或MP重建升级。P13～15虽已授权，仍等核心实际完成/G-SHELF实质门槛，不改RelayShelf后端/数据库。
