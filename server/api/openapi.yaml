@@ -2037,6 +2037,159 @@ paths:
         required: true
         schema:
           $ref: '#/components/schemas/PushProvider'
+  /devices/current/notifications:
+    get:
+      operationId: getCurrentNotifications
+      summary: 恢复当前设备通知配置
+      description: 仅当前有效Android管理员会话。device_id从认证Session取得，不接受目标选择器；偏好属于设备，不因其他设备已读或静音覆盖，同device_id多Session共享配置但注册独立。0为虚拟默认(enabled=true、bot_overrides=[]、DND关闭UTC
+        22:00~07:00、preview=false、fcm/fcm)，不产生变更。PUT含全部字段，expected_version不匹配409返回最新版本及恢复路径，先GET再协调；成功在同事务递增配置版本并写时间和typed
+        SyncChange，即使值相同也递增，耗尽不部分提交。vendor要求当前会话对应有效注册和服务端已核平台条件，不满足422 PROVIDER_NOT_READY，不自动回退。FCM注册缺失不妨碍保存fcm偏好，数据沿前台/周期补偿，注册成功不会自动切换模式。
+      security:
+      - AdminBearer: []
+      x-client-type: android
+      x-notification-settings-policy:
+        owner: authenticated-Session.device_id-shared-across-sessions-never-assume-unique-device-session
+        registration: Session.id+provider-independent-never-activate-mode
+        initial: virtual-version-0-enabled-fcm-preview-false-no-event-time-null
+        transaction: reauthenticate-current-session-check-bots-platform-registration-CAS-device-config-version-time-and-sync-change-atomic
+        put: full-replacement-match-expected-increment-even-same-value-no-client-time
+        conflict: 409-latest_settings_version-recovery_path-GET-before-retry
+        exhaustion: 409-no-wrap-no-config-time-event-or-registration-partial-commit
+        vendor: explicit-opush-valid-current-session-registration-and-server-verified-platform-otherwise-422-no-fallback
+        sync: typed-device.notifications.updated-device_id-filter-strictly-newer-version-GET-current-recovery-no-H-epoch-floor-seed-change
+      x-notification-job-policy:
+        snapshot: session_id-device_id-purpose-target_watermark-provider-registration_version-settings_version-reminder_key-bot_id-bot_seq-expires_at-alert_eligible
+        before: active-exact-session-device-registration-settings-and-mode-lease-device-serial-expiry-then-alert-enabled-bot-DND-unread-existing
+        after: same-entire-snapshot-current-registration-config-active-session-and-live-lease-CAS-old-result-noop
+        merge: sync-watermark-max-only-alert-eligibility-and-original-version-key-expiry-never-revive
+        switch: future-new-events-only-stop-old-version-new-sends-isolate-inflight-no-cross-provider-timeout-retry
+        dnd: drop-alert-eligibility-during-device-timezone-window-no-end-replay-sync-continues
+        result: accepted-is-not-ACK-unknown-preserves-registration-no-cross-channel-resound
+        vendor_text:
+          title: RelayNest 有新消息
+          content: 打开 RelayNest 同步查看
+        fcm: data-only-hint-self-render-after-authoritative-sync-dedup-deployment-message-read-preview-DND-no-vendor-exemptions
+        vendor_limit: only-vendor-accepted-offline-DND-read-delete-logout-switch-retraction-limit
+        convergence: latest-confirmed-config-no-stale-fcm-resound-allowed-missed-alert-data-compensates
+      responses:
+        '200':
+          description: 当前设备完整配置及服务端时间。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationSettingsState'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      x-error-codes:
+        '401':
+        - AUTHENTICATION_REQUIRED
+        '403':
+        - FORBIDDEN
+    put:
+      operationId: updateCurrentNotifications
+      summary: CAS替换当前设备通知配置
+      description: 仅当前有效Android管理员会话。device_id从认证Session取得，不接受目标选择器；偏好属于设备，不因其他设备已读或静音覆盖，同device_id多Session共享配置但注册独立。0为虚拟默认(enabled=true、bot_overrides=[]、DND关闭UTC
+        22:00~07:00、preview=false、fcm/fcm)，不产生变更。PUT含全部字段，expected_version不匹配409返回最新版本及恢复路径，先GET再协调；成功在同事务递增配置版本并写时间和typed
+        SyncChange，即使值相同也递增，耗尽不部分提交。vendor要求当前会话对应有效注册和服务端已核平台条件，不满足422 PROVIDER_NOT_READY，不自动回退。FCM注册缺失不妨碍保存fcm偏好，数据沿前台/周期补偿，注册成功不会自动切换模式。
+      security:
+      - AdminBearer: []
+      x-client-type: android
+      x-notification-settings-policy:
+        owner: authenticated-Session.device_id-shared-across-sessions-never-assume-unique-device-session
+        registration: Session.id+provider-independent-never-activate-mode
+        initial: virtual-version-0-enabled-fcm-preview-false-no-event-time-null
+        transaction: reauthenticate-current-session-check-bots-platform-registration-CAS-device-config-version-time-and-sync-change-atomic
+        put: full-replacement-match-expected-increment-even-same-value-no-client-time
+        conflict: 409-latest_settings_version-recovery_path-GET-before-retry
+        exhaustion: 409-no-wrap-no-config-time-event-or-registration-partial-commit
+        vendor: explicit-opush-valid-current-session-registration-and-server-verified-platform-otherwise-422-no-fallback
+        sync: typed-device.notifications.updated-device_id-filter-strictly-newer-version-GET-current-recovery-no-H-epoch-floor-seed-change
+      x-notification-job-policy:
+        snapshot: session_id-device_id-purpose-target_watermark-provider-registration_version-settings_version-reminder_key-bot_id-bot_seq-expires_at-alert_eligible
+        before: active-exact-session-device-registration-settings-and-mode-lease-device-serial-expiry-then-alert-enabled-bot-DND-unread-existing
+        after: same-entire-snapshot-current-registration-config-active-session-and-live-lease-CAS-old-result-noop
+        merge: sync-watermark-max-only-alert-eligibility-and-original-version-key-expiry-never-revive
+        switch: future-new-events-only-stop-old-version-new-sends-isolate-inflight-no-cross-provider-timeout-retry
+        dnd: drop-alert-eligibility-during-device-timezone-window-no-end-replay-sync-continues
+        result: accepted-is-not-ACK-unknown-preserves-registration-no-cross-channel-resound
+        vendor_text:
+          title: RelayNest 有新消息
+          content: 打开 RelayNest 同步查看
+        fcm: data-only-hint-self-render-after-authoritative-sync-dedup-deployment-message-read-preview-DND-no-vendor-exemptions
+        vendor_limit: only-vendor-accepted-offline-DND-read-delete-logout-switch-retraction-limit
+        convergence: latest-confirmed-config-no-stale-fcm-resound-allowed-missed-alert-data-compensates
+      responses:
+        '200':
+          description: 当前设备完整配置及服务端时间。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationSettingsState'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+        '404':
+          $ref: '#/components/responses/404'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '409':
+          description: 配置冲突或版本耗尽；重新读取，禁止盲重放旧意图。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationSettingsConflict'
+      x-error-codes:
+        '401':
+        - AUTHENTICATION_REQUIRED
+        '403':
+        - FORBIDDEN
+        '404':
+        - RESOURCE_NOT_FOUND
+        '409':
+        - SETTINGS_CONFLICT
+        - SETTINGS_VERSION_EXHAUSTED
+        '422':
+        - VALIDATION_FAILED
+        - PROVIDER_NOT_READY
+      requestBody:
+        required: true
+        x-max-bytes: 262144
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationSettingsUpdate'
 components:
   schemas:
     PushProvider:
@@ -3419,7 +3572,8 @@ components:
       - $ref: '#/components/schemas/SyncBotDelete'
       - $ref: '#/components/schemas/SyncReadUpdate'
       - $ref: '#/components/schemas/SyncDeliveryUpsert'
-      description: 事件序号与当前投影分离；同一读事务解析当前实体。消息revision、Bot.version、ReadState.version及delivery.state_version分别单调；旧版/重复删除均幂等no-op。已删除对象转换为对应删除类型，仅含墓碑，无旧正文；允许投影版本高于事件版本乃至H内事件版本。删除版本为实体终态版本，不复活同一ID。设置类型由后卡显式扩展。
+      - $ref: '#/components/schemas/SyncDeviceNotifications'
+      description: 事件序号与当前投影分离；同一读事务解析当前实体。消息revision、Bot.version、ReadState.version及delivery.state_version分别单调；旧版/重复删除均幂等no-op。已删除对象转换为对应删除类型，仅含墓碑，无旧正文；允许投影版本高于事件版本乃至H内事件版本。删除版本为实体终态版本，不复活同一ID。设备通知设置以device.notifications.updated显式扩展，按settings.device_id过滤且仅较高settings_version应用；GET /devices/current/notifications恢复。全局设置类型由原S03后卡补齐。
     SyncPage:
       type: object
       properties:
@@ -3548,6 +3702,324 @@ components:
       oneOf:
       - $ref: '#/components/schemas/BootstrapPage'
       - $ref: '#/components/schemas/BootstrapVerified'
+    NotificationSettingsVersion:
+      type: integer
+      minimum: 0
+      maximum: 9223372036854775807
+      description: 服务端设备配置版本；0仅虚拟默认，非客户端时间，首次CAS从0开始。
+    NotificationDND:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 128
+        start:
+          type: string
+          pattern: ^(?:[01][0-9]|2[0-3]):[0-5][0-9]$
+        end:
+          type: string
+          pattern: ^(?:[01][0-9]|2[0-3]):[0-5][0-9]$
+      required:
+      - enabled
+      - timezone
+      - start
+      - end
+      additionalProperties: false
+      x-notification-dnd: true
+      description: IANA时区；start包含/end不包含，每日时段，start>end跨午夜，禁止相等。按该时区当时实际本地时间计算，包含DST重复时刻；缺失时刻自然无匹配。禁用仍保存有效配置。
+    NotificationBotOverride:
+      type: object
+      properties:
+        bot_id:
+          $ref: '#/components/schemas/ID'
+        enabled:
+          type: boolean
+      required:
+      - bot_id
+      - enabled
+      additionalProperties: false
+    NotificationSettingsUpdate:
+      type: object
+      properties:
+        expected_version:
+          $ref: '#/components/schemas/NotificationSettingsVersion'
+        enabled:
+          type: boolean
+        bot_overrides:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/NotificationBotOverride'
+          x-unique-bot-overrides: true
+          description: 完整替换的设备局部Bot覆盖；未列出Bot默认启用，与设备总开关取AND。仅引用当前身份有权的未删除Bot，否则404。
+        dnd:
+          $ref: '#/components/schemas/NotificationDND'
+        preview:
+          type: boolean
+        notify_channel:
+          type: string
+          enum:
+          - fcm
+          - vendor
+          - none
+        notify_provider:
+          type:
+          - string
+          - 'null'
+          enum:
+          - fcm
+          - opush
+          - null
+      required:
+      - expected_version
+      - enabled
+      - bot_overrides
+      - dnd
+      - preview
+      - notify_channel
+      - notify_provider
+      additionalProperties: false
+      oneOf:
+      - properties:
+          notify_channel:
+            const: fcm
+          notify_provider:
+            const: fcm
+      - properties:
+          notify_channel:
+            const: vendor
+          notify_provider:
+            const: opush
+      - properties:
+          notify_channel:
+            const: none
+          notify_provider:
+            const: null
+      description: 完整配置替换而非局部patch；不接受device_id/session_id/时间/版本或平台资格，设备归属从当前认证Session取得。
+    NotificationSettings:
+      type: object
+      properties:
+        device_id:
+          $ref: '#/components/schemas/ID'
+        settings_version:
+          $ref: '#/components/schemas/NotificationSettingsVersion'
+        updated_at:
+          oneOf:
+          - $ref: '#/components/schemas/UTCDateTime'
+          - type: 'null'
+        enabled:
+          type: boolean
+        bot_overrides:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/NotificationBotOverride'
+          x-unique-bot-overrides: true
+          description: 完整替换的设备局部Bot覆盖；未列出Bot默认启用，与设备总开关取AND。仅引用当前身份有权的未删除Bot，否则404。
+        dnd:
+          $ref: '#/components/schemas/NotificationDND'
+        preview:
+          type: boolean
+        notify_channel:
+          type: string
+          enum:
+          - fcm
+          - vendor
+          - none
+        notify_provider:
+          type:
+          - string
+          - 'null'
+          enum:
+          - fcm
+          - opush
+          - null
+      required:
+      - device_id
+      - settings_version
+      - updated_at
+      - enabled
+      - bot_overrides
+      - dnd
+      - preview
+      - notify_channel
+      - notify_provider
+      additionalProperties: false
+      oneOf:
+      - properties:
+          notify_channel:
+            const: fcm
+          notify_provider:
+            const: fcm
+      - properties:
+          notify_channel:
+            const: vendor
+          notify_provider:
+            const: opush
+      - properties:
+          notify_channel:
+            const: none
+          notify_provider:
+            const: null
+      allOf:
+      - if:
+          properties:
+            settings_version:
+              const: 0
+        then:
+          properties:
+            updated_at:
+              type: 'null'
+            enabled:
+              const: true
+            bot_overrides:
+              const: []
+            dnd:
+              const:
+                enabled: false
+                timezone: UTC
+                start: '22:00'
+                end: 07:00
+            preview:
+              const: false
+            notify_channel:
+              const: fcm
+            notify_provider:
+              const: fcm
+        else:
+          properties:
+            updated_at:
+              $ref: '#/components/schemas/UTCDateTime'
+    NotificationSettingsState:
+      type: object
+      properties:
+        settings:
+          $ref: '#/components/schemas/NotificationSettings'
+        server_time:
+          $ref: '#/components/schemas/UTCDateTime'
+      required:
+      - settings
+      - server_time
+      additionalProperties: false
+    NotificationSettingsConflict:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              pattern: ^[A-Z][A-Z0-9_]*$
+              description: 稳定机器码；按 code 分支，不匹配中文 message。后续卡可增加 code。
+              enum:
+              - SETTINGS_CONFLICT
+              - SETTINGS_VERSION_EXHAUSTED
+            message:
+              type: string
+            request_id:
+              type: string
+              minLength: 1
+            retryable:
+              type: boolean
+            latest_settings_version:
+              $ref: '#/components/schemas/NotificationSettingsVersion'
+            recovery_path:
+              const: /devices/current/notifications
+          required:
+          - code
+          - message
+          - request_id
+          - retryable
+          - latest_settings_version
+          - recovery_path
+          additionalProperties: false
+      required:
+      - error
+      additionalProperties: false
+    SyncDeviceNotifications:
+      type: object
+      properties:
+        type:
+          const: device.notifications.updated
+        change_seq:
+          $ref: '#/components/schemas/Sequence'
+        settings:
+          allOf:
+          - $ref: '#/components/schemas/NotificationSettings'
+          - properties:
+              settings_version:
+                minimum: 1
+      required:
+      - type
+      - change_seq
+      - settings
+      additionalProperties: false
+      description: 仅认证设备device_id应用；其他设备事件忽略投影但仍按原批次提交游标，同设备仅较高settings_version替换。GET恢复先校验当前认证设备，再按版本应用，旧响应不得倒退；同device_id多Session共享偏好，不共享注册。
+    NotificationJobSnapshot:
+      type: object
+      properties:
+        session_id:
+          $ref: '#/components/schemas/ID'
+        device_id:
+          $ref: '#/components/schemas/ID'
+        purpose:
+          enum:
+          - sync
+          - alert
+        target_watermark:
+          $ref: '#/components/schemas/Sequence'
+        provider:
+          $ref: '#/components/schemas/PushProvider'
+        registration_version:
+          $ref: '#/components/schemas/PushRegistrationVersion'
+        settings_version:
+          $ref: '#/components/schemas/NotificationSettingsVersion'
+        reminder_key:
+          type: object
+          properties:
+            deployment_id:
+              $ref: '#/components/schemas/ID'
+            message_id:
+              $ref: '#/components/schemas/ID'
+          required:
+          - deployment_id
+          - message_id
+          additionalProperties: false
+        bot_id:
+          $ref: '#/components/schemas/ID'
+        bot_seq:
+          $ref: '#/components/schemas/Sequence'
+        expires_at:
+          $ref: '#/components/schemas/UTCDateTime'
+        alert_eligible:
+          type: boolean
+      required:
+      - session_id
+      - device_id
+      - purpose
+      - target_watermark
+      - provider
+      - registration_version
+      - settings_version
+      - reminder_key
+      - bot_id
+      - bot_seq
+      - expires_at
+      - alert_eligible
+      additionalProperties: false
+      description: 仅内部契约夹具，不是HTTP队列或厂商payload。sync也携带关联稳定键但不产生提醒；派生提醒须保留原事件资格/版本，不可由目标水位合并复活。
+      allOf:
+      - if:
+          properties:
+            purpose:
+              const: sync
+        then:
+          properties:
+            provider:
+              const: fcm
   responses:
     '400':
       description: 格式错误

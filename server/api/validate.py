@@ -2,6 +2,7 @@
 
 import copy
 from datetime import datetime
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import json
 import re
 from pathlib import Path
@@ -227,7 +228,164 @@ def bootstrap_state_valid(state):
     return False
 
 
+def notification_dnd(validator, enabled, instance, schema):
+    """时区必须能解析；跨午夜保留方向，不能把相等时段误当全天。"""
+    if not enabled or not isinstance(instance, dict):
+        return
+    if not isinstance(instance.get('timezone'), str):
+        return
+    try:
+        ZoneInfo(instance.get('timezone', ''))
+    except (ZoneInfoNotFoundError, ValueError):
+        yield ValidationError('免打扰时区不是可用IANA时区')
+    if instance.get('start') == instance.get('end'):
+        yield ValidationError('免打扰起止不能相同')
+
+
+def unique_bot_overrides(validator, enabled, instance, schema):
+    if enabled and isinstance(instance, list):
+        ids = [item['bot_id'] for item in instance
+               if isinstance(item, dict) and isinstance(item.get('bot_id'), str)]
+        if len(ids) != len(set(ids)):
+            yield ValidationError('同一设备Bot开关不能重复')
+
+
+def notification_in_dnd(config, instant):
+    dnd = config['dnd']
+    if not dnd['enabled']:
+        return False
+    local = datetime.fromisoformat(instant.replace('Z', '+00:00')).astimezone(ZoneInfo(dnd['timezone']))
+    clock = local.strftime('%H:%M')
+    start, end = dnd['start'], dnd['end']
+    return start <= clock < end if start < end else clock >= start or clock < end
+
+
+def notification_settings_state_valid(state, schemas):
+    """合成配置事务/恢复模型：每步核对全状态，不是数据库或HTTP实现。"""
+    data = copy.deepcopy(state['initial'])
+    wrapper = {'$ref': '#/components/schemas/NotificationSettingsUpdate', 'components': {'schemas': schemas}}
+    validator = ContractValidator(wrapper, format_checker=FormatChecker())
+    for step in state['steps']:
+        status, code, projection = 200, None, None
+        session = data['sessions'].get(step['session_id'])
+        if not session or not session['active']:
+            status, code = 401, 'AUTHENTICATION_REQUIRED'
+        elif step['action'] in ('get', 'put'):
+            device = session['device_id']
+            config = data['settings'][device]
+            if step['action'] == 'get':
+                projection = {'settings': copy.deepcopy(config), 'server_time': step['now']}
+            else:
+                request = step['request']
+                provider = request.get('notify_provider')
+                registration = session['registrations'].get(provider)
+                if not validator.is_valid(request):
+                    status, code = 422, 'VALIDATION_FAILED'
+                elif request['expected_version'] != config['settings_version']:
+                    status, code = 409, 'SETTINGS_CONFLICT'
+                elif config['settings_version'] == 9223372036854775807:
+                    status, code = 409, 'SETTINGS_VERSION_EXHAUSTED'
+                elif any(item['bot_id'] not in data['authorized_bots'] for item in request['bot_overrides']):
+                    status, code = 404, 'RESOURCE_NOT_FOUND'
+                elif (request['notify_channel'] == 'vendor'
+                      and (not registration or not registration['registered']
+                           or provider not in data['verified_platforms'])):
+                    status, code = 422, 'PROVIDER_NOT_READY'
+                else:
+                    updated = {k: copy.deepcopy(v) for k, v in request.items() if k != 'expected_version'}
+                    updated.update(device_id=device, settings_version=config['settings_version'] + 1,
+                                   updated_at=step['now'])
+                    data['settings'][device] = updated
+                    data['events'].append({'type': 'device.notifications.updated', 'settings': copy.deepcopy(updated)})
+                    projection = {'settings': copy.deepcopy(updated), 'server_time': step['now']}
+                if status == 409:
+                    projection = {'latest_settings_version': config['settings_version'],
+                                  'recovery_path': '/devices/current/notifications'}
+        elif step['action'] == 'apply':
+            # 跨设备事件不能污染当前投影；无论是否应用，原envelope游标规则不变。
+            candidate = step['settings']
+            local = data['local']
+            if (candidate['device_id'] == session['device_id']
+                    and candidate['settings_version'] > local['settings_version']):
+                data['local'] = copy.deepcopy(candidate)
+        elif step['action'] == 'revoke':
+            session['active'] = False
+        else:
+            return False
+        if {'status': status, 'code': code, 'projection': projection, 'data': data} != step['expected']:
+            return False
+    return True
+
+
+def notification_job_state_valid(state):
+    """合成租约和快照条件；平台结果不视为ACK，旧结果不修改新注册/配置。"""
+    snapshot = state['snapshot']
+    current = state['current']
+    config = current['settings']
+    now = datetime.fromisoformat(state['now'].replace('Z', '+00:00'))
+    parse = lambda value: datetime.fromisoformat(value.replace('Z', '+00:00'))
+    exact = (current['active'] and snapshot['session_id'] == current['session_id']
+             and snapshot['device_id'] == current['device_id'] == config['device_id']
+             and snapshot['provider'] == current['registration']['provider']
+             and current['registration']['registered']
+             and snapshot['registration_version'] == current['registration']['registration_version']
+             and snapshot['settings_version'] == config['settings_version'])
+    lease = (state['worker'] == current['lease_owner'] and now < parse(current['lease_expires_at'])
+             and current['device_serial_owner'] == state['worker'])
+    ready = exact and lease and now < parse(snapshot['expires_at'])
+    if snapshot['purpose'] == 'sync':
+        # none/vendor均允许FCM静默同步，不以提醒模式阻断数据补偿。
+        ready = ready and snapshot['provider'] == 'fcm'
+    else:
+        enabled = config['enabled'] and next((x['enabled'] for x in config['bot_overrides']
+                                               if x['bot_id'] == snapshot['bot_id']), True)
+        ready = (ready and snapshot['alert_eligible'] and current['alert_eligible'] and current['target_exists']
+                 and int(snapshot['bot_seq']) > int(current['read_seq']) and enabled
+                 and config['notify_channel'] != 'none' and config['notify_provider'] == snapshot['provider']
+                 and not notification_in_dnd(config, state['now']))
+        if snapshot['provider'] == 'opush':
+            ready = ready and current['platform_verified']
+    after = copy.deepcopy(current)
+    if state['action'] == 'before':
+        ready = ready and snapshot == current['job_snapshot'] and current['job_status'] == 'pending'
+        ready = ready and snapshot == current['job_snapshot'] and current['job_status'] == 'pending'
+        outcome = 'send' if ready else 'drop'
+        if ready:
+            after['job_status'] = 'sending'
+        if ready:
+            after['job_status'] = 'sending'
+        if (snapshot['purpose'] == 'alert' and notification_in_dnd(config, state['now'])):
+            after['alert_eligible'] = False
+    elif state['action'] == 'result':
+        # 已读/DND/过期可能在外发后变化：仅同一快照/租约能记录归一化结果，不能补响。
+        same_job = snapshot == current['job_snapshot'] and current['job_status'] == 'sending'
+        if exact and lease and same_job:
+            outcome = 'record'
+            after['job_status'] = state['result']
+            if state['result'] == 'unregistered' or (state['result'] == 'invalid_registration' and state['payload_valid']):
+                if after['registration']['registration_version'] == 9223372036854775807:
+                    outcome, after = 'exhausted', copy.deepcopy(current)
+                else:
+                    after['registration']['registration_version'] += 1
+                    after['registration']['registered'] = False
+        else:
+            outcome = 'stale'
+    elif state['action'] == 'merge':
+        # 合并只推进同步水位；保留原job及资格、版本、稳定键与expiry。
+        if exact and snapshot == current['job_snapshot']:
+            outcome = 'merged'
+            after['sync_target_watermark'] = str(max(int(current['sync_target_watermark']), int(state['new_watermark'])))
+        else:
+            outcome = 'stale'
+    else:
+        return False
+    return {'outcome': outcome, 'current': after} == state['expected']
+
 ContractValidator = validators.extend(Draft202012Validator, {
+    'x-notification-dnd': notification_dnd,
+    'x-unique-bot-overrides': unique_bot_overrides,
+    'x-notification-dnd': notification_dnd,
+    'x-unique-bot-overrides': unique_bot_overrides,
     'x-utf8-max-bytes': utf8_max_bytes,
     'x-byte-ranges': byte_ranges,
     'x-content-range': content_range,
@@ -586,6 +744,200 @@ PUSH_SCHEMAS = {'PushProvider': {'type': 'string', 'enum': ['fcm', 'opush']},
                            'additionalProperties': False}}
 
 
+
+NOTIFICATION_POLICY = {'owner': 'authenticated-Session.device_id-shared-across-sessions-never-assume-unique-device-session',
+ 'registration': 'Session.id+provider-independent-never-activate-mode',
+ 'initial': 'virtual-version-0-enabled-fcm-preview-false-no-event-time-null',
+ 'transaction': 'reauthenticate-current-session-check-bots-platform-registration-CAS-device-config-version-time-and-sync-change-atomic',
+ 'put': 'full-replacement-match-expected-increment-even-same-value-no-client-time',
+ 'conflict': '409-latest_settings_version-recovery_path-GET-before-retry',
+ 'exhaustion': '409-no-wrap-no-config-time-event-or-registration-partial-commit',
+ 'vendor': 'explicit-opush-valid-current-session-registration-and-server-verified-platform-otherwise-422-no-fallback',
+ 'sync': 'typed-device.notifications.updated-device_id-filter-strictly-newer-version-GET-current-recovery-no-H-epoch-floor-seed-change'}
+NOTIFICATION_JOB_POLICY = {'snapshot': 'session_id-device_id-purpose-target_watermark-provider-registration_version-settings_version-reminder_key-bot_id-bot_seq-expires_at-alert_eligible',
+ 'before': 'active-exact-session-device-registration-settings-and-mode-lease-device-serial-expiry-then-alert-enabled-bot-DND-unread-existing',
+ 'after': 'same-entire-snapshot-current-registration-config-active-session-and-live-lease-CAS-old-result-noop',
+ 'merge': 'sync-watermark-max-only-alert-eligibility-and-original-version-key-expiry-never-revive',
+ 'switch': 'future-new-events-only-stop-old-version-new-sends-isolate-inflight-no-cross-provider-timeout-retry',
+ 'dnd': 'drop-alert-eligibility-during-device-timezone-window-no-end-replay-sync-continues',
+ 'result': 'accepted-is-not-ACK-unknown-preserves-registration-no-cross-channel-resound',
+ 'vendor_text': {'title': 'RelayNest 有新消息', 'content': '打开 RelayNest 同步查看'},
+ 'fcm': 'data-only-hint-self-render-after-authoritative-sync-dedup-deployment-message-read-preview-DND-no-vendor-exemptions',
+ 'vendor_limit': 'only-vendor-accepted-offline-DND-read-delete-logout-switch-retraction-limit',
+ 'convergence': 'latest-confirmed-config-no-stale-fcm-resound-allowed-missed-alert-data-compensates'}
+NOTIFICATION_SCHEMAS = {'NotificationSettingsVersion': {'type': 'integer',
+                                 'minimum': 0,
+                                 'maximum': 9223372036854775807,
+                                 'description': '服务端设备配置版本；0仅虚拟默认，非客户端时间，首次CAS从0开始。'},
+ 'NotificationDND': {'type': 'object',
+                     'properties': {'enabled': {'type': 'boolean'},
+                                    'timezone': {'type': 'string',
+                                                 'minLength': 1,
+                                                 'maxLength': 128},
+                                    'start': {'type': 'string',
+                                              'pattern': '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$'},
+                                    'end': {'type': 'string',
+                                            'pattern': '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$'}},
+                     'required': ['enabled', 'timezone', 'start', 'end'],
+                     'additionalProperties': False,
+                     'x-notification-dnd': True,
+                     'description': 'IANA时区；start包含/end不包含，每日时段，start>end跨午夜，禁止相等。按该时区当时实际本地时间计算，包含DST重复时刻；缺失时刻自然无匹配。禁用仍保存有效配置。'},
+ 'NotificationBotOverride': {'type': 'object',
+                             'properties': {'bot_id': {'$ref': '#/components/schemas/ID'},
+                                            'enabled': {'type': 'boolean'}},
+                             'required': ['bot_id', 'enabled'],
+                             'additionalProperties': False},
+ 'NotificationSettingsUpdate': {'type': 'object',
+                                'properties': {'expected_version': {'$ref': '#/components/schemas/NotificationSettingsVersion'},
+                                               'enabled': {'type': 'boolean'},
+                                               'bot_overrides': {'type': 'array',
+                                                                 'maxItems': 1000,
+                                                                 'items': {'$ref': '#/components/schemas/NotificationBotOverride'},
+                                                                 'x-unique-bot-overrides': True,
+                                                                 'description': '完整替换的设备局部Bot覆盖；未列出Bot默认启用，与设备总开关取AND。仅引用当前身份有权的未删除Bot，否则404。'},
+                                               'dnd': {'$ref': '#/components/schemas/NotificationDND'},
+                                               'preview': {'type': 'boolean'},
+                                               'notify_channel': {'type': 'string',
+                                                                  'enum': ['fcm',
+                                                                           'vendor',
+                                                                           'none']},
+                                               'notify_provider': {'type': ['string', 'null'],
+                                                                   'enum': ['fcm', 'opush', None]}},
+                                'required': ['expected_version',
+                                             'enabled',
+                                             'bot_overrides',
+                                             'dnd',
+                                             'preview',
+                                             'notify_channel',
+                                             'notify_provider'],
+                                'additionalProperties': False,
+                                'oneOf': [{'properties': {'notify_channel': {'const': 'fcm'},
+                                                          'notify_provider': {'const': 'fcm'}}},
+                                          {'properties': {'notify_channel': {'const': 'vendor'},
+                                                          'notify_provider': {'const': 'opush'}}},
+                                          {'properties': {'notify_channel': {'const': 'none'},
+                                                          'notify_provider': {'const': None}}}],
+                                'description': '完整配置替换而非局部patch；不接受device_id/session_id/时间/版本或平台资格，设备归属从当前认证Session取得。'},
+ 'NotificationSettings': {'type': 'object',
+                          'properties': {'device_id': {'$ref': '#/components/schemas/ID'},
+                                         'settings_version': {'$ref': '#/components/schemas/NotificationSettingsVersion'},
+                                         'updated_at': {'oneOf': [{'$ref': '#/components/schemas/UTCDateTime'},
+                                                                  {'type': 'null'}]},
+                                         'enabled': {'type': 'boolean'},
+                                         'bot_overrides': {'type': 'array',
+                                                           'maxItems': 1000,
+                                                           'items': {'$ref': '#/components/schemas/NotificationBotOverride'},
+                                                           'x-unique-bot-overrides': True,
+                                                           'description': '完整替换的设备局部Bot覆盖；未列出Bot默认启用，与设备总开关取AND。仅引用当前身份有权的未删除Bot，否则404。'},
+                                         'dnd': {'$ref': '#/components/schemas/NotificationDND'},
+                                         'preview': {'type': 'boolean'},
+                                         'notify_channel': {'type': 'string',
+                                                            'enum': ['fcm', 'vendor', 'none']},
+                                         'notify_provider': {'type': ['string', 'null'],
+                                                             'enum': ['fcm', 'opush', None]}},
+                          'required': ['device_id',
+                                       'settings_version',
+                                       'updated_at',
+                                       'enabled',
+                                       'bot_overrides',
+                                       'dnd',
+                                       'preview',
+                                       'notify_channel',
+                                       'notify_provider'],
+                          'additionalProperties': False,
+                          'oneOf': [{'properties': {'notify_channel': {'const': 'fcm'},
+                                                    'notify_provider': {'const': 'fcm'}}},
+                                    {'properties': {'notify_channel': {'const': 'vendor'},
+                                                    'notify_provider': {'const': 'opush'}}},
+                                    {'properties': {'notify_channel': {'const': 'none'},
+                                                    'notify_provider': {'const': None}}}],
+                          'allOf': [{'if': {'properties': {'settings_version': {'const': 0}}},
+                                     'then': {'properties': {'updated_at': {'type': 'null'},
+                                                             'enabled': {'const': True},
+                                                             'bot_overrides': {'const': []},
+                                                             'dnd': {'const': {'enabled': False,
+                                                                               'timezone': 'UTC',
+                                                                               'start': '22:00',
+                                                                               'end': '07:00'}},
+                                                             'preview': {'const': False},
+                                                             'notify_channel': {'const': 'fcm'},
+                                                             'notify_provider': {'const': 'fcm'}}},
+                                     'else': {'properties': {'updated_at': {'$ref': '#/components/schemas/UTCDateTime'}}}}]},
+ 'NotificationSettingsState': {'type': 'object',
+                               'properties': {'settings': {'$ref': '#/components/schemas/NotificationSettings'},
+                                              'server_time': {'$ref': '#/components/schemas/UTCDateTime'}},
+                               'required': ['settings', 'server_time'],
+                               'additionalProperties': False},
+ 'NotificationSettingsConflict': {'type': 'object',
+                                  'properties': {'error': {'type': 'object',
+                                                           'properties': {'code': {'type': 'string',
+                                                                                   'pattern': '^[A-Z][A-Z0-9_]*$',
+                                                                                   'description': '稳定机器码；按 '
+                                                                                                  'code '
+                                                                                                  '分支，不匹配中文 '
+                                                                                                  'message。后续卡可增加 '
+                                                                                                  'code。',
+                                                                                   'enum': ['SETTINGS_CONFLICT',
+                                                                                            'SETTINGS_VERSION_EXHAUSTED']},
+                                                                          'message': {'type': 'string'},
+                                                                          'request_id': {'type': 'string',
+                                                                                         'minLength': 1},
+                                                                          'retryable': {'type': 'boolean'},
+                                                                          'latest_settings_version': {'$ref': '#/components/schemas/NotificationSettingsVersion'},
+                                                                          'recovery_path': {'const': '/devices/current/notifications'}},
+                                                           'required': ['code',
+                                                                        'message',
+                                                                        'request_id',
+                                                                        'retryable',
+                                                                        'latest_settings_version',
+                                                                        'recovery_path'],
+                                                           'additionalProperties': False}},
+                                  'required': ['error'],
+                                  'additionalProperties': False},
+ 'SyncDeviceNotifications': {'type': 'object',
+                             'properties': {'type': {'const': 'device.notifications.updated'},
+                                            'change_seq': {'$ref': '#/components/schemas/Sequence'},
+                                            'settings': {'allOf': [{'$ref': '#/components/schemas/NotificationSettings'},
+                                                                   {'properties': {'settings_version': {'minimum': 1}}}]}},
+                             'required': ['type', 'change_seq', 'settings'],
+                             'additionalProperties': False,
+                             'description': '仅认证设备device_id应用；其他设备事件忽略投影但仍按原批次提交游标，同设备仅较高settings_version替换。GET恢复先校验当前认证设备，再按版本应用，旧响应不得倒退；同device_id多Session共享偏好，不共享注册。'},
+ 'NotificationJobSnapshot': {'type': 'object',
+                             'properties': {'session_id': {'$ref': '#/components/schemas/ID'},
+                                            'device_id': {'$ref': '#/components/schemas/ID'},
+                                            'purpose': {'enum': ['sync', 'alert']},
+                                            'target_watermark': {'$ref': '#/components/schemas/Sequence'},
+                                            'provider': {'$ref': '#/components/schemas/PushProvider'},
+                                            'registration_version': {'$ref': '#/components/schemas/PushRegistrationVersion'},
+                                            'settings_version': {'$ref': '#/components/schemas/NotificationSettingsVersion'},
+                                            'reminder_key': {'type': 'object',
+                                                             'properties': {'deployment_id': {'$ref': '#/components/schemas/ID'},
+                                                                            'message_id': {'$ref': '#/components/schemas/ID'}},
+                                                             'required': ['deployment_id',
+                                                                          'message_id'],
+                                                             'additionalProperties': False},
+                                            'bot_id': {'$ref': '#/components/schemas/ID'},
+                                            'bot_seq': {'$ref': '#/components/schemas/Sequence'},
+                                            'expires_at': {'$ref': '#/components/schemas/UTCDateTime'},
+                                            'alert_eligible': {'type': 'boolean'}},
+                             'required': ['session_id',
+                                          'device_id',
+                                          'purpose',
+                                          'target_watermark',
+                                          'provider',
+                                          'registration_version',
+                                          'settings_version',
+                                          'reminder_key',
+                                          'bot_id',
+                                          'bot_seq',
+                                          'expires_at',
+                                          'alert_eligible'],
+                             'additionalProperties': False,
+                             'description': '仅内部契约夹具，不是HTTP队列或厂商payload。sync也携带关联稳定键但不产生提醒；派生提醒须保留原事件资格/版本，不可由目标水位合并复活。',
+                             'allOf': [{'if': {'properties': {'purpose': {'const': 'sync'}}},
+                                        'then': {'properties': {'provider': {'const': 'fcm'}}}}]}}
+
+
 def main():
     document = yaml.safe_load((ROOT / 'openapi.yaml').read_text(encoding='utf-8'))
     validate_spec(document)
@@ -628,6 +980,12 @@ def main():
         if ('device_session_state' in case
                 and device_session_state_valid(case['device_session_state']) != case.get('state_valid', True)):
             failures.append(case['name'] + ' 设备会话状态声明')
+        if ('notification_settings_state' in case
+                and notification_settings_state_valid(case['notification_settings_state'], schemas) != case.get('state_valid', True)):
+            failures.append(case['name'] + ' 通知配置状态')
+        if ('notification_job_state' in case
+                and notification_job_state_valid(case['notification_job_state']) != case.get('state_valid', True)):
+            failures.append(case['name'] + ' 通知发送状态')
         if ('push_registration_state' in case
                 and push_registration_state_valid(case['push_registration_state']) != case.get('state_valid', True)):
             failures.append(case['name'] + ' 注册事务状态声明')
@@ -639,7 +997,11 @@ def main():
             if allowed != case['valid']:
                 failures.append(case['name'] + ' 权限声明')
         if 'operationId' in case:
-            response = resolve(document, operation_map[case['operationId']]['responses'][str(case['status'])])
+            declared_response = operation_map[case['operationId']]['responses'].get(str(case['status']))
+            if declared_response is None:
+                failures.append(case['name'] + ' 操作响应状态缺失')
+                continue
+            response = resolve(document, declared_response)
             response_schema = (response['headers'][case['header']]['schema'] if 'header' in case
                                else response['content']['application/json']['schema'])
             wrapped = {**response_schema, 'components': {'schemas': schemas}}
@@ -653,6 +1015,7 @@ def main():
         raise SystemExit('示例校验与预期不符：' + '、'.join(failures))
 
     new_security = {
+        'getCurrentNotifications': ['AdminBearer'], 'updateCurrentNotifications': ['AdminBearer'],
         'getCurrentPush': ['AdminBearer'], 'updateCurrentPush': ['AdminBearer'],
         'deleteCurrentPush': ['AdminBearer'],
         'createBotMessage': ['BotAPIToken'], 'editBotMessage': ['BotAPIToken'],
@@ -670,7 +1033,7 @@ def main():
     idempotent = {'createBotMessage', 'editBotMessage', 'createWebhookMessage',
                   'createClientMessage', 'createCallback', 'uploadAttachment', 'retryDelivery'}
     reference_ops = set(new_security) - {'listClientMessages', 'getClientMessage',
-                                         'syncClientChanges', 'updateClientRead', 'bootstrapClient', 'connectClientWS', 'getCurrentPush', 'updateCurrentPush', 'deleteCurrentPush'} - delivery_ids
+                                         'syncClientChanges', 'updateClientRead', 'bootstrapClient', 'connectClientWS', 'getCurrentPush', 'updateCurrentPush', 'deleteCurrentPush', 'getCurrentNotifications', 'updateCurrentNotifications'} - delivery_ids
     for path, item in document['paths'].items():
         for method, operation in item.items():
             if method == 'parameters':
@@ -760,6 +1123,34 @@ def main():
             expected_codes['409'] = ['REGISTRATION_CONFLICT', 'REGISTRATION_VERSION_EXHAUSTED']
         if op.get('requestBody') != expected_body or op.get('x-error-codes') != expected_codes:
             raise SystemExit('注册请求/错误声明不符：' + oid)
+    for name, expected in NOTIFICATION_SCHEMAS.items():
+        if schemas.get(name) != expected:
+            raise SystemExit('通知Schema冻结声明不符：' + name)
+    for method, oid in (('get', 'getCurrentNotifications'), ('put', 'updateCurrentNotifications')):
+        op = document['paths']['/devices/current/notifications'][method]
+        statuses = {'200', '400', '401', '403', '429', '503'}
+        codes = {'401': ['AUTHENTICATION_REQUIRED'], '403': ['FORBIDDEN']}
+        if method == 'put':
+            statuses |= {'404', '409', '413', '422'}
+            codes.update({'404': ['RESOURCE_NOT_FOUND'], '409': ['SETTINGS_CONFLICT', 'SETTINGS_VERSION_EXHAUSTED'],
+                          '422': ['VALIDATION_FAILED', 'PROVIDER_NOT_READY']})
+        expected_body = ({'required': True, 'x-max-bytes': 262144, 'content': {'application/json': {'schema': {
+            '$ref': '#/components/schemas/NotificationSettingsUpdate'}}}} if method == 'put' else None)
+        if (op['operationId'] != oid or set(op['responses']) != statuses
+                or op.get('x-client-type') != 'android' or op.get('parameters', []) != []
+                or op.get('requestBody') != expected_body or op.get('x-error-codes') != codes
+                or op.get('x-notification-settings-policy') != NOTIFICATION_POLICY
+                or op.get('x-notification-job-policy') != NOTIFICATION_JOB_POLICY
+                or op['responses']['200']['content']['application/json']['schema'] != {
+                    '$ref': '#/components/schemas/NotificationSettingsState'}):
+            raise SystemExit('通知路径/权限/状态/事务声明不符：' + oid)
+        if method == 'put' and op['responses']['409']['content']['application/json']['schema'] != {
+                '$ref': '#/components/schemas/NotificationSettingsConflict'}:
+            raise SystemExit('通知冲突缺少最新版本及恢复路径')
+    expected_union = ['SyncMessageUpsert', 'SyncMessageDelete', 'SyncBotUpsert', 'SyncBotDelete',
+                      'SyncReadUpdate', 'SyncDeliveryUpsert', 'SyncDeviceNotifications']
+    if schemas['SyncChange']['oneOf'] != [{'$ref': '#/components/schemas/' + name} for name in expected_union]:
+        raise SystemExit('同步union设备通知分支不完整')
     if set(operation_map) != baseline_ids | set(new_security) | delivery_ids | {'listDeviceSessions', 'revokeDeviceSession'}:
         raise SystemExit('冻结操作集合不符')
     if any(method in document['paths']['/client/messages/{id}'] for method in ('put', 'patch')):

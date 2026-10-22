@@ -222,3 +222,42 @@ DELETE 先匹配屏障：有效注册清 token 并将屏障加一、生成服务
 内部发送结果不是HTTP接口。最小条件解绑快照为 `Session.id + provider + registration_version`，发送前和结果提交时重验会话有效及精确当前注册；仅明确 UNREGISTERED，或已确认合法载荷的无效注册错误可以解绑。该解绑与客户端删除同样保留递增屏障；耗尽则不提交，记录归一化内部失败等待后续处置。旧版本结果、网络错误、未知结果、不合法载荷均保留注册，不删除新token、其他provider、其他会话或偏好。撤销/退出先使对应Session全部映射不可用，旧工作即使晚到也不能影响重新登录的新Session。完整用途/配置/提醒快照、通知模式与偏好CAS/同步union交下一卡；本卡不新增后台HTTP job、SDK或厂商payload。
 
 `examples.json` 的 `push_registration_state` 是合成事务序列，每步比对全部会话、两通道、版本/时间和偏好的快照；正反序列验证CAS、删除屏障、旧失败、未知结果与撤销/重登隔离。它不执行HTTP、数据库、多worker、SDK、系统展示或真实注销；以上以及手机/NAS现场均NOT_RUN，不能据此放行G-OPPO。
+
+## P03-07-S02-S03 设备通知设置与联合发送条件
+
+新增 `GET/PUT /devices/current/notifications`（`getCurrentNotifications/updateCurrentNotifications`），仅当前有效 Android AdminBearer，Web Cookie（含CSRF）、Bot/Webhook凭据均无权。没有目标设备/会话参数；权限错误401/403，共有400/429/503，PUT另有404（Bot不存在/无权）、409、413、422，全部响应no-store。请求 `NotificationSettingsUpdate` 完整替换设备配置：`expected_version/enabled/bot_overrides[{bot_id,enabled}]/dnd{enabled,timezone,start,end}/preview/notify_channel/notify_provider`，Bot不在覆盖列表时默认启用，与设备总开关取AND；重复Bot或未知字段拒绝。`fcm/fcm`、`vendor/opush`、`none/null` 是仅有的模式/provider组合。
+
+归属依据T6.3“通知偏好始终属于设备”和T9.3当前认证设备/会话：配置键为认证 `Session.device_id`，注册仍以不可复用 `Session.id + provider` 隔离。不能假定一个device_id只有一个Session。同设备多Session共享偏好，设置写入与发送检查当前有效Session自己的注册；另一Session缺注册不得借用其token。撤销只撤销目标Session，不删除设备偏好，不修改登录/单活规则。
+
+不存在持久设置时，GET返回虚拟默认：`settings_version=0, updated_at=null, enabled=true, bot_overrides=[], dnd={enabled:false,timezone:UTC,start:22:00,end:07:00}, preview=false, notify_channel=fcm, notify_provider=fcm`；无设置变更事件。首次PUT expected_version=0。之后每个成功PUT（含同值）在同一事务重验身份/归属、Bot授权、注册/平台前置、CAS，服务端版本+1、UTC `updated_at`和 `device.notifications.updated` 事件一起提交。并发失配409 `SETTINGS_CONFLICT`，耗尽409 `SETTINGS_VERSION_EXHAUSTED`，均为 `NotificationSettingsConflict`：公共Error四字段外仅增加 `error.latest_settings_version/recovery_path`；恢复路径固定 `/devices/current/notifications`。先GET并协调当前意图，不能盲重放未知旧请求。上限9223372036854775807，耗尽不回绕、不部分提交时间/事件/注册。版本不是客户端时间。
+
+GET和PUT的200是 `NotificationSettingsState{settings,server_time}`；settings含 `device_id/settings_version/updated_at` 及全部配置字段，无token/厂商凭据。`server_time`仅服务端当前时间；配置时间只由服务端产生。vendor仅显式选择且本会话opush注册有效、服务器已核对应平台前置时可保存；缺任一条件422 `PROVIDER_NOT_READY`，不静默回退。平台资格来自服务器配置/验证，不能由请求伪造。OPPO账号未准备只阻实际激活/实测；不编造SDK/REST/资格/签名/分类/错误码。注册成功不改配置；首次fcm即使无注册仍沿前台和周期补偿获取数据。
+
+`NotificationDND`使用可解析IANA时区，HH:mm的[start,end)，start>end跨午夜，start=end拒绝。按事件当时和发送当时的本地墙钟过滤；DST重复时刻均按同一窗口，跳过的时刻无匹配。命中时丢弃该事件提醒资格，静默同步继续，结束不补响。`preview`只管FCM同步后本地自绘：保留系统通知权限/渠道、当前可见会话、设备/Bot开关、锁屏私有可见性、无正文缓存兜底、共享已读/删除取消和 `(deployment_id,message_id)` 去重；编辑不响铃、缓存重建不批量提醒。vendor永远固定title「RelayNest 有新消息」、content「打开 RelayNest 同步查看」，不按preview发送正文。
+
+### 同步与恢复keys
+
+`SyncChange` 有意新增严格分支 `SyncDeviceNotifications{type:device.notifications.updated,change_seq,settings}`，使用原 `SyncPage` envelope与 `server_time`。应用时先比较认证device_id，不同设备忽略投影但仍按既有分页完成规则推进游标；同设备仅较高settings_version替换，重复/旧版不倒退。GET恢复同样先校验当前认证设备及版本，不把旧设备响应应用到新设备。bootstrap/epoch/floor/generation重建沿原S01流程，另取当前通知配置后才做提醒决策；设置GET不能充当完成sync-result或bootstrap-seed。H/floor/epoch/种子与WS衔接规则、bootstrap形状均不变。其余全局历史/附件配置、健康及全局设置变更分支由原P03-07-S03补齐；没有任意object占位。
+
+### 内部job快照与D1～D3
+
+`NotificationJobSnapshot`仅用于内部契约/合成夹具，未新增HTTP队列或厂商payload。字段为 `session_id/device_id/purpose(sync|alert)/target_watermark/provider/registration_version/settings_version/reminder_key{deployment_id,message_id}/bot_id/bot_seq/expires_at/alert_eligible`。Session.id即不可复用会话代次。稳定键跨重试保留；sync必须FCM，vendor/none可继续FCM静默同步，不能派生旧提醒。创建时按事件资格过滤并固定原配置代次；DND命中过的事件不能因发送延迟/水位合并恢复资格。
+
+发送前检查有效精确会话/设备、当前注册版本、配置版本、目的/模式、有效租约与同设备串行所有权、expiry；alert另查设备/Bot开关、时区DND、共享已读、目标仍存在及保留的提醒资格，vendor还查服务器平台条件。只有pending且与当前job完整快照相等时可开始发送，避免重复worker发送。发送后以整个相同快照、当前注册/配置/有效会话和活租约作CAS；旧worker/旧注册/旧配置/旧水位/旧稳定键结果均不能修改新状态。外发后新已读/DND/过期不能倒转已经发生的发送；只能同快照记结果，不重新获得提醒资格。同会话/注册/配置代次和相同原job才能合并；合并只取sync目标水位max，不改变原提醒的代次、稳定键、expiry或已丢弃资格。
+
+切换只作用于未来新事件；先停止旧版本新发送，使旧job失效，并隔离已外发/在途/未知结果。超时不跨FCM补响；客户端只根据最新确认配置决定是否自绘，离线不能确认vendor生效时不凭旧fcm配置补响。收敛可漏提醒，数据仍补偿。accepted仅平台受理，绝不是展示/同步/已读ACK；未知/暂态/限流/配置错误保留注册，不能跨通道重响。内部明确无效注册仍遵循前卡同Session/provider/registration_version条件解绑与递增墓碑；耗尽不部分提交。
+
+仅vendor接受平台离线积压恢复时DND/已读/删除/退出/切换后无法可靠撤回的限制，以及旧通知/在途残余。FCM继续自绘、去重、共享已读、preview、DND全套要求，不扩豁免。适配器仅收固定通用提示或无正文FCM hint，禁止正文、附件URL、callback、凭据/原厂错误串。这些是声明及状态夹具；HTTP、数据库、多worker、SDK、平台展示、真机DND、手机/NAS均NOT_RUN，不放行G-OPPO或完整G-API。
+
+### 父S02八项联合证据
+
+| 父验收 | 实际证据（均为契约/合成检查） |
+| --- | --- |
+| 1 会话列表/撤销 | 前卡 `listDeviceSessions/revokeDeviceSession`，GET /devices，DELETE /devices/{id}/session，按Session.id精确撤销；`Session/DeviceSessionPage`；S01-F01/A02已集成，保留687例基段中的会话/权限例。 |
+| 2 多通道注册 | 前卡 `updateCurrentPush/getCurrentPush` PUT/GET /devices/current/push；`PushRegistrationUpdate/PushRegistrationState`与全部注册版本/恢复例保持。 |
+| 3 条件删除/迟到结果 | 前卡 `deleteCurrentPush` DELETE /devices/current/push/{provider}，body `PushRegistrationDelete{expected_version}`；有效删除屏障递增、墓碑保留、重登隔离；本卡结果快照模型联合旧结果/未知结果/耗尽。 |
+| 4 通知CAS/恢复 | 本卡两操作及9个Schema，`通知 配置CAS恢复跨设备同设备多Session撤销`、合法/非法模式、缺注册/平台、冲突响应、耗尽全状态例。 |
+| 5 设置变更/版本时间 | typed SyncDeviceNotifications与当前GET恢复，跨设备忽略、同设备只取更高版本，耗尽拒绝全事务；原sync/bootstrap/WS全部例保留。 |
+| 6 D1～D3 | 固定通用文案、显式vendor、首次FCM、仅未来事件、FCM无豁免及DND资格永久丢弃；本段政策与job状态例，外部展示NOT_RUN。 |
+| 7 联合夹具/快照 | 全部旧注册/会话例保留，新配置全状态、before/result/merge、跨设备/同设备多Session、租约/串行、旧快照及敏感字段正反例；隔离破坏检查见本卡实施报告。 |
+| 8 完整交接/非回归 | 本文枚举三卡5条路径7个操作（含恢复GET和条件DELETE）、权限/状态/Schema及同步扩展；锁/旧组件/765例比较见实施报告；原S03只接剩余全局分支。真实运行时与G-API未验收。 |
