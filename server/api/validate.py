@@ -173,7 +173,8 @@ def bootstrap_state_valid(state):
         elif not state['bootstrap_valid']:
             status = 410
         elif (not state['sync_integrity'] or state['identity'] != state['sync_identity']
-              or state['epoch'] != state['sync_epoch'] or not state['cycle_complete']
+              or state['epoch'] != state['sync_epoch']
+              or state.get('verified_cursor_purpose') != 'sync-result' or not state['cycle_complete']
               or int(state['position']) < int(state['h'])):
             status = 400
         else:
@@ -182,6 +183,22 @@ def bootstrap_state_valid(state):
                 else 'BOOTSTRAP_RESET_REQUIRED' if status == 410
                 else 'INVALID_SYNC_CURSOR' if status == 400 else None)
         return status == state['expected_status'] and code == state['expected_code']
+    if kind == 'catchup':
+        # 合成服务端执行链：seed的完成位必须让冻结sync规则捕获新H；
+        # 实际批次产出的完成位/位置进入verify，来源不是客户端请求字段。
+        cursor = {'kind': 'cursor', 'identity': 'a1', 'cursor_identity': 'a1',
+                  'epoch': 'e1', 'cursor_epoch': 'e1', 'position': state['h'],
+                  'floor': state['h'], 'complete': state['seed_complete'],
+                  'h': state['h'], 'server_h': state['current'],
+                  'expected_h': state['current'], 'expected_status': 200}
+        batch = {'kind': 'batch', 'position': state['h'], 'h': state['current'],
+                 'events': state['events'], 'limit': state['limit'],
+                 'returned': state['returned'], 'has_more': state['has_more'],
+                 'next_position': state['next_position'], 'expected': True}
+        proof = dict(state['verify'], verified_cursor_purpose='sync-result',
+                     cycle_complete=not state['has_more'], position=state['next_position'])
+        return (sync_state_valid(cursor) and sync_state_valid(batch)
+                and bootstrap_state_valid(proof))
     if kind == 'page':
         # 当前投影扫描；删除可使页变空，附件消失不伪造文件可用。
         rows = sorted(state['rows'], key=lambda row: (row['bot_id'], int(row['bot_seq'])))
@@ -504,6 +521,11 @@ def main():
                  'code': 'BOOTSTRAP_RESET_REQUIRED',
                  'conditions': ['now >= expires_at', 'epoch != token.epoch', 'floor > H']},
      'initial_sync_cursor': 'completed-cycle-at-H-same-administrator-and-epoch',
+     'cursor_provenance': {
+         'protection': 'server-verified-integrity-bound-issuance-purpose-not-client-input',
+         'seed': 'bootstrap-seed-rejected-by-verify-even-if-complete-at-H',
+         'catchup': 'seed-starts-new-sync-cycle-capturing-current-high-watermark',
+         'accepted': 'actual-sync-result-and-completed-cycle-at-or-after-H'},
      'verification': 'after-all-pages-and-completed-sync-cycle-at-or-after-H-recheck-epoch-floor',
      'verification_cursor_error': {'status': 400, 'code': 'INVALID_SYNC_CURSOR'},
      'generation': ['independent-staging',
@@ -543,6 +565,8 @@ def main():
     page = schemas['BootstrapPage']
     if page.get('x-bootstrap-envelope') is not True or page['properties']['messages'].get('maxItems') != 200:
         raise SystemExit('bootstrap缺少跨字段边界检查')
+    if 'bootstrap-seed' not in page['properties']['sync_cursor'].get('description', ''):
+        raise SystemExit('bootstrap种子签发用途说明缺失')
     if schemas['BootstrapVerified'].get('x-bootstrap-verified') is not True:
         raise SystemExit('bootstrap缺少最终复核边界检查')
     for name in ('BootstrapPage', 'BootstrapMessage', 'BootstrapVerified'):

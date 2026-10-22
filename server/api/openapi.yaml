@@ -1474,6 +1474,11 @@ paths:
           - epoch != token.epoch
           - floor > H
         initial_sync_cursor: completed-cycle-at-H-same-administrator-and-epoch
+        cursor_provenance:
+          protection: server-verified-integrity-bound-issuance-purpose-not-client-input
+          seed: bootstrap-seed-rejected-by-verify-even-if-complete-at-H
+          catchup: seed-starts-new-sync-cycle-capturing-current-high-watermark
+          accepted: actual-sync-result-and-completed-cycle-at-or-after-H
         verification: after-all-pages-and-completed-sync-cycle-at-or-after-H-recheck-epoch-floor
         verification_cursor_error:
           status: 400
@@ -2906,6 +2911,7 @@ components:
         has_more:
           type: boolean
         sync_cursor:
+          description: 服务端完整性保护的bootstrap-seed；同身份/epoch、位置H且轮次完成，调用sync开启捕获当前高水位的新轮次；原seed不可用于verify。
           $ref: '#/components/schemas/OpaqueCursor'
         issued_at:
           $ref: '#/components/schemas/UTCDateTime'
@@ -2931,6 +2937,7 @@ components:
       additionalProperties: false
       x-bootstrap-envelope: true
     BootstrapVerified:
+      description: 仅在末页receipt有效且服务端验证游标签发用途为实际sync结果、轮次完成且位置≥原H后返回；无变化sync结果位置可等于H。
       x-bootstrap-verified: true
       type: object
       properties:

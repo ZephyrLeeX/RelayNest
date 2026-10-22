@@ -135,8 +135,10 @@ ACK请求为 `{consumer_id,lease_token}`。提交时按当前凭据代次、Bot�
 
 令牌为服务端完整性验证的不透明值，绑定 administrator_id/epoch/high_watermark/position（bot_id,bot_seq）/snapshot_id/issued_at/expires_at/purpose/all_pages_complete。有效期严格为首次签发起900秒，续页和复核不续期。非法、篡改、跨身份、位置不符、用途或参数组合错误 → `400 INVALID_BOOTSTRAP_TOKEN`。`now>=expires_at`、epoch变化、`floor>H` → `410 BOOTSTRAP_RESET_REQUIRED`；floor=H仍有效。必须提示仅保留部分历史并重新启动重建，不跳过缺口，不记为发送失败。
 
-所有分页完成后，从响应 `sync_cursor`（同身份同epoch、已完成轮次位置H）调用已有 `/client/sync` 追赶 `(H,current]`。批次和游标原子保存，提示不会推进游标。再调用 `phase=verify&token=<末页page_token>&sync_cursor=<追赶完成游标>`；page阶段禁止sync_cursor，verify必须携带末页receipt和完成轮次且位置≥H的有效sync游标，limit仅page生效。先验证bootstrap令牌及epoch/floor，再验证sync游标；后者非法、跨身份/epoch、未完成或位置不足 → `400 INVALID_SYNC_CURSOR`。成功返回 `kind=verified`、epoch、原H、当前floor、catchup_position、server_time。该复核不冻结后续写入；切换后仍从已保存sync游标继续增量同步，发现epoch/floor失效继续重建。
+所有分页完成后，从响应 `sync_cursor`（同身份同epoch、已完成轮次位置H的 bootstrap-seed）调用已有 `/client/sync` 追赶 `(H,current]`。seed保留完成位，使sync按既有规则开启新轮次、捕获调用时当前高水位；不能固定旧H而跳过分页期间新增事件。批次和游标原子保存，提示不会推进游标。再调用 `phase=verify&token=<末页page_token>&sync_cursor=<追赶完成游标>`；page阶段禁止sync_cursor，verify必须携带末页receipt和完成轮次且位置≥H的有效sync游标，limit仅page生效。先验证bootstrap令牌及epoch/floor，再验证sync游标；bootstrap专属 `cursor_provenance` 要求服务端验证受完整性保护的签发用途：原seed即使完整性、身份、epoch、完成位及位置H均有效也必须拒绝；仅接受实际sync返回的结果，零变化完成结果位置H合法。用途不是客户端可提交的source字段，也不要求游标等于verify时最新水位；不改变既有sync/read的公开字段或轮次规则。后者为原seed、非法、跨身份/epoch、未完成或位置不足 → `400 INVALID_SYNC_CURSOR`。成功返回 `kind=verified`、epoch、原H、当前floor、catchup_position、server_time。该复核不冻结后续写入；切换后仍从已保存sync游标继续增量同步，发现epoch/floor失效继续重建。
 
 重建写入独立 generation，保留本地未确认 outbox 和上传任务。全部页、追赶、最终epoch/floor复核完成后，客户端在同一本地事务原子切换 generation，并移除不在服务器集合的旧缓存；失败或崩溃不能暴露半代数据，重放按版本幂等。issued_at/expires_at是本次重建会话的服务端签发/固定到期时间，server_time为响应时间；实体时间沿既有语义，不决定排序或版本胜负。
 
 新增 BootstrapMessage/BootstrapPage/BootstrapVerified/BootstrapResponse 四个严格 Schema，复用原 Message/Bot/ReadState/Sequence/Version/SyncEpoch/OpaqueCursor。`x-bootstrap-policy` 与两个 envelope 扩展及合成状态例核对快照、期限、分页、恢复门槛；不代表真实 SQLite 事务、HTTP鉴权/令牌实现、附件竞态或 Android/Room generation 已实现或实测。WS、设备通知/全局设置分支分别留后续 S01-S03、原 S02/S03，不放行 G-API。
+
+F01回归：verify合成声明的 `verified_cursor_purpose` 表示服务端已验证的签发用途，不是HTTP参数或客户端自报；`catchup` 将冻结sync游标/批次规则的结果接入verify，覆盖零变化、新增事件和多页未完成。这里只声明令牌用途隔离，真实签发与防篡改仍须运行时验证。
