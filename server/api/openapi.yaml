@@ -1363,6 +1363,161 @@ paths:
         - RESOURCE_NOT_FOUND
         '403':
         - PERMISSION_DENIED
+  /client/sync:
+    get:
+      operationId: syncClientChanges
+      security:
+      - AdminBearer: []
+      x-client-type: android
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+              description: 受保护响应固定 no-store。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '410':
+          $ref: '#/components/responses/410'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      summary: 固定高水位增量同步
+      description: 仅Android管理员Bearer；Web Cookie、Bot Token及Webhook Key不得读取正文。管理员域绑定游标，跨身份/篡改/格式错误为400
+        INVALID_SYNC_CURSOR；有效游标epoch不符或位置小于floor为410 SYNC_RESET_REQUIRED，必须提示仅保留部分历史并重建服务端缓存，不跳缺口或记为传输失败。省略cursor从当前epoch位置0开始，仍执行floor检查；完成游标下一轮重新冻结H。事件与当前投影同一读事务，无权实体不得泄漏正文。客户端事务保存批次和next_cursor，提交前崩溃重放；旧版本/重复删除幂等。停用Bot仍可同步授权历史。
+      parameters:
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/OpaqueCursor'
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 200
+      x-sync-policy:
+        cursor_binding:
+        - administrator_id
+        - epoch
+        - high_watermark
+        - position
+        - cycle_complete
+        cursor_integrity: server-verified-opaque
+        initial_position: '0'
+        initial_epoch: current
+        high_watermark: fixed-per-cycle
+        completed_cycle: capture-new-high-watermark
+        order: ascending-change_seq
+        page_limit: 200
+        projection: same-read-transaction-current
+        deleted_projection: body-free-tombstone
+        gap: never-skip
+        reset_status: 410
+        reset_code: SYNC_RESET_REQUIRED
+        invalid_cursor_status: 400
+        invalid_cursor_code: INVALID_SYNC_CURSOR
+        identity_mismatch_status: 400
+        floor_comparison: position < floor
+        epoch_comparison: cursor.epoch != current.epoch
+      x-error-codes:
+        '400':
+        - INVALID_SYNC_CURSOR
+        '410':
+        - SYNC_RESET_REQUIRED
+  /client/bots/{id}/read:
+    put:
+      operationId: updateClientRead
+      security:
+      - AdminBearer: []
+      x-client-type: android
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+              description: 受保护响应固定 no-store。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateReadResponse'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '410':
+          $ref: '#/components/responses/410'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      summary: 跨设备合并Bot共享已读
+      description: 仅Android管理员Bearer；Web Cookie/Bot/Webhook不可调用。用户查看会话后提交实际展示最大bot_seq，不可使用change_seq；服务端不能证明实际展示，须由客户端遵守。验证through_seq不超过该Bot曾存在的最大bot_seq，超过422
+        READ_SEQ_OUT_OF_RANGE；不存在/无权Bot返回404 RESOURCE_NOT_FOUND，停用Bot仍可阅读。原子max合并且前进时同事务更新version/updated_at并写read.updated变更；无前进保持原版本/时间，不产生重复变更。未读只计现存application且bot_seq>read_seq，编辑/自身发送/callback/过期不增加未读。其他设备同步后撤销对应通知，不保证离线通知即时撤回或跨设备原子去重；设备通知偏好由后卡负责。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ID'
+      requestBody:
+        required: true
+        x-max-bytes: 262144
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateReadRequest'
+      x-read-policy:
+        input: actually-displayed-bot_seq
+        upper_bound: bot-highest-ever-existing-bot_seq
+        merge: max
+        advance: same-transaction-read-version-and-shared-change
+        unchanged: no-version-time-or-event-change
+        unread: existing-application-with-bot_seq>read_seq
+        exclude:
+        - administrator
+        - callback
+        - edit
+        - expired
+        out_of_range_status: 422
+        out_of_range_code: READ_SEQ_OUT_OF_RANGE
+      x-error-codes:
+        '404':
+        - RESOURCE_NOT_FOUND
+        '422':
+        - READ_SEQ_OUT_OF_RANGE
 components:
   schemas:
     ID:
@@ -2392,6 +2547,186 @@ components:
       - delivery
       additionalProperties: false
       description: failed→pending后的元数据快照；新retry_generation，attempt重置0；同键恢复原结果，即使随后状态已变化。
+    SyncEpoch:
+      type: string
+      minLength: 1
+      description: 服务端同步历史世代的不透明标识；客户端原样保存，不使用客户端时间。
+    ReadState:
+      type: object
+      properties:
+        bot_id:
+          $ref: '#/components/schemas/ID'
+        read_seq:
+          $ref: '#/components/schemas/Sequence'
+        version:
+          $ref: '#/components/schemas/Version'
+        updated_at:
+          $ref: '#/components/schemas/UTCDateTime'
+      required:
+      - bot_id
+      - read_seq
+      - version
+      - updated_at
+      additionalProperties: false
+    UpdateReadRequest:
+      type: object
+      properties:
+        through_seq:
+          $ref: '#/components/schemas/Sequence'
+      required:
+      - through_seq
+      additionalProperties: false
+    UpdateReadResponse:
+      type: object
+      properties:
+        read:
+          $ref: '#/components/schemas/ReadState'
+        server_time:
+          $ref: '#/components/schemas/UTCDateTime'
+      required:
+      - read
+      - server_time
+      additionalProperties: false
+      description: 返回 max(原read_seq,through_seq)；未前进时版本/updated_at不变且不重复产生共享变更。server_time为本次服务端响应时间。
+    SyncMessageUpsert:
+      type: object
+      properties:
+        type:
+          const: message.upsert
+        change_seq:
+          $ref: '#/components/schemas/Sequence'
+        message:
+          $ref: '#/components/schemas/Message'
+      required:
+      - type
+      - change_seq
+      - message
+      additionalProperties: false
+    SyncMessageDelete:
+      type: object
+      properties:
+        type:
+          const: message.deleted
+        change_seq:
+          $ref: '#/components/schemas/Sequence'
+        id:
+          $ref: '#/components/schemas/ID'
+        bot_id:
+          $ref: '#/components/schemas/ID'
+        bot_seq:
+          $ref: '#/components/schemas/Sequence'
+        revision:
+          $ref: '#/components/schemas/Version'
+        deleted_at:
+          $ref: '#/components/schemas/UTCDateTime'
+      required:
+      - type
+      - change_seq
+      - id
+      - bot_id
+      - bot_seq
+      - revision
+      - deleted_at
+      additionalProperties: false
+    SyncBotUpsert:
+      type: object
+      properties:
+        type:
+          const: bot.upsert
+        change_seq:
+          $ref: '#/components/schemas/Sequence'
+        bot:
+          $ref: '#/components/schemas/Bot'
+      required:
+      - type
+      - change_seq
+      - bot
+      additionalProperties: false
+    SyncBotDelete:
+      type: object
+      properties:
+        type:
+          const: bot.deleted
+        change_seq:
+          $ref: '#/components/schemas/Sequence'
+        id:
+          $ref: '#/components/schemas/ID'
+        version:
+          $ref: '#/components/schemas/Version'
+        deleted_at:
+          $ref: '#/components/schemas/UTCDateTime'
+      required:
+      - type
+      - change_seq
+      - id
+      - version
+      - deleted_at
+      additionalProperties: false
+    SyncReadUpdate:
+      type: object
+      properties:
+        type:
+          const: read.updated
+        change_seq:
+          $ref: '#/components/schemas/Sequence'
+        read:
+          $ref: '#/components/schemas/ReadState'
+      required:
+      - type
+      - change_seq
+      - read
+      additionalProperties: false
+    SyncDeliveryUpsert:
+      type: object
+      properties:
+        type:
+          const: delivery.upsert
+        change_seq:
+          $ref: '#/components/schemas/Sequence'
+        delivery:
+          $ref: '#/components/schemas/DeliveryMetadata'
+      required:
+      - type
+      - change_seq
+      - delivery
+      additionalProperties: false
+    SyncChange:
+      oneOf:
+      - $ref: '#/components/schemas/SyncMessageUpsert'
+      - $ref: '#/components/schemas/SyncMessageDelete'
+      - $ref: '#/components/schemas/SyncBotUpsert'
+      - $ref: '#/components/schemas/SyncBotDelete'
+      - $ref: '#/components/schemas/SyncReadUpdate'
+      - $ref: '#/components/schemas/SyncDeliveryUpsert'
+      description: 事件序号与当前投影分离；同一读事务解析当前实体。消息revision、Bot.version、ReadState.version及delivery.state_version分别单调；旧版/重复删除均幂等no-op。已删除对象转换为对应删除类型，仅含墓碑，无旧正文；允许投影版本高于事件版本乃至H内事件版本。删除版本为实体终态版本，不复活同一ID。设置类型由后卡显式扩展。
+    SyncPage:
+      type: object
+      properties:
+        epoch:
+          $ref: '#/components/schemas/SyncEpoch'
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SyncChange'
+          maxItems: 200
+        next_cursor:
+          $ref: '#/components/schemas/OpaqueCursor'
+        has_more:
+          type: boolean
+        server_high_watermark:
+          $ref: '#/components/schemas/Sequence'
+        server_time:
+          $ref: '#/components/schemas/UTCDateTime'
+      required:
+      - epoch
+      - changes
+      - next_cursor
+      - has_more
+      - server_high_watermark
+      - server_time
+      additionalProperties: false
+      x-sync-envelope: true
+      description: H为追赶轮次固定高水位；changes按change_seq严格递增且不超过H，最多min(limit,200)条。next_cursor始终非空：未完成绑定原H及最后已消费位置，完成推进至H并标记轮次结束，下次请求冻结新的H。空轮次合法且has_more=false。server_time为服务端生成批次时间，不参与并发比较。
   responses:
     '400':
       description: 格式错误

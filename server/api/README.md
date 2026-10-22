@@ -110,3 +110,17 @@ ACK请求为 `{consumer_id,lease_token}`。提交时按当前凭据代次、Bot�
 手动重试仅failed→pending：同事务代次加一、attempt重置0、清除错误/租约/退避，保留原投递/事件/载荷/幂等身份；非failed409 `DELIVERY_NOT_FAILED`。停用Bot重新排队后仍暂停，恢复启用才可领取。不同键并发只可一个转换成功。同键在当前有效管理员鉴权后先恢复原结果，再检查failed条件，不能重复加代次；摘要含路径目标及空对象，跨目标同键409 `IDEMPOTENCY_CONFLICT`。资源存活期间保留幂等记录，清理后7天墓碑410 `RESOURCE_EXPIRED`，受保护记录不按7天删除；版本/代次耗尽返回503且不回绕。重试传输不要求应用重跑业务，已有Inbox的应用可重新ACK。
 
 `x-lease-policy/x-claim-policy/x-ack-replay/x-max-total-lease-seconds/x-error-codes/x-management-projection/x-idempotency-policy` 是由本地校验器检查的契约声明；权限示例只检查声明组合，错误示例只检查响应结构及相应状态可用性。所有这些均不证明真实运行时鉴权、数据库原子领取、ACK/重试事务、竞争和即时撤销已经实测。
+
+## P03-07-S01-S01 增量与共享已读
+
+本批只新增 `syncClientChanges`（GET `/client/sync`）和 `updateClientRead`（PUT `/client/bots/{id}/read`），均仅 Android 管理员 Bearer。Web Cookie、Bot Token、Webhook Key 均不授予同步正文或更新共享已读权限。受保护成功/错误响应沿用 no-store，JSON 拒绝未知字段；read 请求上限 262144 字节。
+
+- 每轮追赶冻结 H，按 `(position,H]` 返回事件；`limit` 默认/上限 200。游标为服务端验证的不透明令牌，绑定管理员身份、epoch、H、position、轮次结束标记。续页沿用 H，末页推进至 H，下一请求开始新轮次。`next_cursor` 始终非空；空轮次返回 `has_more=false`。省略游标从当前 epoch 的 0 开始，仍检查 floor。
+- 有效游标 epoch 不同或 position 小于 floor 返回 `410 SYNC_RESET_REQUIRED`；非法/篡改/跨身份游标返回 `400 INVALID_SYNC_CURSOR`。不得跳过历史缺口；客户端提示历史仅部分保留并重建服务端缓存。
+- 事件及当前投影来自同一读事务。`message.upsert` 可携带更高 revision；已删除实体转换为无正文墓碑。六类为 `message.upsert`、`message.deleted`、`bot.upsert`、`bot.deleted`、`read.updated`、`delivery.upsert`。按 Message.revision、Bot.version、ReadState.version、DeliveryMetadata.state_version 应用，重复/旧版本幂等。Bot 删除和消息删除采用实体终态版本，不复活同一 ID。设置类型由原 S02/S03 显式扩展。
+- `through_seq` 为实际展示过的本 Bot bot_seq（客户端责任），不能使用 change_seq；服务端验证不超过该 Bot 曾存在的最大序号，超出返回 `422 READ_SEQ_OUT_OF_RANGE`，无权/不存在返回 `404 RESOURCE_NOT_FOUND`。原子 max 合并；前进才同事务增加版本、更新服务端时间并写共享 read.updated。未前进保持版本/updated_at且不重复写变更。未读仅计现存 application 且 bot_seq>read_seq；编辑、自身、callback、过期不增加未读。
+- 服务端时间：SyncPage.server_time、UpdateReadResponse.server_time 为响应时间；ReadState.updated_at 为已读前进时间；Message.created_at/updated_at、删除 deleted_at、Bot.connection.last_poll_at、DeliveryMetadata 的各时间保持各自语义。并发顺序只依序号/实体版本，不依客户端时间。
+
+新 Schema：SyncEpoch、ReadState、UpdateReadRequest、UpdateReadResponse、SyncMessageUpsert、SyncMessageDelete、SyncBotUpsert、SyncBotDelete、SyncReadUpdate、SyncDeliveryUpsert、SyncChange、SyncPage。所有序号复用非负 SQLite64 字符串 Sequence，实体版本复用从 1 开始的整数 Version。
+
+`x-sync-envelope` 执行批次序号/高水位/有界分页结构检查，`x-sync-policy`/`x-read-policy` 冻结状态规则；examples 的 `sync_state` 核对合成游标、分页、投影、旧版本、max 合并和未读声明。它们不是运行时事务、并发、客户端、通知撤销或真实 WS 测试。bootstrap/WS 为后续 S01-S02/S01-S03；设备通知/全局设置留原 S02/S03。本批不声称 G-API 全域完成。

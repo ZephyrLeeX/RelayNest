@@ -50,10 +50,73 @@ def content_range(validator, enabled, instance, schema):
         yield ValidationError('Content-Range 字节语法错误')
 
 
+def sync_envelope(validator, enabled, instance, schema):
+    """只核对批次结构；固定H、读事务及权限由声明夹具覆盖，不模拟运行时。"""
+    if not enabled or not isinstance(instance, dict):
+        return
+    changes = instance.get('changes')
+    high = instance.get('server_high_watermark')
+    if not isinstance(changes, list) or not isinstance(high, str) or not high.isdecimal():
+        return
+    positions = [item.get('change_seq') for item in changes if isinstance(item, dict)]
+    if any(not isinstance(pos, str) or not pos.isdecimal() for pos in positions):
+        return
+    positions = [int(pos) for pos in positions]
+    if any(pos <= 0 or pos > int(high) for pos in positions):
+        yield ValidationError('变更必须在正序号至H之间')
+    if any(left >= right for left, right in zip(positions, positions[1:])):
+        yield ValidationError('变更序号必须严格递增')
+    if instance.get('has_more') and (not positions or positions[-1] >= int(high)):
+        yield ValidationError('非末页必须非空且最后位置小于H')
+
+
+def sync_state_valid(state):
+    """核对合成状态声明的预期；不是HTTP/SQLite/并发或客户端实测。"""
+    kind = state['kind']
+    if kind == 'cursor':
+        if state['identity'] != state['cursor_identity'] or not state.get('integrity', True):
+            status = 400
+        elif state['epoch'] != state['cursor_epoch'] or int(state['position']) < int(state['floor']):
+            status = 410
+        else:
+            status = 200
+        high = state['server_h'] if state['complete'] else state['h']
+        return status == state['expected_status'] and (status != 200 or high == state['expected_h'])
+    if kind == 'projection':
+        valid = state['current_revision'] >= state['event_revision']
+        valid = valid and state['result_type'] == ('message.deleted' if state['deleted'] else 'message.upsert')
+        valid = valid and state['contains_body'] != state['deleted']
+        return valid == state['expected']
+    if kind == 'apply':
+        return (state['incoming_version'] > state['local_version']) == state['expected_apply']
+    if kind == 'read':
+        old, through, upper = (int(state[key]) for key in ('old', 'through', 'upper'))
+        status = 422 if through > upper else 200
+        return status == state['expected_status'] and (status != 200 or (
+            str(max(old, through)) == state['expected_read']
+            and (through > old) == state['expected_advance']))
+    if kind == 'batch':
+        # 比较已知有序事件区间，防止夹具用next_cursor掩盖遗漏事件。
+        eligible = [pos for pos in state['events']
+                    if int(state['position']) < int(pos) <= int(state['h'])]
+        expected = eligible[:state['limit']]
+        more = len(eligible) > state['limit']
+        next_position = expected[-1] if more else state['h']
+        valid = (state['returned'] == expected and state['has_more'] == more
+                 and state['next_position'] == next_position)
+        return valid == state['expected']
+    if kind == 'unread':
+        count = sum(message['exists'] and message['sender'] == 'application'
+                    and int(message['bot_seq']) > int(state['read']) for message in state['messages'])
+        return count == state['expected_unread']
+    return False
+
+
 ContractValidator = validators.extend(Draft202012Validator, {
     'x-utf8-max-bytes': utf8_max_bytes,
     'x-byte-ranges': byte_ranges,
     'x-content-range': content_range,
+    'x-sync-envelope': sync_envelope,
 })
 
 
@@ -116,6 +179,8 @@ def main():
             intervals = range_intervals(case['value'], case['range_size'])
             if intervals != case['intervals'] or (206 if intervals else 416) != case['status']:
                 failures.append(case['name'] + ' 区间/状态')
+        if 'sync_state' in case and not sync_state_valid(case['sync_state']):
+            failures.append(case['name'] + ' 同步状态声明')
         if 'declaration' in case:
             declaration = case['declaration']
             allowed = declaration['security'] in operation_map[declaration['operationId']]['security']
@@ -140,6 +205,7 @@ def main():
         'createWebhookMessage': ['WebhookKey'],
         'createClientMessage': ['AdminBearer'], 'createCallback': ['AdminBearer'],
         'listClientMessages': ['AdminBearer'], 'getClientMessage': ['AdminBearer'],
+        'syncClientChanges': ['AdminBearer'], 'updateClientRead': ['AdminBearer'],
         'uploadAttachment': ['AdminBearer', 'BotAPIToken'],
         'downloadAttachment': ['AdminBearer', 'BotAPIToken'],
     }
@@ -148,7 +214,8 @@ def main():
                          'renewDelivery': ['BotAPIToken'], 'listDeliveries': ['AdminBearer', 'WebCookie']})
     idempotent = {'createBotMessage', 'editBotMessage', 'createWebhookMessage',
                   'createClientMessage', 'createCallback', 'uploadAttachment', 'retryDelivery'}
-    reference_ops = set(new_security) - {'listClientMessages', 'getClientMessage'} - delivery_ids
+    reference_ops = set(new_security) - {'listClientMessages', 'getClientMessage',
+                                         'syncClientChanges', 'updateClientRead'} - delivery_ids
     for path, item in document['paths'].items():
         for method, operation in item.items():
             if method == 'parameters':
@@ -255,6 +322,56 @@ def main():
         body = operation_map[oid]['requestBody']
         if body.get('x-max-bytes') != 262144:
             raise SystemExit('投递JSON大小限制缺失：' + oid)
+    # 精确冻结游标/已读声明，避免只有文字却没有可破坏的检查。
+    sync = operation_map['syncClientChanges']
+    read = operation_map['updateClientRead']
+    expected_sync = {'cursor_binding': ['administrator_id', 'epoch', 'high_watermark', 'position', 'cycle_complete'],
+     'cursor_integrity': 'server-verified-opaque',
+     'initial_position': '0',
+     'initial_epoch': 'current',
+     'high_watermark': 'fixed-per-cycle',
+     'completed_cycle': 'capture-new-high-watermark',
+     'order': 'ascending-change_seq',
+     'page_limit': 200,
+     'projection': 'same-read-transaction-current',
+     'deleted_projection': 'body-free-tombstone',
+     'gap': 'never-skip',
+     'reset_status': 410,
+     'reset_code': 'SYNC_RESET_REQUIRED',
+     'invalid_cursor_status': 400,
+     'invalid_cursor_code': 'INVALID_SYNC_CURSOR',
+     'identity_mismatch_status': 400,
+     'floor_comparison': 'position < floor',
+     'epoch_comparison': 'cursor.epoch != current.epoch'}
+    expected_read = {'input': 'actually-displayed-bot_seq',
+     'upper_bound': 'bot-highest-ever-existing-bot_seq',
+     'merge': 'max',
+     'advance': 'same-transaction-read-version-and-shared-change',
+     'unchanged': 'no-version-time-or-event-change',
+     'unread': 'existing-application-with-bot_seq>read_seq',
+     'exclude': ['administrator', 'callback', 'edit', 'expired'],
+     'out_of_range_status': 422,
+     'out_of_range_code': 'READ_SEQ_OUT_OF_RANGE'}
+    if sync.get('x-sync-policy') != expected_sync or read.get('x-read-policy') != expected_read:
+        raise SystemExit('同步/已读状态声明错误')
+    for operation in (sync, read):
+        if operation.get('x-client-type') != 'android':
+            raise SystemExit('同步/已读仅允许Android管理员')
+    if sync.get('x-error-codes') != {'400': ['INVALID_SYNC_CURSOR'], '410': ['SYNC_RESET_REQUIRED']}:
+        raise SystemExit('同步错误码声明错误')
+    if read.get('x-error-codes') != {'404': ['RESOURCE_NOT_FOUND'], '422': ['READ_SEQ_OUT_OF_RANGE']}:
+        raise SystemExit('已读错误码声明错误')
+    limit = next(p for p in sync['parameters'] if p['name'] == 'limit')
+    if limit['schema'] != {'type': 'integer', 'minimum': 1, 'maximum': 200, 'default': 200}:
+        raise SystemExit('同步有界页大小声明错误')
+    if schemas['SyncPage'].get('x-sync-envelope') is not True:
+        raise SystemExit('缺少同步批次语义扩展')
+    if schemas['SyncPage']['properties']['changes'].get('maxItems') != 200:
+        raise SystemExit('同步批次缺少上限')
+    if schemas['UpdateReadRequest'] != {
+            'type': 'object', 'properties': {'through_seq': {'$ref': '#/components/schemas/Sequence'}},
+            'required': ['through_seq'], 'additionalProperties': False}:
+        raise SystemExit('已读请求必须严格使用bot_seq序号')
     schemes = document['components']['securitySchemes']
     for name in ('AdminBearer', 'BotAPIToken', 'WebhookKey'):
         if schemes[name]['type'] != 'http' or schemes[name]['scheme'] != 'bearer':
