@@ -200,3 +200,25 @@ F01回归：verify合成声明的 `verified_cursor_purpose` 表示服务端已�
 撤销自身 Web 会话时清 Cookie，撤销其他设备不清调用方 Cookie。`logout` 保持只撤销当前会话及其所有通道/WS，不影响其他设备或 Bot 凭据。同 device_id 的其他会话保持；未知、无权或已无有效会话的目标返回404，迟到或重试 DELETE 旧 S1 绝不回退选择新 S2；DELETE无请求体，不承诺跨重新登录的重试幂等，重试前可重读列表。后卡须按 T9.3 分别核验注册与偏好归属，不得假定 device_id 唯一对应 Session；注册接口必须绑定当前认证设备/会话，不接受客户端选择其他设备/会话；本卡没有预造注册字段或 provider Schema。
 
 `examples.json` 的 `device_session_state` 按步骤核对权限、完整会话快照、同设备双会话、撤销/登录交错、迟到回调和重登隔离的合成状态声明；正反例和破坏探针不等于运行时撤销、真实 WS 断连、SDK、多 worker 或手机/NAS测试。父验收1及7/8会话部分由本段及本卡报告追溯，注册/通知及父卡完整收口仍由后两卡承担。
+
+## P03-07-S02-S02 注册生命周期
+
+以下均为契约，前缀 `/api/v1`；仅当前有效 Android `AdminBearer`，Web Cookie、Bot Token、Webhook Key 均不可调用。提交事务前重验当前 `Session.id`，同 device_id 多个 Session 相互独立，不使用 device_id 作为注册代次。客户端不接受 device_id/session_id 目标选择器，也不能以重新登录的凭据提交旧会话回调：客户端须保存回调来源 Session.id，在新会话登记前丢弃旧来源；这不是新增 HTTP 字段。
+
+| 路径 / operationId | 请求 | 成功 |
+| --- | --- | --- |
+| `GET /devices/current/push` / `getCurrentPush` | 无请求体/选择器 | 200 `PushRegistrationState` |
+| `PUT /devices/current/push` / `updateCurrentPush` | `PushRegistrationUpdate` | 200 同上 |
+| `DELETE /devices/current/push/{provider}` / `deleteCurrentPush` | `PushRegistrationDelete` | 200 同上 |
+
+新增 Schema：`PushProvider=fcm|opush`、`PushBarrierVersion`（0..SQLite64上限）、`PushRegistrationVersion`（1..上限）、`PushRegistrationUpdate`、`PushRegistrationDelete`、`PushRegistration`、`PushRegistrationState`。PUT keys 为 `provider/token/registration_version/expected_version`，DELETE body 仅 `expected_version`；未知字段拒绝，单次只更新指定 provider，不全量替换。token 为非空有界字符串且 writeOnly，不回显/不记录。恢复结果 keys 为 `session_id/registrations`；后者必须恰含 fcm、opush 各一条，仅 `provider/registration_version/registered/updated_at`，既含有效注册也含缺失/墓碑，不含 token。
+
+每个 `(Session.id, provider)` 持久屏障独立：从未注册为 version=0、registered=false、updated_at=null，初次 PUT 的 expected_version=0，新 registration_version 必须大于0。当前**有效**注册同 version 同 token 为幂等重放，在 CAS 前判定并保留 updated_at（expected_version可为原请求旧值）；其余写入必须 expected_version 等于当前屏障且 registration_version 严格增加。同版本不同 token、旧版本、预期不匹配均409，墓碑不能当作同值重放。服务端在同一事务完成身份重验、比较、单通道修改和 UTC RFC3339 updated_at；客户端不提交时间。
+
+DELETE 先匹配屏障：有效注册清 token 并将屏障加一、生成服务端时间，墓碑持久保留；匹配从未注册或已有墓碑则无副作用200，重复原删除请求的旧 expected_version 仍409。重建须GET取得删除后的屏障，再用更高 registration_version 与匹配 expected_version；版本不可归零、回绕或部分提交。有效注册已达9223372036854775807时，同值重放仍成功，删除返回409 `REGISTRATION_VERSION_EXHAUSTED`；无法再提高的写入以409拒绝，需恢复状态并提示会话重新认证，不能私自重建旧身份。
+
+409 `REGISTRATION_CONFLICT` 或 `REGISTRATION_VERSION_EXHAUSTED` 沿用脱敏 `Error`，不附 token/厂商原错或内部任务字段。冲突或请求结果未知时先GET当前会话状态，再用当前 SDK 注册及新版本协调；不得用迟到旧意图覆盖。GET没有token，不能据此推断token内容。共有400/401 `AUTHENTICATION_REQUIRED`/403 `FORBIDDEN`/429/503，PUT和DELETE另有413/422；成功和全部错误均no-store。401后不能将旧回调重定向到新登录会话。
+
+内部发送结果不是HTTP接口。最小条件解绑快照为 `Session.id + provider + registration_version`，发送前和结果提交时重验会话有效及精确当前注册；仅明确 UNREGISTERED，或已确认合法载荷的无效注册错误可以解绑。该解绑与客户端删除同样保留递增屏障；耗尽则不提交，记录归一化内部失败等待后续处置。旧版本结果、网络错误、未知结果、不合法载荷均保留注册，不删除新token、其他provider、其他会话或偏好。撤销/退出先使对应Session全部映射不可用，旧工作即使晚到也不能影响重新登录的新Session。完整用途/配置/提醒快照、通知模式与偏好CAS/同步union交下一卡；本卡不新增后台HTTP job、SDK或厂商payload。
+
+`examples.json` 的 `push_registration_state` 是合成事务序列，每步比对全部会话、两通道、版本/时间和偏好的快照；正反序列验证CAS、删除屏障、旧失败、未知结果与撤销/重登隔离。它不执行HTTP、数据库、多worker、SDK、系统展示或真实注销；以上以及手机/NAS现场均NOT_RUN，不能据此放行G-OPPO。

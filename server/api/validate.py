@@ -330,6 +330,79 @@ def device_session_state_valid(state):
     return True
 
 
+def push_registration_state_valid(state):
+    """注册契约的合成事务模型；快照比较不能替代真实数据库/SDK并发测试。"""
+    sessions = copy.deepcopy(state['sessions'])
+    ceiling = 9223372036854775807
+    for step in state['steps']:
+        action = step['action']
+        status, code, projection = None, None, None
+        current = step.get('session_id')
+        session = sessions.get(current)
+        if action == 'login':
+            # 同device_id允许多个Session；已撤销身份也不能复用。
+            new = step['session']
+            if new['id'] in sessions:
+                return False
+            sessions[new['id']] = copy.deepcopy(new)
+        elif action == 'revoke':
+            if session:
+                session['active'] = False
+                for registration in session['providers'].values():
+                    registration['token'] = None
+        elif action == 'callback' and step['source_session_id'] != current:
+            # 这是客户端本地来源检查，source_session_id不是HTTP请求字段。
+            status = 'discard'
+        elif action == 'internal':
+            # 内部失败分类已归一化，不接收厂商错误串；未知/网络失败没有解绑权。
+            registration = (session['providers'][step['provider']] if session else None)
+            exact = (session and session['active'] and registration['token'] is not None
+                     and registration['version'] == step['snapshot_version'])
+            invalid = (step['result'] == 'unregistered'
+                       or (step['result'] == 'invalid_registration' and step['payload_valid']))
+            if exact and invalid:
+                if registration['version'] == ceiling:
+                    code = 'REGISTRATION_VERSION_EXHAUSTED'
+                else:
+                    registration.update(version=registration['version'] + 1,
+                                        token=None, updated_at=step['server_time'])
+        elif not session or not session['active']:
+            status, code = 401, 'AUTHENTICATION_REQUIRED'
+        elif step.get('credential', 'AdminBearer') != 'AdminBearer':
+            status, code = 403, 'FORBIDDEN'
+        elif action == 'get':
+            status = 200
+            projection = {'session_id': current, 'registrations': [
+                {'provider': provider, 'registration_version': record['version'],
+                 'registered': record['token'] is not None, 'updated_at': record['updated_at']}
+                for provider, record in session['providers'].items()]}
+        elif action in ('put', 'callback', 'delete'):
+            record = session['providers'][step['provider']]
+            version, expected = record['version'], step['expected_version']
+            replay = (action != 'delete' and record['token'] is not None
+                      and step['registration_version'] == version and step['token'] == record['token'])
+            # 重放保留原时间；删除后的墓碑不具备“同值重放”资格。
+            if replay:
+                status = 200
+            elif expected != version or (action != 'delete' and step['registration_version'] <= version):
+                status, code = 409, 'REGISTRATION_CONFLICT'
+            elif action == 'delete' and record['token'] is None:
+                status = 200
+            elif version == ceiling:
+                status, code = 409, 'REGISTRATION_VERSION_EXHAUSTED'
+            else:
+                record.update(version=version + 1 if action == 'delete' else step['registration_version'],
+                              token=None if action == 'delete' else step['token'],
+                              updated_at=step['server_time'])
+                status = 200
+        else:
+            return False
+        if ({'status': status, 'code': code, 'projection': projection, 'sessions': sessions}
+                != step['expected']):
+            return False
+    return True
+
+
 def range_intervals(value, size):
     """将合法示例映射至预期区间；只是契约边界计算，不验证文件服务。"""
     result = []
@@ -448,6 +521,71 @@ WS_SCHEMAS = {'WSProtocolVersion': {'type': 'object',
                        {'$ref': '#/components/schemas/WSUnknownOptional'}]}}
 
 
+# 本卡冻结的事务约束和脱敏Schema，防止单端点删除或敏感字段回显。
+PUSH_POLICY = {'identity': 'authenticated-current-android-Session.id-never-reused',
+ 'key': 'Session.id+provider-not-device_id',
+ 'transaction': 'reauthenticate-and-CAS-and-write-or-delete-and-server-time-atomic',
+ 'initial': 'absent-version-0-no-token-updated_at-null',
+ 'put': 'same-version-same-token-replay-before-CAS-otherwise-strictly-increase-and-match-barrier',
+ 'delete': 'match-barrier-increment-and-clear-token-retain-tombstone-unregistered-match-noop',
+ 'internal_result': 'unregistered-or-confirmed-valid-payload-invalid-registration-only-exact-active-session-provider-registration-version-increment-barrier',
+ 'unknown_result': 'preserve-registration-no-cross-provider-or-session-or-preference-change',
+ 'exhaustion': 'reject-mutation-no-wrap-no-partial-commit',
+ 'recovery': 'GET-current-push-no-token-all-providers-including-tombstones'}
+PUSH_SCHEMAS = {'PushProvider': {'type': 'string', 'enum': ['fcm', 'opush']},
+ 'PushBarrierVersion': {'type': 'integer',
+                        'minimum': 0,
+                        'maximum': 9223372036854775807,
+                        'description': '当前会话+provider持久版本屏障；0仅从未注册，删除不归零。'},
+ 'PushRegistrationVersion': {'type': 'integer', 'minimum': 1, 'maximum': 9223372036854775807},
+ 'PushRegistrationUpdate': {'type': 'object',
+                            'properties': {'provider': {'$ref': '#/components/schemas/PushProvider'},
+                                           'token': {'type': 'string',
+                                                     'minLength': 1,
+                                                     'maxLength': 4096,
+                                                     'writeOnly': True,
+                                                     'description': '不回显、不写日志；合成示例不是真实厂商凭据。'},
+                                           'registration_version': {'$ref': '#/components/schemas/PushRegistrationVersion'},
+                                           'expected_version': {'$ref': '#/components/schemas/PushBarrierVersion'}},
+                            'required': ['provider',
+                                         'token',
+                                         'registration_version',
+                                         'expected_version'],
+                            'additionalProperties': False},
+ 'PushRegistrationDelete': {'type': 'object',
+                            'properties': {'expected_version': {'$ref': '#/components/schemas/PushBarrierVersion'}},
+                            'required': ['expected_version'],
+                            'additionalProperties': False},
+ 'PushRegistration': {'type': 'object',
+                      'properties': {'provider': {'$ref': '#/components/schemas/PushProvider'},
+                                     'registration_version': {'$ref': '#/components/schemas/PushBarrierVersion'},
+                                     'registered': {'type': 'boolean'},
+                                     'updated_at': {'oneOf': [{'$ref': '#/components/schemas/UTCDateTime'},
+                                                              {'type': 'null'}]}},
+                      'required': ['provider', 'registration_version', 'registered', 'updated_at'],
+                      'additionalProperties': False,
+                      'allOf': [{'if': {'properties': {'registration_version': {'const': 0}}},
+                                 'then': {'properties': {'registered': {'const': False},
+                                                         'updated_at': {'type': 'null'}}},
+                                 'else': {'properties': {'updated_at': {'$ref': '#/components/schemas/UTCDateTime'}}}}]},
+ 'PushRegistrationState': {'type': 'object',
+                           'properties': {'session_id': {'$ref': '#/components/schemas/ID'},
+                                          'registrations': {'type': 'array',
+                                                            'minItems': 2,
+                                                            'maxItems': 2,
+                                                            'items': {'$ref': '#/components/schemas/PushRegistration'},
+                                                            'allOf': [{'contains': {'properties': {'provider': {'const': 'fcm'}},
+                                                                                    'required': ['provider']},
+                                                                       'minContains': 1,
+                                                                       'maxContains': 1},
+                                                                      {'contains': {'properties': {'provider': {'const': 'opush'}},
+                                                                                    'required': ['provider']},
+                                                                       'minContains': 1,
+                                                                       'maxContains': 1}]}},
+                           'required': ['session_id', 'registrations'],
+                           'additionalProperties': False}}
+
+
 def main():
     document = yaml.safe_load((ROOT / 'openapi.yaml').read_text(encoding='utf-8'))
     validate_spec(document)
@@ -490,6 +628,9 @@ def main():
         if ('device_session_state' in case
                 and device_session_state_valid(case['device_session_state']) != case.get('state_valid', True)):
             failures.append(case['name'] + ' 设备会话状态声明')
+        if ('push_registration_state' in case
+                and push_registration_state_valid(case['push_registration_state']) != case.get('state_valid', True)):
+            failures.append(case['name'] + ' 注册事务状态声明')
         if 'sync_state' in case and not sync_state_valid(case['sync_state']):
             failures.append(case['name'] + ' 同步状态声明')
         if 'declaration' in case:
@@ -512,6 +653,8 @@ def main():
         raise SystemExit('示例校验与预期不符：' + '、'.join(failures))
 
     new_security = {
+        'getCurrentPush': ['AdminBearer'], 'updateCurrentPush': ['AdminBearer'],
+        'deleteCurrentPush': ['AdminBearer'],
         'createBotMessage': ['BotAPIToken'], 'editBotMessage': ['BotAPIToken'],
         'createWebhookMessage': ['WebhookKey'],
         'createClientMessage': ['AdminBearer'], 'createCallback': ['AdminBearer'],
@@ -527,7 +670,7 @@ def main():
     idempotent = {'createBotMessage', 'editBotMessage', 'createWebhookMessage',
                   'createClientMessage', 'createCallback', 'uploadAttachment', 'retryDelivery'}
     reference_ops = set(new_security) - {'listClientMessages', 'getClientMessage',
-                                         'syncClientChanges', 'updateClientRead', 'bootstrapClient', 'connectClientWS'} - delivery_ids
+                                         'syncClientChanges', 'updateClientRead', 'bootstrapClient', 'connectClientWS', 'getCurrentPush', 'updateCurrentPush', 'deleteCurrentPush'} - delivery_ids
     for path, item in document['paths'].items():
         for method, operation in item.items():
             if method == 'parameters':
@@ -590,6 +733,33 @@ def main():
     if {key: value for key, value in schemas['DeviceSessionPage'].items()
             if key != 'description'} != DEVICE_PAGE:
         raise SystemExit('设备会话分页Schema不符')
+    # 注册事务、恢复投影与删除屏障是一个整体，不能按端点拆散或削弱。
+    for name, expected in PUSH_SCHEMAS.items():
+        if schemas.get(name) != expected:
+            raise SystemExit('注册Schema冻结声明不符：' + name)
+    for path, method, oid, body in (
+            ('/devices/current/push', 'get', 'getCurrentPush', None),
+            ('/devices/current/push', 'put', 'updateCurrentPush', 'PushRegistrationUpdate'),
+            ('/devices/current/push/{provider}', 'delete', 'deleteCurrentPush', 'PushRegistrationDelete')):
+        op = document['paths'][path][method]
+        statuses = {'200', '400', '401', '403', '429', '503'}
+        if body:
+            statuses |= {'409', '413', '422'}
+        if (op['operationId'] != oid or set(op['responses']) != statuses
+                or op.get('x-push-registration-policy') != PUSH_POLICY
+                or op['responses']['200']['content']['application/json']['schema'] != {
+                    '$ref': '#/components/schemas/PushRegistrationState'}
+                or op.get('parameters', []) != ([{'name': 'provider', 'in': 'path',
+                    'required': True, 'schema': {'$ref': '#/components/schemas/PushProvider'}}]
+                    if method == 'delete' else [])):
+            raise SystemExit('注册路径/投影/事务声明不符：' + oid)
+        expected_body = ({'required': True, 'x-max-bytes': 262144, 'content': {'application/json': {'schema': {
+            '$ref': '#/components/schemas/' + body}}}} if body else None)
+        expected_codes = {'401': ['AUTHENTICATION_REQUIRED'], '403': ['FORBIDDEN']}
+        if body:
+            expected_codes['409'] = ['REGISTRATION_CONFLICT', 'REGISTRATION_VERSION_EXHAUSTED']
+        if op.get('requestBody') != expected_body or op.get('x-error-codes') != expected_codes:
+            raise SystemExit('注册请求/错误声明不符：' + oid)
     if set(operation_map) != baseline_ids | set(new_security) | delivery_ids | {'listDeviceSessions', 'revokeDeviceSession'}:
         raise SystemExit('冻结操作集合不符')
     if any(method in document['paths']['/client/messages/{id}'] for method in ('put', 'patch')):

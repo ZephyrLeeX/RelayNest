@@ -1865,8 +1865,289 @@ paths:
         - RESOURCE_NOT_FOUND
         '422':
         - READ_SEQ_OUT_OF_RANGE
+  /devices/current/push:
+    get:
+      operationId: getCurrentPush
+      summary: 恢复当前会话全部注册元数据
+      description: 仅当前有效Android会话，提交前重验Session.id；不接受设备/会话选择器。读取含缺失及墓碑的两个provider，无token。
+      security:
+      - AdminBearer: []
+      x-push-registration-policy:
+        identity: authenticated-current-android-Session.id-never-reused
+        key: Session.id+provider-not-device_id
+        transaction: reauthenticate-and-CAS-and-write-or-delete-and-server-time-atomic
+        initial: absent-version-0-no-token-updated_at-null
+        put: same-version-same-token-replay-before-CAS-otherwise-strictly-increase-and-match-barrier
+        delete: match-barrier-increment-and-clear-token-retain-tombstone-unregistered-match-noop
+        internal_result: unregistered-or-confirmed-valid-payload-invalid-registration-only-exact-active-session-provider-registration-version-increment-barrier
+        unknown_result: preserve-registration-no-cross-provider-or-session-or-preference-change
+        exhaustion: reject-mutation-no-wrap-no-partial-commit
+        recovery: GET-current-push-no-token-all-providers-including-tombstones
+      responses:
+        '200':
+          description: 当前会话完整脱敏注册状态；幂等重放保持updated_at。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushRegistrationState'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      x-error-codes:
+        '401':
+        - AUTHENTICATION_REQUIRED
+        '403':
+        - FORBIDDEN
+    put:
+      operationId: updateCurrentPush
+      summary: 局部更新当前会话单个provider注册
+      description: 仅当前有效Android会话，提交前重验Session.id；不接受设备/会话选择器。原子执行身份、版本比较、写入/删除与服务端时间；不改变其他provider、会话或偏好。初次expected_version=0；写入新版本须大于屏障且expected_version精确匹配，当前有效注册同版本同token重放先于CAS并保持时间。删除匹配有效注册时屏障加一并留墓碑，匹配未注册状态为无副作用成功；旧删除请求仍冲突。409后GET恢复版本，未知结果先GET再协调。版本耗尽拒绝推进且不部分提交。
+      security:
+      - AdminBearer: []
+      x-push-registration-policy:
+        identity: authenticated-current-android-Session.id-never-reused
+        key: Session.id+provider-not-device_id
+        transaction: reauthenticate-and-CAS-and-write-or-delete-and-server-time-atomic
+        initial: absent-version-0-no-token-updated_at-null
+        put: same-version-same-token-replay-before-CAS-otherwise-strictly-increase-and-match-barrier
+        delete: match-barrier-increment-and-clear-token-retain-tombstone-unregistered-match-noop
+        internal_result: unregistered-or-confirmed-valid-payload-invalid-registration-only-exact-active-session-provider-registration-version-increment-barrier
+        unknown_result: preserve-registration-no-cross-provider-or-session-or-preference-change
+        exhaustion: reject-mutation-no-wrap-no-partial-commit
+        recovery: GET-current-push-no-token-all-providers-including-tombstones
+      responses:
+        '200':
+          description: 当前会话完整脱敏注册状态；幂等重放保持updated_at。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushRegistrationState'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '409':
+          $ref: '#/components/responses/409'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+        '413':
+          $ref: '#/components/responses/413'
+      x-error-codes:
+        '401':
+        - AUTHENTICATION_REQUIRED
+        '403':
+        - FORBIDDEN
+        '409':
+        - REGISTRATION_CONFLICT
+        - REGISTRATION_VERSION_EXHAUSTED
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushRegistrationUpdate'
+        x-max-bytes: 262144
+  /devices/current/push/{provider}:
+    delete:
+      operationId: deleteCurrentPush
+      summary: 条件删除当前会话指定provider注册
+      description: 仅当前有效Android会话，提交前重验Session.id；不接受设备/会话选择器。原子执行身份、版本比较、写入/删除与服务端时间；不改变其他provider、会话或偏好。初次expected_version=0；写入新版本须大于屏障且expected_version精确匹配，当前有效注册同版本同token重放先于CAS并保持时间。删除匹配有效注册时屏障加一并留墓碑，匹配未注册状态为无副作用成功；旧删除请求仍冲突。409后GET恢复版本，未知结果先GET再协调。版本耗尽拒绝推进且不部分提交。
+      security:
+      - AdminBearer: []
+      x-push-registration-policy:
+        identity: authenticated-current-android-Session.id-never-reused
+        key: Session.id+provider-not-device_id
+        transaction: reauthenticate-and-CAS-and-write-or-delete-and-server-time-atomic
+        initial: absent-version-0-no-token-updated_at-null
+        put: same-version-same-token-replay-before-CAS-otherwise-strictly-increase-and-match-barrier
+        delete: match-barrier-increment-and-clear-token-retain-tombstone-unregistered-match-noop
+        internal_result: unregistered-or-confirmed-valid-payload-invalid-registration-only-exact-active-session-provider-registration-version-increment-barrier
+        unknown_result: preserve-registration-no-cross-provider-or-session-or-preference-change
+        exhaustion: reject-mutation-no-wrap-no-partial-commit
+        recovery: GET-current-push-no-token-all-providers-including-tombstones
+      responses:
+        '200':
+          description: 当前会话完整脱敏注册状态；幂等重放保持updated_at。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushRegistrationState'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '409':
+          $ref: '#/components/responses/409'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+        '413':
+          $ref: '#/components/responses/413'
+      x-error-codes:
+        '401':
+        - AUTHENTICATION_REQUIRED
+        '403':
+        - FORBIDDEN
+        '409':
+        - REGISTRATION_CONFLICT
+        - REGISTRATION_VERSION_EXHAUSTED
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushRegistrationDelete'
+        x-max-bytes: 262144
+      parameters:
+      - name: provider
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/PushProvider'
 components:
   schemas:
+    PushProvider:
+      type: string
+      enum:
+      - fcm
+      - opush
+    PushBarrierVersion:
+      type: integer
+      minimum: 0
+      maximum: 9223372036854775807
+      description: 当前会话+provider持久版本屏障；0仅从未注册，删除不归零。
+    PushRegistrationVersion:
+      type: integer
+      minimum: 1
+      maximum: 9223372036854775807
+    PushRegistrationUpdate:
+      type: object
+      properties:
+        provider:
+          $ref: '#/components/schemas/PushProvider'
+        token:
+          type: string
+          minLength: 1
+          maxLength: 4096
+          writeOnly: true
+          description: 不回显、不写日志；合成示例不是真实厂商凭据。
+        registration_version:
+          $ref: '#/components/schemas/PushRegistrationVersion'
+        expected_version:
+          $ref: '#/components/schemas/PushBarrierVersion'
+      required:
+      - provider
+      - token
+      - registration_version
+      - expected_version
+      additionalProperties: false
+    PushRegistrationDelete:
+      type: object
+      properties:
+        expected_version:
+          $ref: '#/components/schemas/PushBarrierVersion'
+      required:
+      - expected_version
+      additionalProperties: false
+    PushRegistration:
+      type: object
+      properties:
+        provider:
+          $ref: '#/components/schemas/PushProvider'
+        registration_version:
+          $ref: '#/components/schemas/PushBarrierVersion'
+        registered:
+          type: boolean
+        updated_at:
+          oneOf:
+          - $ref: '#/components/schemas/UTCDateTime'
+          - type: 'null'
+      required:
+      - provider
+      - registration_version
+      - registered
+      - updated_at
+      additionalProperties: false
+      allOf:
+      - if:
+          properties:
+            registration_version:
+              const: 0
+        then:
+          properties:
+            registered:
+              const: false
+            updated_at:
+              type: 'null'
+        else:
+          properties:
+            updated_at:
+              $ref: '#/components/schemas/UTCDateTime'
+    PushRegistrationState:
+      type: object
+      properties:
+        session_id:
+          $ref: '#/components/schemas/ID'
+        registrations:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            $ref: '#/components/schemas/PushRegistration'
+          allOf:
+          - contains:
+              properties:
+                provider:
+                  const: fcm
+              required:
+              - provider
+            minContains: 1
+            maxContains: 1
+          - contains:
+              properties:
+                provider:
+                  const: opush
+              required:
+              - provider
+            minContains: 1
+            maxContains: 1
+      required:
+      - session_id
+      - registrations
+      additionalProperties: false
 
     WSProtocolVersion:
       type: object
