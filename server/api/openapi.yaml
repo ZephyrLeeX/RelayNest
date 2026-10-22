@@ -6,6 +6,166 @@ info:
 servers:
 - url: /api/v1
 paths:
+  /admin/settings:
+    get:
+      operationId: getGlobalSettings
+      summary: 读取全局设置
+      tags:
+      - Admin
+      security:
+      - AdminBearer: []
+      - WebCookie: []
+      description: 仅唯一管理员。Cookie写入须CSRF及同源Origin/Referer。三配置为正int64规范十进制字符串，0不表示立即清理、禁用或无限；不新增业务上限。缩短期限只影响后续清理批次；保护未完成/未ACK/failed及必要附件、父消息和有效引用，不承诺永久恢复。
+      responses:
+        '200':
+          description: 完整配置、版本及服务端时间。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalSettings'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      x-global-settings-policy:
+        validation_order:
+        - authentication
+        - structure-400
+        - field-semantics-422
+        - expected-version-CAS
+        - version-exhaustion
+        - atomic-commit
+        cookie_write: csrf-and-same-origin-origin-or-referer
+        commit: all-values-version-updated_at-and-one-settings.updated-in-one-transaction
+        same_values: increment-version-and-emit-one-change
+        conflict: 409-GLOBAL_SETTINGS_CONFLICT-latest-version-and-reread
+        exhaustion: 409-GLOBAL_SETTINGS_VERSION_EXHAUSTED-retryable-false-no-write-no-event-no-wrap
+        recovery: GET-admin-settings-then-reapply-intent-no-blind-replay
+      x-cleanup-policy:
+        age: UTC-whole-days-since-created_at-safe-day-second-decomposition-no-duration-multiplication-no-cutoff-subtraction-future-never-expired
+        schedule: shortening-affects-subsequent-hourly-small-batches-no-immediate-completion
+        transaction: recheck-protection-in-delete-transaction
+        protect:
+        - pending
+        - leased
+        - retry_wait
+        - failed
+        - unacknowledged
+        - necessary-parent-message-and-attachment
+        - other-message-attachment-reference
+        - active-download-reference
+        ordinary_reference: does-not-permanently-protect-parent-message
+        no_ttl: protected-delivery-or-failure-never-silently-dropped-under-pressure
+        history: offline-or-unread-does-not-protect-history-no-permanent-recovery-guarantee
+    put:
+      operationId: updateGlobalSettings
+      summary: CAS替换全局设置
+      tags:
+      - Admin
+      security:
+      - AdminBearer: []
+      - WebCookie: []
+        CSRF: []
+      description: 仅唯一管理员。Cookie写入须CSRF及同源Origin/Referer。三配置为正int64规范十进制字符串，0不表示立即清理、禁用或无限；不新增业务上限。缩短期限只影响后续清理批次；保护未完成/未ACK/failed及必要附件、父消息和有效引用，不承诺永久恢复。
+      responses:
+        '200':
+          description: 完整配置、版本及服务端时间。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalSettings'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '409':
+          description: 过期CAS优先；匹配但耗尽不可重试，无部分写入或事件。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalSettingsConflict'
+      x-global-settings-policy:
+        validation_order:
+        - authentication
+        - structure-400
+        - field-semantics-422
+        - expected-version-CAS
+        - version-exhaustion
+        - atomic-commit
+        cookie_write: csrf-and-same-origin-origin-or-referer
+        commit: all-values-version-updated_at-and-one-settings.updated-in-one-transaction
+        same_values: increment-version-and-emit-one-change
+        conflict: 409-GLOBAL_SETTINGS_CONFLICT-latest-version-and-reread
+        exhaustion: 409-GLOBAL_SETTINGS_VERSION_EXHAUSTED-retryable-false-no-write-no-event-no-wrap
+        recovery: GET-admin-settings-then-reapply-intent-no-blind-replay
+      x-cleanup-policy:
+        age: UTC-whole-days-since-created_at-safe-day-second-decomposition-no-duration-multiplication-no-cutoff-subtraction-future-never-expired
+        schedule: shortening-affects-subsequent-hourly-small-batches-no-immediate-completion
+        transaction: recheck-protection-in-delete-transaction
+        protect:
+        - pending
+        - leased
+        - retry_wait
+        - failed
+        - unacknowledged
+        - necessary-parent-message-and-attachment
+        - other-message-attachment-reference
+        - active-download-reference
+        ordinary_reference: does-not-permanently-protect-parent-message
+        no_ttl: protected-delivery-or-failure-never-silently-dropped-under-pressure
+        history: offline-or-unread-does-not-protect-history-no-permanent-recovery-guarantee
+      requestBody:
+        required: true
+        x-max-bytes: 262144
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GlobalSettingsUpdate'
+      x-error-codes:
+        '400':
+        - INVALID_REQUEST
+        '401':
+        - AUTHENTICATION_REQUIRED
+        '403':
+        - FORBIDDEN
+        '409':
+        - GLOBAL_SETTINGS_CONFLICT
+        - GLOBAL_SETTINGS_VERSION_EXHAUSTED
+        '413':
+        - REQUEST_TOO_LARGE
+        '422':
+        - VALIDATION_FAILED
   /health/live:
     get:
       operationId: getHealthLive
@@ -2308,6 +2468,142 @@ paths:
               $ref: '#/components/schemas/NotificationSettingsUpdate'
 components:
   schemas:
+    GlobalSettingsValue:
+      allOf:
+      - $ref: '#/components/schemas/Sequence'
+      - not:
+          const: '0'
+      description: 正 int64 规范十进制字符串，1～9223372036854775807；禁止0、前导零、符号、小数、指数和JSON数字。仅为表示/存储技术上限，无额外业务上限。
+    GlobalSettingsVersion:
+      allOf:
+      - $ref: '#/components/schemas/Version'
+      - maximum: 9007199254740991
+      description: 全局设置专用JSON整数版本，1～9007199254740991；不改变公共或设备Version。
+    GlobalSettings:
+      type: object
+      properties:
+        retention_days:
+          $ref: '#/components/schemas/GlobalSettingsValue'
+          default: '30'
+        image_max_bytes:
+          $ref: '#/components/schemas/GlobalSettingsValue'
+          default: '10485760'
+        file_max_bytes:
+          $ref: '#/components/schemas/GlobalSettingsValue'
+          default: '52428800'
+        version:
+          $ref: '#/components/schemas/GlobalSettingsVersion'
+        updated_at:
+          $ref: '#/components/schemas/UTCDateTime'
+      required:
+      - retention_days
+      - image_max_bytes
+      - file_max_bytes
+      - version
+      - updated_at
+      additionalProperties: false
+      description: 完整全局设置；初始持久化版本1，updated_at由服务端生成。默认30天、10MiB、50MiB均可调。
+    GlobalSettingsUpdate:
+      type: object
+      properties:
+        retention_days:
+          $ref: '#/components/schemas/GlobalSettingsValue'
+          default: '30'
+        image_max_bytes:
+          $ref: '#/components/schemas/GlobalSettingsValue'
+          default: '10485760'
+        file_max_bytes:
+          $ref: '#/components/schemas/GlobalSettingsValue'
+          default: '52428800'
+        expected_version:
+          $ref: '#/components/schemas/GlobalSettingsVersion'
+      required:
+      - retention_days
+      - image_max_bytes
+      - file_max_bytes
+      - expected_version
+      additionalProperties: false
+    GlobalSettingsConflict:
+      oneOf:
+      - type: object
+        properties:
+          error:
+            type: object
+            properties:
+              code:
+                const: GLOBAL_SETTINGS_CONFLICT
+              message:
+                type: string
+              request_id:
+                type: string
+                minLength: 1
+              retryable:
+                const: false
+              latest_version:
+                $ref: '#/components/schemas/GlobalSettingsVersion'
+              recovery_path:
+                const: /admin/settings
+            required:
+            - code
+            - message
+            - request_id
+            - retryable
+            - latest_version
+            - recovery_path
+            additionalProperties: false
+        required:
+        - error
+        additionalProperties: false
+      - type: object
+        properties:
+          error:
+            type: object
+            properties:
+              code:
+                const: GLOBAL_SETTINGS_VERSION_EXHAUSTED
+              message:
+                type: string
+              request_id:
+                type: string
+                minLength: 1
+              retryable:
+                const: false
+              latest_version:
+                allOf:
+                - $ref: '#/components/schemas/GlobalSettingsVersion'
+                - const: 9007199254740991
+              recovery_path:
+                const: /admin/settings
+            required:
+            - code
+            - message
+            - request_id
+            - retryable
+            - latest_version
+            - recovery_path
+            additionalProperties: false
+        required:
+        - error
+        additionalProperties: false
+      description: 先CAS再耗尽：过期即CONFLICT；匹配且达到上限为VERSION_EXHAUSTED。重读最新配置；禁止盲重放。耗尽不可重试，GET仍可用，恢复写入需未来明确迁移。
+    SyncGlobalSettings:
+      type: object
+      properties:
+        type:
+          const: settings.updated
+        change_seq:
+          $ref: '#/components/schemas/Sequence'
+        settings_version:
+          $ref: '#/components/schemas/GlobalSettingsVersion'
+        recovery_path:
+          const: /admin/settings
+      required:
+      - type
+      - change_seq
+      - settings_version
+      - recovery_path
+      additionalProperties: false
+      description: 仅传全局配置版本及管理GET关联，不携带配置正文；正文仍需管理员权限。仅更高版本触发重读，重复/旧版本忽略投影但正常提交同步游标；GET旧响应不得覆盖较新版本。与device.notifications.updated独立。
     HealthOK:
       type: string
       const: "ok\n"
@@ -3832,7 +4128,9 @@ components:
       - $ref: '#/components/schemas/SyncReadUpdate'
       - $ref: '#/components/schemas/SyncDeliveryUpsert'
       - $ref: '#/components/schemas/SyncDeviceNotifications'
-      description: 事件序号与当前投影分离；同一读事务解析当前实体。消息revision、Bot.version、ReadState.version及delivery.state_version分别单调；旧版/重复删除均幂等no-op。已删除对象转换为对应删除类型，仅含墓碑，无旧正文；允许投影版本高于事件版本乃至H内事件版本。删除版本为实体终态版本，不复活同一ID。设备通知设置以device.notifications.updated显式扩展，按settings.device_id过滤且仅较高settings_version应用；GET /devices/current/notifications恢复。全局设置类型由原S03后卡补齐。
+      - $ref: '#/components/schemas/SyncGlobalSettings'
+      description: 事件序号与当前投影分离；同一读事务解析当前实体。消息revision、Bot.version、ReadState.version及delivery.state_version分别单调；旧版/重复删除均幂等no-op。已删除对象转换为对应删除类型，仅含墓碑，无旧正文；允许投影版本高于事件版本乃至H内事件版本。删除版本为实体终态版本，不复活同一ID。设备通知设置以device.notifications.updated显式扩展，按settings.device_id过滤且仅较高settings_version应用；GET
+        /devices/current/notifications恢复。 全局settings.updated仅携带版本及/admin/settings关联；管理正文权限不变，重复/旧版本幂等忽略。
     SyncPage:
       type: object
       properties:

@@ -282,3 +282,27 @@ GET和PUT的200是 `NotificationSettingsState{settings,server_time}`；settings�
 校验新增 HealthOK/HealthUnavailable、上述汇总 Schema；Schema/权限正反例、`health_response` 合成纯文本信封（媒体/状态/固定正文/两头）、`health_state` 合成就绪声明独立于 WS HTTP101/frame。操作路径、根 servers、安全、内容类型、响应头、就绪/降级策略和全部新 Schema 均由固定声明对照校验；公开权限例外仅两个固定 health 操作，旧管理权限继续核验。全部既有示例继续原样执行。
 
 移交 P06-08：实现 Probe 和管理员只读汇总/错误映射，接入前先按本表鉴权与固定响应，再做故障注入及真实 HTTP 验证。P4/P5 使用这些路径/Schema/错误边界，P8/P9继续验证部署和手机/NAS现场。当前结构/夹具/破坏探针 PASS 不等于运行时、HTTP部署、推送厂商或真机验收；这些均 NOT_RUN。settings 后续从本卡实际集成后的最新 main 重验；最终 S03-S03 同时依赖 settings 与本卡，本卡不放行 G-API。
+
+## 全局配置与全局 changes（P03-07-S03-S01）
+
+`GET/PUT /admin/settings` 仅限唯一管理员 Bearer 或 Web Cookie；Cookie PUT 同时要求 CSRF 与同源 Origin/Referer。GET 返回 `GlobalSettings` 完整资源。PUT 为完整替换 `GlobalSettingsUpdate`，要求 `expected_version`；不接受客户端 `version`/`updated_at`。响应均 no-store。
+
+- `retention_days`、`image_max_bytes`、`file_max_bytes` 使用 `GlobalSettingsValue`：1～9223372036854775807 的规范十进制字符串，默认 `"30"`、`"10485760"`、`"52428800"`。禁止 0、前导零、符号、小数、指数及 JSON 数字；0 不表示立即清理、禁用或无限。上界仅为 SQLite int64 表示/存储技术边界，没有额外业务上限。Web 不得经 Number 中转大字节值。
+- `GlobalSettingsVersion` 沿公共 `Version`，仅对本资源限制为 1～9007199254740991 的 JSON 整数。公共 Version、设备版本、Sequence 和 Attachment.size 均不变。资源初始持久化版本为 1，时间由服务端生成。
+- 验证顺序为鉴权 → 结构/类型 400 → 字段语义 422 → expected_version CAS → 耗尽 → 原子提交。错误类型、未知/缺失字段是 400；字符串非法表示、0、超 int64、数字版本非整数/越界是 422。请求正文技术上限 262144 字节，超限 413，不是字段业务上限。
+- 过期 CAS 返回 409 `GLOBAL_SETTINGS_CONFLICT`；匹配且当前版本为 M=9007199254740991 返回 409 `GLOBAL_SETTINGS_VERSION_EXHAUSTED`。`GlobalSettingsConflict` 两分支均包含 `latest_version`、`recovery_path: /admin/settings`、`retryable: false`。先重读，再决定是否重新应用意图，不盲重放。过期且耗尽仍先冲突；耗尽分支的最新版本必须为 M。
+- 成功 PUT（含同值写入）在同一事务替换三配置、版本加 1、生成 `updated_at` 并记录唯一 `settings.updated`。M−1 可写到 M；耗尽/冲突/无效输入不得部分写入或发事件，不回绕、归零或换代。耗尽后 GET 可用，恢复写入需未来明确契约迁移。
+
+`SyncGlobalSettings` 是 `SyncChange` 的第八个严格分支：`type: settings.updated`、`change_seq`、`settings_version`、`recovery_path: /admin/settings`。事件只指向管理 GET，不含管理配置正文；读取仍受管理权限约束。仅更高版本触发重读，重复/旧版本忽略投影并正常提交游标，旧 GET 响应不得倒退当前版本。与 `device.notifications.updated` 分支独立；原消息/删除/Bot/已读/投递/设备分支保持不变。
+
+清理交接 P06-08：按 UTC 实际经过整日年龄与保留天数字符串的安全整数值比较，未来时间不满足期限；不乘 Duration、不从 now 减巨大天数。缩短仅影响后续每小时小批次，不承诺立即完成。在删除事务再次检查 pending/leased/retry_wait/failed、未 ACK、必要父消息/附件和有效附件引用、活动下载保护；普通历史引用不永久保护父消息，离线/未读不阻止普通历史清理，保护队列没有隐含 TTL，也不承诺永久恢复。
+
+本卡使用锁环境 `/tmp/relaynest-health-contract-locked/bin/python`（3.13.15，18 个依赖与锁一致）：
+
+```sh
+/tmp/relaynest-health-contract-locked/bin/python -m openapi_spec_validator server/api/openapi.yaml
+/tmp/relaynest-health-contract-locked/bin/python server/api/validate.py
+git diff --check
+```
+
+全局配置状态例仅对合成预期执行输入分类、CAS/耗尽/原子提交结果、整日清理保护和同步应用规则；声明快照防止权限、边界、事务顺序和清理政策被弱化。它们不是 HTTP、SQLite 并发/事务、真实定时清理、Room、WS 帧或真机验证，这些运行时项仍为 NOT_RUN。

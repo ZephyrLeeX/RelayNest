@@ -1110,6 +1110,269 @@ def response_body_schema(path, method, operation, response, case):
     return response['content'][expected_media]['schema']
 
 
+
+def global_settings_state_valid(state, schemas):
+    """仅核对合成契约声明；未执行HTTP、数据库事务或真实清理。"""
+    def matches(name, value):
+        schema = {'$ref': '#/components/schemas/' + name,
+                  'components': {'schemas': schemas}}
+        return ContractValidator(schema, format_checker=FormatChecker()).is_valid(value)
+
+    if state['kind'] == 'cas':
+        current = copy.deepcopy(state['before'])
+        if not matches('GlobalSettings', current):
+            return False
+        events = []
+        results = []
+        for step in state['steps']:
+            request = step['request']
+            auth = step.get('auth', 'bearer')
+            if auth == 'anonymous':
+                status, code = 401, 'AUTHENTICATION_REQUIRED'
+            elif auth not in ('bearer', 'cookie') or (auth == 'cookie' and not (
+                    step.get('csrf') and step.get('same_origin'))):
+                status, code = 403, 'FORBIDDEN'
+            elif (not isinstance(request, dict)
+                  or set(request) != {'retention_days', 'image_max_bytes',
+                                      'file_max_bytes', 'expected_version'}
+                  or any(not isinstance(request[key], str) for key in (
+                      'retention_days', 'image_max_bytes', 'file_max_bytes'))
+                  or isinstance(request['expected_version'], bool)
+                  or not isinstance(request['expected_version'], (int, float))):
+                status, code = 400, 'INVALID_REQUEST'
+            elif not matches('GlobalSettingsUpdate', request):
+                status, code = 422, 'VALIDATION_FAILED'
+            elif request['expected_version'] != current['version']:
+                status, code = 409, 'GLOBAL_SETTINGS_CONFLICT'
+            elif current['version'] == 9007199254740991:
+                status, code = 409, 'GLOBAL_SETTINGS_VERSION_EXHAUSTED'
+            else:
+                if not matches('UTCDateTime', step['server_time']):
+                    return False
+                current = {key: request[key] for key in (
+                    'retention_days', 'image_max_bytes', 'file_max_bytes')}
+                current.update(version=request['expected_version'] + 1,
+                               updated_at=step['server_time'])
+                events.append({'type': 'settings.updated',
+                               'settings_version': current['version'],
+                               'recovery_path': '/admin/settings'})
+                status, code = 200, None
+            result = {'status': status, 'code': code}
+            if status == 409:
+                result.update(latest_version=current['version'], retryable=False,
+                              recovery_path='/admin/settings')
+            results.append(result)
+        return (results == state['results'] and current == state['after']
+                and events == state['events'])
+    if state['kind'] == 'cleanup':
+        if not matches('GlobalSettingsValue', state['retention_days']):
+            return False
+        if not all(matches('UTCDateTime', state[key]) for key in ('now', 'created_at')):
+            return False
+        # timedelta.days 是差值的整日部分，无巨量天数乘法或远古cutoff。
+        age = (datetime.fromisoformat(state['now'])
+               - datetime.fromisoformat(state['created_at'])).days
+        protected = (state['delivery'] in ('pending', 'leased', 'retry_wait', 'failed')
+                     or state['unacknowledged'] or state['necessary_parent'])
+        delete_message = age >= int(state['retention_days']) and not protected
+        delete_attachment = (delete_message and not state['other_attachment_reference']
+                             and not state['active_download'])
+        return (state['delete_message'] == delete_message
+                and state['delete_attachment'] == delete_attachment)
+    if state['kind'] == 'sync':
+        if not matches('SyncGlobalSettings', state['event']):
+            return False
+        incoming = state['event']['settings_version']
+        if not matches('GlobalSettingsVersion', state['local_version']):
+            return False
+        # 事件无管理正文；重读始终经过管理权限，且异步GET不得倒退。
+        fetch = incoming > state['local_version']
+        body_allowed = state['auth'] in ('bearer', 'cookie')
+        apply = (fetch and body_allowed and matches('GlobalSettings', state['response'])
+                 and state['response']['version'] >= incoming
+                 and state['response']['version'] > state['local_version'])
+        return (state['fetch'] == fetch and state['body_allowed'] == body_allowed
+                and state['apply'] == apply and state['cursor_committed'] is True)
+    return False
+
+
+GLOBAL_SETTINGS_SCHEMAS = {'GlobalSettingsValue': {'allOf': [{'$ref': '#/components/schemas/Sequence'},
+                                   {'not': {'const': '0'}}],
+                         'description': '正 int64 '
+                                        '规范十进制字符串，1～9223372036854775807；禁止0、前导零、符号、小数、指数和JSON数字。仅为表示/存储技术上限，无额外业务上限。'},
+ 'GlobalSettingsVersion': {'allOf': [{'$ref': '#/components/schemas/Version'},
+                                     {'maximum': 9007199254740991}],
+                           'description': '全局设置专用JSON整数版本，1～9007199254740991；不改变公共或设备Version。'},
+ 'GlobalSettings': {'type': 'object',
+                    'properties': {'retention_days': {'$ref': '#/components/schemas/GlobalSettingsValue',
+                                                      'default': '30'},
+                                   'image_max_bytes': {'$ref': '#/components/schemas/GlobalSettingsValue',
+                                                       'default': '10485760'},
+                                   'file_max_bytes': {'$ref': '#/components/schemas/GlobalSettingsValue',
+                                                      'default': '52428800'},
+                                   'version': {'$ref': '#/components/schemas/GlobalSettingsVersion'},
+                                   'updated_at': {'$ref': '#/components/schemas/UTCDateTime'}},
+                    'required': ['retention_days',
+                                 'image_max_bytes',
+                                 'file_max_bytes',
+                                 'version',
+                                 'updated_at'],
+                    'additionalProperties': False,
+                    'description': '完整全局设置；初始持久化版本1，updated_at由服务端生成。默认30天、10MiB、50MiB均可调。'},
+ 'GlobalSettingsUpdate': {'type': 'object',
+                          'properties': {'retention_days': {'$ref': '#/components/schemas/GlobalSettingsValue',
+                                                            'default': '30'},
+                                         'image_max_bytes': {'$ref': '#/components/schemas/GlobalSettingsValue',
+                                                             'default': '10485760'},
+                                         'file_max_bytes': {'$ref': '#/components/schemas/GlobalSettingsValue',
+                                                            'default': '52428800'},
+                                         'expected_version': {'$ref': '#/components/schemas/GlobalSettingsVersion'}},
+                          'required': ['retention_days',
+                                       'image_max_bytes',
+                                       'file_max_bytes',
+                                       'expected_version'],
+                          'additionalProperties': False},
+ 'GlobalSettingsConflict': {'oneOf': [{'type': 'object',
+                                       'properties': {'error': {'type': 'object',
+                                                                'properties': {'code': {'const': 'GLOBAL_SETTINGS_CONFLICT'},
+                                                                               'message': {'type': 'string'},
+                                                                               'request_id': {'type': 'string',
+                                                                                              'minLength': 1},
+                                                                               'retryable': {'const': False},
+                                                                               'latest_version': {'$ref': '#/components/schemas/GlobalSettingsVersion'},
+                                                                               'recovery_path': {'const': '/admin/settings'}},
+                                                                'required': ['code',
+                                                                             'message',
+                                                                             'request_id',
+                                                                             'retryable',
+                                                                             'latest_version',
+                                                                             'recovery_path'],
+                                                                'additionalProperties': False}},
+                                       'required': ['error'],
+                                       'additionalProperties': False},
+                                      {'type': 'object',
+                                       'properties': {'error': {'type': 'object',
+                                                                'properties': {'code': {'const': 'GLOBAL_SETTINGS_VERSION_EXHAUSTED'},
+                                                                               'message': {'type': 'string'},
+                                                                               'request_id': {'type': 'string',
+                                                                                              'minLength': 1},
+                                                                               'retryable': {'const': False},
+                                                                               'latest_version': {'allOf': [{'$ref': '#/components/schemas/GlobalSettingsVersion'}, {'const': 9007199254740991}]},
+                                                                               'recovery_path': {'const': '/admin/settings'}},
+                                                                'required': ['code',
+                                                                             'message',
+                                                                             'request_id',
+                                                                             'retryable',
+                                                                             'latest_version',
+                                                                             'recovery_path'],
+                                                                'additionalProperties': False}},
+                                       'required': ['error'],
+                                       'additionalProperties': False}],
+                            'description': '先CAS再耗尽：过期即CONFLICT；匹配且达到上限为VERSION_EXHAUSTED。重读最新配置；禁止盲重放。耗尽不可重试，GET仍可用，恢复写入需未来明确迁移。'},
+ 'SyncGlobalSettings': {'type': 'object',
+                        'properties': {'type': {'const': 'settings.updated'},
+                                       'change_seq': {'$ref': '#/components/schemas/Sequence'},
+                                       'settings_version': {'$ref': '#/components/schemas/GlobalSettingsVersion'},
+                                       'recovery_path': {'const': '/admin/settings'}},
+                        'required': ['type', 'change_seq', 'settings_version', 'recovery_path'],
+                        'additionalProperties': False,
+                        'description': '仅传全局配置版本及管理GET关联，不携带配置正文；正文仍需管理员权限。仅更高版本触发重读，重复/旧版本忽略投影但正常提交同步游标；GET旧响应不得覆盖较新版本。与device.notifications.updated独立。'}}
+GLOBAL_SETTINGS_PATH = {'get': {'operationId': 'getGlobalSettings',
+         'summary': '读取全局设置',
+         'tags': ['Admin'],
+         'security': [{'AdminBearer': []}, {'WebCookie': []}],
+         'description': '仅唯一管理员。Cookie写入须CSRF及同源Origin/Referer。三配置为正int64规范十进制字符串，0不表示立即清理、禁用或无限；不新增业务上限。缩短期限只影响后续清理批次；保护未完成/未ACK/failed及必要附件、父消息和有效引用，不承诺永久恢复。',
+         'responses': {'200': {'description': '完整配置、版本及服务端时间。',
+                               'headers': {'Cache-Control': {'schema': {'type': 'string',
+                                                                        'const': 'no-store'}}},
+                               'content': {'application/json': {'schema': {'$ref': '#/components/schemas/GlobalSettings'}}}},
+                       '400': {'$ref': '#/components/responses/400'},
+                       '401': {'$ref': '#/components/responses/401'},
+                       '403': {'$ref': '#/components/responses/403'},
+                       '429': {'$ref': '#/components/responses/429'},
+                       '503': {'$ref': '#/components/responses/503'}},
+         'x-global-settings-policy': {'validation_order': ['authentication',
+                                                           'structure-400',
+                                                           'field-semantics-422',
+                                                           'expected-version-CAS',
+                                                           'version-exhaustion',
+                                                           'atomic-commit'],
+                                      'cookie_write': 'csrf-and-same-origin-origin-or-referer',
+                                      'commit': 'all-values-version-updated_at-and-one-settings.updated-in-one-transaction',
+                                      'same_values': 'increment-version-and-emit-one-change',
+                                      'conflict': '409-GLOBAL_SETTINGS_CONFLICT-latest-version-and-reread',
+                                      'exhaustion': '409-GLOBAL_SETTINGS_VERSION_EXHAUSTED-retryable-false-no-write-no-event-no-wrap',
+                                      'recovery': 'GET-admin-settings-then-reapply-intent-no-blind-replay'},
+         'x-cleanup-policy': {'age': 'UTC-whole-days-since-created_at-safe-day-second-decomposition-no-duration-multiplication-no-cutoff-subtraction-future-never-expired',
+                              'schedule': 'shortening-affects-subsequent-hourly-small-batches-no-immediate-completion',
+                              'transaction': 'recheck-protection-in-delete-transaction',
+                              'protect': ['pending',
+                                          'leased',
+                                          'retry_wait',
+                                          'failed',
+                                          'unacknowledged',
+                                          'necessary-parent-message-and-attachment',
+                                          'other-message-attachment-reference',
+                                          'active-download-reference'],
+                              'ordinary_reference': 'does-not-permanently-protect-parent-message',
+                              'no_ttl': 'protected-delivery-or-failure-never-silently-dropped-under-pressure',
+                              'history': 'offline-or-unread-does-not-protect-history-no-permanent-recovery-guarantee'}},
+ 'put': {'operationId': 'updateGlobalSettings',
+         'summary': 'CAS替换全局设置',
+         'tags': ['Admin'],
+         'security': [{'AdminBearer': []}, {'WebCookie': [], 'CSRF': []}],
+         'description': '仅唯一管理员。Cookie写入须CSRF及同源Origin/Referer。三配置为正int64规范十进制字符串，0不表示立即清理、禁用或无限；不新增业务上限。缩短期限只影响后续清理批次；保护未完成/未ACK/failed及必要附件、父消息和有效引用，不承诺永久恢复。',
+         'responses': {'200': {'description': '完整配置、版本及服务端时间。',
+                               'headers': {'Cache-Control': {'schema': {'type': 'string',
+                                                                        'const': 'no-store'}}},
+                               'content': {'application/json': {'schema': {'$ref': '#/components/schemas/GlobalSettings'}}}},
+                       '400': {'$ref': '#/components/responses/400'},
+                       '401': {'$ref': '#/components/responses/401'},
+                       '403': {'$ref': '#/components/responses/403'},
+                       '429': {'$ref': '#/components/responses/429'},
+                       '503': {'$ref': '#/components/responses/503'},
+                       '413': {'$ref': '#/components/responses/413'},
+                       '422': {'$ref': '#/components/responses/422'},
+                       '409': {'description': '过期CAS优先；匹配但耗尽不可重试，无部分写入或事件。',
+                               'headers': {'Cache-Control': {'schema': {'type': 'string',
+                                                                        'const': 'no-store'}}},
+                               'content': {'application/json': {'schema': {'$ref': '#/components/schemas/GlobalSettingsConflict'}}}}},
+         'x-global-settings-policy': {'validation_order': ['authentication',
+                                                           'structure-400',
+                                                           'field-semantics-422',
+                                                           'expected-version-CAS',
+                                                           'version-exhaustion',
+                                                           'atomic-commit'],
+                                      'cookie_write': 'csrf-and-same-origin-origin-or-referer',
+                                      'commit': 'all-values-version-updated_at-and-one-settings.updated-in-one-transaction',
+                                      'same_values': 'increment-version-and-emit-one-change',
+                                      'conflict': '409-GLOBAL_SETTINGS_CONFLICT-latest-version-and-reread',
+                                      'exhaustion': '409-GLOBAL_SETTINGS_VERSION_EXHAUSTED-retryable-false-no-write-no-event-no-wrap',
+                                      'recovery': 'GET-admin-settings-then-reapply-intent-no-blind-replay'},
+         'x-cleanup-policy': {'age': 'UTC-whole-days-since-created_at-safe-day-second-decomposition-no-duration-multiplication-no-cutoff-subtraction-future-never-expired',
+                              'schedule': 'shortening-affects-subsequent-hourly-small-batches-no-immediate-completion',
+                              'transaction': 'recheck-protection-in-delete-transaction',
+                              'protect': ['pending',
+                                          'leased',
+                                          'retry_wait',
+                                          'failed',
+                                          'unacknowledged',
+                                          'necessary-parent-message-and-attachment',
+                                          'other-message-attachment-reference',
+                                          'active-download-reference'],
+                              'ordinary_reference': 'does-not-permanently-protect-parent-message',
+                              'no_ttl': 'protected-delivery-or-failure-never-silently-dropped-under-pressure',
+                              'history': 'offline-or-unread-does-not-protect-history-no-permanent-recovery-guarantee'},
+         'requestBody': {'required': True,
+                         'x-max-bytes': 262144,
+                         'content': {'application/json': {'schema': {'$ref': '#/components/schemas/GlobalSettingsUpdate'}}}},
+         'x-error-codes': {'400': ['INVALID_REQUEST'],
+                           '401': ['AUTHENTICATION_REQUIRED'],
+                           '403': ['FORBIDDEN'],
+                           '409': ['GLOBAL_SETTINGS_CONFLICT', 'GLOBAL_SETTINGS_VERSION_EXHAUSTED'],
+                           '413': ['REQUEST_TOO_LARGE'],
+                           '422': ['VALIDATION_FAILED']}}}
+
 def main():
     document = yaml.safe_load((ROOT / 'openapi.yaml').read_text(encoding='utf-8'))
     validate_spec(document)
@@ -1125,6 +1388,11 @@ def main():
     for name, expected in HEALTH_SCHEMAS.items():
         if schemas.get(name) != expected:
             raise SystemExit('健康/管理Schema错误：' + name)
+    if document['paths'].get('/admin/settings') != GLOBAL_SETTINGS_PATH:
+        raise SystemExit('全局配置操作声明错误')
+    for name, expected in GLOBAL_SETTINGS_SCHEMAS.items():
+        if schemas.get(name) != expected:
+            raise SystemExit('全局配置Schema错误：' + name)
     cases = json.loads((ROOT / 'examples.json').read_text(encoding='utf-8'))
     failures = []
     operation_map = {op['operationId']: op for item in document['paths'].values()
@@ -1158,6 +1426,10 @@ def main():
             standalone = ContractValidator({'type': 'string', 'x-content-range': True})
             if standalone.is_valid(case['value']) != case.get('schema_valid', case['valid']):
                 failures.append(case['name'] + ' 独立 Content-Range 扩展')
+        if ('global_settings_state' in case
+                and global_settings_state_valid(case['global_settings_state'], schemas)
+                != case.get('state_valid', True)):
+            failures.append(case['name'] + ' 全局配置合成状态')
         if 'range_size' in case:
             intervals = range_intervals(case['value'], case['range_size'])
             if intervals != case['intervals'] or (206 if intervals else 416) != case['status']:
@@ -1355,10 +1627,10 @@ def main():
                 '$ref': '#/components/schemas/NotificationSettingsConflict'}:
             raise SystemExit('通知冲突缺少最新版本及恢复路径')
     expected_union = ['SyncMessageUpsert', 'SyncMessageDelete', 'SyncBotUpsert', 'SyncBotDelete',
-                      'SyncReadUpdate', 'SyncDeliveryUpsert', 'SyncDeviceNotifications']
+                      'SyncReadUpdate', 'SyncDeliveryUpsert', 'SyncDeviceNotifications', 'SyncGlobalSettings']
     if schemas['SyncChange']['oneOf'] != [{'$ref': '#/components/schemas/' + name} for name in expected_union]:
-        raise SystemExit('同步union设备通知分支不完整')
-    if set(operation_map) != baseline_ids | set(new_security) | delivery_ids | {'listDeviceSessions', 'revokeDeviceSession', 'getHealthLive', 'getHealthReady', 'getAdminStatus'}:
+        raise SystemExit('同步union全局与设备配置分支不完整')
+    if set(operation_map) != baseline_ids | set(new_security) | delivery_ids | {'listDeviceSessions', 'revokeDeviceSession', 'getHealthLive', 'getHealthReady', 'getAdminStatus', 'getGlobalSettings', 'updateGlobalSettings'}:
         raise SystemExit('冻结操作集合不符')
     if any(method in document['paths']['/client/messages/{id}'] for method in ('put', 'patch')):
         raise SystemExit('不得提供 Android 编辑接口')

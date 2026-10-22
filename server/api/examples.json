@@ -23647,5 +23647,6450 @@
       },
       "body": "unavailable\n"
     }
+  },
+
+  {
+    "name": "全局配置：默认完整配置",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    }
+  },
+  {
+    "name": "全局配置：retention_days合法1",
+    "schema": "GlobalSettingsUpdate",
+    "valid": true,
+    "value": {
+      "retention_days": "1",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：retention_days合法9223372036854775807",
+    "schema": "GlobalSettingsUpdate",
+    "valid": true,
+    "value": {
+      "retention_days": "9223372036854775807",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：retention_days合法9007199254740992",
+    "schema": "GlobalSettingsUpdate",
+    "valid": true,
+    "value": {
+      "retention_days": "9007199254740992",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：retention_days合法1000000000000000000",
+    "schema": "GlobalSettingsUpdate",
+    "valid": true,
+    "value": {
+      "retention_days": "1000000000000000000",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：retention_days拒绝'0'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "0",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：retention_days拒绝'-1'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "-1",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：retention_days拒绝'01'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "01",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：retention_days拒绝'+1'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "+1",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：retention_days拒绝'1.5'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "1.5",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：retention_days拒绝'1e3'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "1e3",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：retention_days拒绝' 1'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": " 1",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：retention_days拒绝'1\\n'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "1\n",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：retention_days拒绝'9223372036854775808'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "9223372036854775808",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：retention_days拒绝'999999999999999999999'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "999999999999999999999",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：retention_days拒绝0",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": 0,
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：retention_days拒绝30",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": 30,
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：retention_days拒绝None",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": null,
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：retention_days拒绝True",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": true,
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：image_max_bytes合法1",
+    "schema": "GlobalSettingsUpdate",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "1",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：image_max_bytes合法9223372036854775807",
+    "schema": "GlobalSettingsUpdate",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "9223372036854775807",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：image_max_bytes合法9007199254740992",
+    "schema": "GlobalSettingsUpdate",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "9007199254740992",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：image_max_bytes合法1000000000000000000",
+    "schema": "GlobalSettingsUpdate",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "1000000000000000000",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：image_max_bytes拒绝'0'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "0",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：image_max_bytes拒绝'-1'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "-1",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：image_max_bytes拒绝'01'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "01",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：image_max_bytes拒绝'+1'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "+1",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：image_max_bytes拒绝'1.5'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "1.5",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：image_max_bytes拒绝'1e3'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "1e3",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：image_max_bytes拒绝' 1'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": " 1",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：image_max_bytes拒绝'1\\n'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "1\n",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：image_max_bytes拒绝'9223372036854775808'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "9223372036854775808",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：image_max_bytes拒绝'999999999999999999999'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "999999999999999999999",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：image_max_bytes拒绝0",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": 0,
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：image_max_bytes拒绝30",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": 30,
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：image_max_bytes拒绝None",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": null,
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：image_max_bytes拒绝True",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": true,
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：file_max_bytes合法1",
+    "schema": "GlobalSettingsUpdate",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "1",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：file_max_bytes合法9223372036854775807",
+    "schema": "GlobalSettingsUpdate",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "9223372036854775807",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：file_max_bytes合法9007199254740992",
+    "schema": "GlobalSettingsUpdate",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "9007199254740992",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：file_max_bytes合法1000000000000000000",
+    "schema": "GlobalSettingsUpdate",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "1000000000000000000",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：file_max_bytes拒绝'0'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "0",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：file_max_bytes拒绝'-1'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "-1",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：file_max_bytes拒绝'01'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "01",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：file_max_bytes拒绝'+1'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "+1",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：file_max_bytes拒绝'1.5'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "1.5",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：file_max_bytes拒绝'1e3'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "1e3",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：file_max_bytes拒绝' 1'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": " 1",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：file_max_bytes拒绝'1\\n'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "1\n",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：file_max_bytes拒绝'9223372036854775808'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "9223372036854775808",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：file_max_bytes拒绝'999999999999999999999'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "999999999999999999999",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：file_max_bytes拒绝0",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": 0,
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：file_max_bytes拒绝30",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": 30,
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：file_max_bytes拒绝None",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": null,
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：file_max_bytes拒绝True",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": true,
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：专用版本合法1",
+    "schema": "GlobalSettingsVersion",
+    "valid": true,
+    "value": 1
+  },
+  {
+    "name": "全局配置：专用版本合法9007199254740990",
+    "schema": "GlobalSettingsVersion",
+    "valid": true,
+    "value": 9007199254740990
+  },
+  {
+    "name": "全局配置：专用版本合法9007199254740991",
+    "schema": "GlobalSettingsVersion",
+    "valid": true,
+    "value": 9007199254740991
+  },
+  {
+    "name": "全局配置：专用版本拒绝0",
+    "schema": "GlobalSettingsVersion",
+    "valid": false,
+    "value": 0
+  },
+  {
+    "name": "全局配置：专用版本拒绝-1",
+    "schema": "GlobalSettingsVersion",
+    "valid": false,
+    "value": -1
+  },
+  {
+    "name": "全局配置：专用版本拒绝9007199254740992",
+    "schema": "GlobalSettingsVersion",
+    "valid": false,
+    "value": 9007199254740992
+  },
+  {
+    "name": "全局配置：专用版本拒绝1.5",
+    "schema": "GlobalSettingsVersion",
+    "valid": false,
+    "value": 1.5
+  },
+  {
+    "name": "全局配置：专用版本拒绝'1'",
+    "schema": "GlobalSettingsVersion",
+    "valid": false,
+    "value": "1"
+  },
+  {
+    "name": "全局配置：专用版本拒绝True",
+    "schema": "GlobalSettingsVersion",
+    "valid": false,
+    "value": true
+  },
+  {
+    "name": "全局配置：专用版本拒绝None",
+    "schema": "GlobalSettingsVersion",
+    "valid": false,
+    "value": null
+  },
+  {
+    "name": "全局配置：GlobalSettingsUpdate版本0",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 0
+    }
+  },
+  {
+    "name": "全局配置：GlobalSettingsUpdate版本9007199254740992",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 9007199254740992
+    }
+  },
+  {
+    "name": "全局配置：GlobalSettingsUpdate版本'1'",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": "1"
+    }
+  },
+  {
+    "name": "全局配置：GlobalSettingsUpdate版本True",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": true
+    }
+  },
+  {
+    "name": "全局配置：GlobalSettingsUpdate版本1.5",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1.5
+    }
+  },
+  {
+    "name": "全局配置：GlobalSettingsUpdatemissing",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1
+    }
+  },
+  {
+    "name": "全局配置：GlobalSettingsUpdateunknown",
+    "schema": "GlobalSettingsUpdate",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "expected_version": 1,
+      "unknown": 1
+    }
+  },
+  {
+    "name": "全局配置：GlobalSettings版本0",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 0,
+      "updated_at": "2026-10-23T00:00:00Z"
+    }
+  },
+  {
+    "name": "全局配置：GlobalSettings版本9007199254740992",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 9007199254740992,
+      "updated_at": "2026-10-23T00:00:00Z"
+    }
+  },
+  {
+    "name": "全局配置：GlobalSettings版本'1'",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": "1",
+      "updated_at": "2026-10-23T00:00:00Z"
+    }
+  },
+  {
+    "name": "全局配置：GlobalSettings版本True",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": true,
+      "updated_at": "2026-10-23T00:00:00Z"
+    }
+  },
+  {
+    "name": "全局配置：GlobalSettings版本1.5",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1.5,
+      "updated_at": "2026-10-23T00:00:00Z"
+    }
+  },
+  {
+    "name": "全局配置：GlobalSettingsmissing",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    }
+  },
+  {
+    "name": "全局配置：GlobalSettingsunknown",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z",
+      "unknown": 1
+    }
+  },
+  {
+    "name": "全局配置：拒绝非UTC服务端时间",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T08:00:00+08:00"
+    }
+  },
+  {
+    "name": "全局配置：getGlobalSettings成功",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "operationId": "getGlobalSettings",
+    "status": 200
+  },
+  {
+    "name": "全局配置：getGlobalSettings400",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "INVALID_REQUEST",
+        "message": "合成错误",
+        "request_id": "synthetic",
+        "retryable": false
+      }
+    },
+    "operationId": "getGlobalSettings",
+    "status": 400
+  },
+  {
+    "name": "全局配置：getGlobalSettings401",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "AUTHENTICATION_REQUIRED",
+        "message": "合成错误",
+        "request_id": "synthetic",
+        "retryable": false
+      }
+    },
+    "operationId": "getGlobalSettings",
+    "status": 401
+  },
+  {
+    "name": "全局配置：getGlobalSettings403",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "FORBIDDEN",
+        "message": "合成错误",
+        "request_id": "synthetic",
+        "retryable": false
+      }
+    },
+    "operationId": "getGlobalSettings",
+    "status": 403
+  },
+  {
+    "name": "全局配置：getGlobalSettings权限{'AdminBearer': []}",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "getGlobalSettings",
+      "security": {
+        "AdminBearer": []
+      }
+    }
+  },
+  {
+    "name": "全局配置：getGlobalSettings权限{'WebCookie': []}",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "getGlobalSettings",
+      "security": {
+        "WebCookie": []
+      }
+    }
+  },
+  {
+    "name": "全局配置：getGlobalSettings权限{'WebCookie': [], 'CSRF': []}",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "getGlobalSettings",
+      "security": {
+        "WebCookie": [],
+        "CSRF": []
+      }
+    }
+  },
+  {
+    "name": "全局配置：getGlobalSettings权限{'BotAPIToken': []}",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "getGlobalSettings",
+      "security": {
+        "BotAPIToken": []
+      }
+    }
+  },
+  {
+    "name": "全局配置：getGlobalSettings权限{}",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "getGlobalSettings",
+      "security": {}
+    }
+  },
+  {
+    "name": "全局配置：updateGlobalSettings成功",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "operationId": "updateGlobalSettings",
+    "status": 200
+  },
+  {
+    "name": "全局配置：updateGlobalSettings400",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "INVALID_REQUEST",
+        "message": "合成错误",
+        "request_id": "synthetic",
+        "retryable": false
+      }
+    },
+    "operationId": "updateGlobalSettings",
+    "status": 400
+  },
+  {
+    "name": "全局配置：updateGlobalSettings401",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "AUTHENTICATION_REQUIRED",
+        "message": "合成错误",
+        "request_id": "synthetic",
+        "retryable": false
+      }
+    },
+    "operationId": "updateGlobalSettings",
+    "status": 401
+  },
+  {
+    "name": "全局配置：updateGlobalSettings403",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "FORBIDDEN",
+        "message": "合成错误",
+        "request_id": "synthetic",
+        "retryable": false
+      }
+    },
+    "operationId": "updateGlobalSettings",
+    "status": 403
+  },
+  {
+    "name": "全局配置：updateGlobalSettings413",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "REQUEST_TOO_LARGE",
+        "message": "合成错误",
+        "request_id": "synthetic",
+        "retryable": false
+      }
+    },
+    "operationId": "updateGlobalSettings",
+    "status": 413
+  },
+  {
+    "name": "全局配置：updateGlobalSettings422",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "VALIDATION_FAILED",
+        "message": "合成错误",
+        "request_id": "synthetic",
+        "retryable": false
+      }
+    },
+    "operationId": "updateGlobalSettings",
+    "status": 422
+  },
+  {
+    "name": "全局配置：updateGlobalSettings权限{'AdminBearer': []}",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "updateGlobalSettings",
+      "security": {
+        "AdminBearer": []
+      }
+    }
+  },
+  {
+    "name": "全局配置：updateGlobalSettings权限{'WebCookie': []}",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "updateGlobalSettings",
+      "security": {
+        "WebCookie": []
+      }
+    }
+  },
+  {
+    "name": "全局配置：updateGlobalSettings权限{'WebCookie': [], 'CSRF': []}",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "updateGlobalSettings",
+      "security": {
+        "WebCookie": [],
+        "CSRF": []
+      }
+    }
+  },
+  {
+    "name": "全局配置：updateGlobalSettings权限{'BotAPIToken': []}",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "updateGlobalSettings",
+      "security": {
+        "BotAPIToken": []
+      }
+    }
+  },
+  {
+    "name": "全局配置：updateGlobalSettings权限{}",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "updateGlobalSettings",
+      "security": {}
+    }
+  },
+  {
+    "name": "全局配置：GLOBAL_SETTINGS_CONFLICT",
+    "schema": "GlobalSettingsConflict",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "GLOBAL_SETTINGS_CONFLICT",
+        "message": "合成冲突",
+        "request_id": "synthetic",
+        "retryable": false,
+        "latest_version": 9007199254740991,
+        "recovery_path": "/admin/settings"
+      }
+    },
+    "operationId": "updateGlobalSettings",
+    "status": 409
+  },
+  {
+    "name": "全局配置：GLOBAL_SETTINGS_CONFLICT拒绝retryableTrue",
+    "schema": "GlobalSettingsConflict",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "GLOBAL_SETTINGS_CONFLICT",
+        "message": "合成冲突",
+        "request_id": "synthetic",
+        "retryable": true,
+        "latest_version": 9007199254740991,
+        "recovery_path": "/admin/settings"
+      }
+    }
+  },
+  {
+    "name": "全局配置：GLOBAL_SETTINGS_CONFLICT拒绝latest_version9007199254740992",
+    "schema": "GlobalSettingsConflict",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "GLOBAL_SETTINGS_CONFLICT",
+        "message": "合成冲突",
+        "request_id": "synthetic",
+        "retryable": false,
+        "latest_version": 9007199254740992,
+        "recovery_path": "/admin/settings"
+      }
+    }
+  },
+  {
+    "name": "全局配置：GLOBAL_SETTINGS_CONFLICT拒绝latest_version'1'",
+    "schema": "GlobalSettingsConflict",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "GLOBAL_SETTINGS_CONFLICT",
+        "message": "合成冲突",
+        "request_id": "synthetic",
+        "retryable": false,
+        "latest_version": "1",
+        "recovery_path": "/admin/settings"
+      }
+    }
+  },
+  {
+    "name": "全局配置：GLOBAL_SETTINGS_CONFLICT拒绝recovery_path'/devices/current/notifications'",
+    "schema": "GlobalSettingsConflict",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "GLOBAL_SETTINGS_CONFLICT",
+        "message": "合成冲突",
+        "request_id": "synthetic",
+        "retryable": false,
+        "latest_version": 9007199254740991,
+        "recovery_path": "/devices/current/notifications"
+      }
+    }
+  },
+  {
+    "name": "全局配置：GLOBAL_SETTINGS_CONFLICT拒绝code'SETTINGS_CONFLICT'",
+    "schema": "GlobalSettingsConflict",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "SETTINGS_CONFLICT",
+        "message": "合成冲突",
+        "request_id": "synthetic",
+        "retryable": false,
+        "latest_version": 9007199254740991,
+        "recovery_path": "/admin/settings"
+      }
+    }
+  },
+  {
+    "name": "全局配置：GLOBAL_SETTINGS_CONFLICT缺最新版本",
+    "schema": "GlobalSettingsConflict",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "GLOBAL_SETTINGS_CONFLICT",
+        "message": "合成冲突",
+        "request_id": "synthetic",
+        "retryable": false,
+        "recovery_path": "/admin/settings"
+      }
+    }
+  },
+  {
+    "name": "全局配置：GLOBAL_SETTINGS_VERSION_EXHAUSTED",
+    "schema": "GlobalSettingsConflict",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "GLOBAL_SETTINGS_VERSION_EXHAUSTED",
+        "message": "合成冲突",
+        "request_id": "synthetic",
+        "retryable": false,
+        "latest_version": 9007199254740991,
+        "recovery_path": "/admin/settings"
+      }
+    },
+    "operationId": "updateGlobalSettings",
+    "status": 409
+  },
+  {
+    "name": "全局配置：GLOBAL_SETTINGS_VERSION_EXHAUSTED拒绝retryableTrue",
+    "schema": "GlobalSettingsConflict",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "GLOBAL_SETTINGS_VERSION_EXHAUSTED",
+        "message": "合成冲突",
+        "request_id": "synthetic",
+        "retryable": true,
+        "latest_version": 9007199254740991,
+        "recovery_path": "/admin/settings"
+      }
+    }
+  },
+  {
+    "name": "全局配置：GLOBAL_SETTINGS_VERSION_EXHAUSTED拒绝latest_version9007199254740992",
+    "schema": "GlobalSettingsConflict",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "GLOBAL_SETTINGS_VERSION_EXHAUSTED",
+        "message": "合成冲突",
+        "request_id": "synthetic",
+        "retryable": false,
+        "latest_version": 9007199254740992,
+        "recovery_path": "/admin/settings"
+      }
+    }
+  },
+  {
+    "name": "全局配置：GLOBAL_SETTINGS_VERSION_EXHAUSTED拒绝latest_version'1'",
+    "schema": "GlobalSettingsConflict",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "GLOBAL_SETTINGS_VERSION_EXHAUSTED",
+        "message": "合成冲突",
+        "request_id": "synthetic",
+        "retryable": false,
+        "latest_version": "1",
+        "recovery_path": "/admin/settings"
+      }
+    }
+  },
+  {
+    "name": "全局配置：GLOBAL_SETTINGS_VERSION_EXHAUSTED拒绝recovery_path'/devices/current/notifications'",
+    "schema": "GlobalSettingsConflict",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "GLOBAL_SETTINGS_VERSION_EXHAUSTED",
+        "message": "合成冲突",
+        "request_id": "synthetic",
+        "retryable": false,
+        "latest_version": 9007199254740991,
+        "recovery_path": "/devices/current/notifications"
+      }
+    }
+  },
+  {
+    "name": "全局配置：GLOBAL_SETTINGS_VERSION_EXHAUSTED拒绝code'SETTINGS_CONFLICT'",
+    "schema": "GlobalSettingsConflict",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "SETTINGS_CONFLICT",
+        "message": "合成冲突",
+        "request_id": "synthetic",
+        "retryable": false,
+        "latest_version": 9007199254740991,
+        "recovery_path": "/admin/settings"
+      }
+    }
+  },
+  {
+    "name": "全局配置：GLOBAL_SETTINGS_VERSION_EXHAUSTED缺最新版本",
+    "schema": "GlobalSettingsConflict",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "GLOBAL_SETTINGS_VERSION_EXHAUSTED",
+        "message": "合成冲突",
+        "request_id": "synthetic",
+        "retryable": false,
+        "recovery_path": "/admin/settings"
+      }
+    }
+  },
+  {
+    "name": "全局配置：全局事件SyncGlobalSettings",
+    "schema": "SyncGlobalSettings",
+    "valid": true,
+    "value": {
+      "type": "settings.updated",
+      "change_seq": "12",
+      "settings_version": 2,
+      "recovery_path": "/admin/settings"
+    }
+  },
+  {
+    "name": "全局配置：全局事件SyncChange",
+    "schema": "SyncChange",
+    "valid": true,
+    "value": {
+      "type": "settings.updated",
+      "change_seq": "12",
+      "settings_version": 2,
+      "recovery_path": "/admin/settings"
+    }
+  },
+  {
+    "name": "全局配置：全局事件拒绝SyncGlobalSettingstype'device.notifications.updated'",
+    "schema": "SyncGlobalSettings",
+    "valid": false,
+    "value": {
+      "type": "device.notifications.updated",
+      "change_seq": "12",
+      "settings_version": 2,
+      "recovery_path": "/admin/settings"
+    }
+  },
+  {
+    "name": "全局配置：全局事件拒绝SyncChangetype'device.notifications.updated'",
+    "schema": "SyncChange",
+    "valid": false,
+    "value": {
+      "type": "device.notifications.updated",
+      "change_seq": "12",
+      "settings_version": 2,
+      "recovery_path": "/admin/settings"
+    }
+  },
+  {
+    "name": "全局配置：全局事件拒绝SyncGlobalSettingssettings_version0",
+    "schema": "SyncGlobalSettings",
+    "valid": false,
+    "value": {
+      "type": "settings.updated",
+      "change_seq": "12",
+      "settings_version": 0,
+      "recovery_path": "/admin/settings"
+    }
+  },
+  {
+    "name": "全局配置：全局事件拒绝SyncChangesettings_version0",
+    "schema": "SyncChange",
+    "valid": false,
+    "value": {
+      "type": "settings.updated",
+      "change_seq": "12",
+      "settings_version": 0,
+      "recovery_path": "/admin/settings"
+    }
+  },
+  {
+    "name": "全局配置：全局事件拒绝SyncGlobalSettingssettings_version9007199254740992",
+    "schema": "SyncGlobalSettings",
+    "valid": false,
+    "value": {
+      "type": "settings.updated",
+      "change_seq": "12",
+      "settings_version": 9007199254740992,
+      "recovery_path": "/admin/settings"
+    }
+  },
+  {
+    "name": "全局配置：全局事件拒绝SyncChangesettings_version9007199254740992",
+    "schema": "SyncChange",
+    "valid": false,
+    "value": {
+      "type": "settings.updated",
+      "change_seq": "12",
+      "settings_version": 9007199254740992,
+      "recovery_path": "/admin/settings"
+    }
+  },
+  {
+    "name": "全局配置：全局事件拒绝SyncGlobalSettingssettings_version'2'",
+    "schema": "SyncGlobalSettings",
+    "valid": false,
+    "value": {
+      "type": "settings.updated",
+      "change_seq": "12",
+      "settings_version": "2",
+      "recovery_path": "/admin/settings"
+    }
+  },
+  {
+    "name": "全局配置：全局事件拒绝SyncChangesettings_version'2'",
+    "schema": "SyncChange",
+    "valid": false,
+    "value": {
+      "type": "settings.updated",
+      "change_seq": "12",
+      "settings_version": "2",
+      "recovery_path": "/admin/settings"
+    }
+  },
+  {
+    "name": "全局配置：全局事件拒绝SyncGlobalSettingschange_seq12",
+    "schema": "SyncGlobalSettings",
+    "valid": false,
+    "value": {
+      "type": "settings.updated",
+      "change_seq": 12,
+      "settings_version": 2,
+      "recovery_path": "/admin/settings"
+    }
+  },
+  {
+    "name": "全局配置：全局事件拒绝SyncChangechange_seq12",
+    "schema": "SyncChange",
+    "valid": false,
+    "value": {
+      "type": "settings.updated",
+      "change_seq": 12,
+      "settings_version": 2,
+      "recovery_path": "/admin/settings"
+    }
+  },
+  {
+    "name": "全局配置：全局事件拒绝SyncGlobalSettingsrecovery_path'/admin/status'",
+    "schema": "SyncGlobalSettings",
+    "valid": false,
+    "value": {
+      "type": "settings.updated",
+      "change_seq": "12",
+      "settings_version": 2,
+      "recovery_path": "/admin/status"
+    }
+  },
+  {
+    "name": "全局配置：全局事件拒绝SyncChangerecovery_path'/admin/status'",
+    "schema": "SyncChange",
+    "valid": false,
+    "value": {
+      "type": "settings.updated",
+      "change_seq": "12",
+      "settings_version": 2,
+      "recovery_path": "/admin/status"
+    }
+  },
+  {
+    "name": "全局配置：全局事件拒绝SyncGlobalSettingssettings{'retention_days': '30', 'image_max_bytes': '10485760', 'file_max_bytes': '52428800', 'version': 1, 'updated_at': '2026-10-23T00:00:00Z'}",
+    "schema": "SyncGlobalSettings",
+    "valid": false,
+    "value": {
+      "type": "settings.updated",
+      "change_seq": "12",
+      "settings_version": 2,
+      "recovery_path": "/admin/settings",
+      "settings": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      }
+    }
+  },
+  {
+    "name": "全局配置：全局事件拒绝SyncChangesettings{'retention_days': '30', 'image_max_bytes': '10485760', 'file_max_bytes': '52428800', 'version': 1, 'updated_at': '2026-10-23T00:00:00Z'}",
+    "schema": "SyncChange",
+    "valid": false,
+    "value": {
+      "type": "settings.updated",
+      "change_seq": "12",
+      "settings_version": 2,
+      "recovery_path": "/admin/settings",
+      "settings": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      }
+    }
+  },
+  {
+    "name": "全局配置：全局事件拒绝SyncGlobalSettingsretention_days'30'",
+    "schema": "SyncGlobalSettings",
+    "valid": false,
+    "value": {
+      "type": "settings.updated",
+      "change_seq": "12",
+      "settings_version": 2,
+      "recovery_path": "/admin/settings",
+      "retention_days": "30"
+    }
+  },
+  {
+    "name": "全局配置：全局事件拒绝SyncChangeretention_days'30'",
+    "schema": "SyncChange",
+    "valid": false,
+    "value": {
+      "type": "settings.updated",
+      "change_seq": "12",
+      "settings_version": 2,
+      "recovery_path": "/admin/settings",
+      "retention_days": "30"
+    }
+  },
+  {
+    "name": "全局配置：全局事件缺type",
+    "schema": "SyncChange",
+    "valid": false,
+    "value": {
+      "change_seq": "12",
+      "settings_version": 2,
+      "recovery_path": "/admin/settings"
+    }
+  },
+  {
+    "name": "全局配置：全局事件缺change_seq",
+    "schema": "SyncChange",
+    "valid": false,
+    "value": {
+      "type": "settings.updated",
+      "settings_version": 2,
+      "recovery_path": "/admin/settings"
+    }
+  },
+  {
+    "name": "全局配置：全局事件缺settings_version",
+    "schema": "SyncChange",
+    "valid": false,
+    "value": {
+      "type": "settings.updated",
+      "change_seq": "12",
+      "recovery_path": "/admin/settings"
+    }
+  },
+  {
+    "name": "全局配置：全局事件缺recovery_path",
+    "schema": "SyncChange",
+    "valid": false,
+    "value": {
+      "type": "settings.updated",
+      "change_seq": "12",
+      "settings_version": 2
+    }
+  },
+  {
+    "name": "全局配置：同值写入仍增版",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 200,
+          "code": null
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T01:00:00Z"
+      },
+      "events": [
+        {
+          "type": "settings.updated",
+          "settings_version": 2,
+          "recovery_path": "/admin/settings"
+        }
+      ]
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：同值写入仍增版拒绝部分提交version",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 200,
+          "code": null
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T01:00:00Z"
+      },
+      "events": [
+        {
+          "type": "settings.updated",
+          "settings_version": 2,
+          "recovery_path": "/admin/settings"
+        }
+      ]
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：同值写入仍增版拒绝部分提交updated_at",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 200,
+          "code": null
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": [
+        {
+          "type": "settings.updated",
+          "settings_version": 2,
+          "recovery_path": "/admin/settings"
+        }
+      ]
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：同值写入仍增版拒绝漏事件",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 200,
+          "code": null
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T01:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：同值写入仍增版拒绝重复事件",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 200,
+          "code": null
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T01:00:00Z"
+      },
+      "events": [
+        {
+          "type": "settings.updated",
+          "settings_version": 2,
+          "recovery_path": "/admin/settings"
+        },
+        {
+          "type": "settings.updated",
+          "settings_version": 2,
+          "recovery_path": "/admin/settings"
+        }
+      ]
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：并发CAS仅一成功",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        },
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 200,
+          "code": null
+        },
+        {
+          "status": 409,
+          "code": "GLOBAL_SETTINGS_CONFLICT",
+          "latest_version": 2,
+          "retryable": false,
+          "recovery_path": "/admin/settings"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T01:00:00Z"
+      },
+      "events": [
+        {
+          "type": "settings.updated",
+          "settings_version": 2,
+          "recovery_path": "/admin/settings"
+        }
+      ]
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：Cookie同源CSRF成功",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z",
+          "auth": "cookie",
+          "csrf": true,
+          "same_origin": true
+        }
+      ],
+      "results": [
+        {
+          "status": 200,
+          "code": null
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T01:00:00Z"
+      },
+      "events": [
+        {
+          "type": "settings.updated",
+          "settings_version": 2,
+          "recovery_path": "/admin/settings"
+        }
+      ]
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：M减1成功到M",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740990,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 9007199254740990
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 200,
+          "code": null
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T01:00:00Z"
+      },
+      "events": [
+        {
+          "type": "settings.updated",
+          "settings_version": 9007199254740991,
+          "recovery_path": "/admin/settings"
+        }
+      ]
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：M减1成功到M拒绝部分提交version",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740990,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 9007199254740990
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 200,
+          "code": null
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740990,
+        "updated_at": "2026-10-23T01:00:00Z"
+      },
+      "events": [
+        {
+          "type": "settings.updated",
+          "settings_version": 9007199254740991,
+          "recovery_path": "/admin/settings"
+        }
+      ]
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：M减1成功到M拒绝部分提交updated_at",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740990,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 9007199254740990
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 200,
+          "code": null
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": [
+        {
+          "type": "settings.updated",
+          "settings_version": 9007199254740991,
+          "recovery_path": "/admin/settings"
+        }
+      ]
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：M减1成功到M拒绝漏事件",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740990,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 9007199254740990
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 200,
+          "code": null
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T01:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：M减1成功到M拒绝重复事件",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740990,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 9007199254740990
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 200,
+          "code": null
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T01:00:00Z"
+      },
+      "events": [
+        {
+          "type": "settings.updated",
+          "settings_version": 9007199254740991,
+          "recovery_path": "/admin/settings"
+        },
+        {
+          "type": "settings.updated",
+          "settings_version": 9007199254740991,
+          "recovery_path": "/admin/settings"
+        }
+      ]
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：最大配置可写入",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "9223372036854775807",
+            "image_max_bytes": "9223372036854775807",
+            "file_max_bytes": "9223372036854775807",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 200,
+          "code": null
+        }
+      ],
+      "after": {
+        "retention_days": "9223372036854775807",
+        "image_max_bytes": "9223372036854775807",
+        "file_max_bytes": "9223372036854775807",
+        "version": 2,
+        "updated_at": "2026-10-23T01:00:00Z"
+      },
+      "events": [
+        {
+          "type": "settings.updated",
+          "settings_version": 2,
+          "recovery_path": "/admin/settings"
+        }
+      ]
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：最大配置可写入拒绝部分提交retention_days",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "9223372036854775807",
+            "image_max_bytes": "9223372036854775807",
+            "file_max_bytes": "9223372036854775807",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 200,
+          "code": null
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "9223372036854775807",
+        "file_max_bytes": "9223372036854775807",
+        "version": 2,
+        "updated_at": "2026-10-23T01:00:00Z"
+      },
+      "events": [
+        {
+          "type": "settings.updated",
+          "settings_version": 2,
+          "recovery_path": "/admin/settings"
+        }
+      ]
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：最大配置可写入拒绝部分提交version",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "9223372036854775807",
+            "image_max_bytes": "9223372036854775807",
+            "file_max_bytes": "9223372036854775807",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 200,
+          "code": null
+        }
+      ],
+      "after": {
+        "retention_days": "9223372036854775807",
+        "image_max_bytes": "9223372036854775807",
+        "file_max_bytes": "9223372036854775807",
+        "version": 1,
+        "updated_at": "2026-10-23T01:00:00Z"
+      },
+      "events": [
+        {
+          "type": "settings.updated",
+          "settings_version": 2,
+          "recovery_path": "/admin/settings"
+        }
+      ]
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：最大配置可写入拒绝部分提交updated_at",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "9223372036854775807",
+            "image_max_bytes": "9223372036854775807",
+            "file_max_bytes": "9223372036854775807",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 200,
+          "code": null
+        }
+      ],
+      "after": {
+        "retention_days": "9223372036854775807",
+        "image_max_bytes": "9223372036854775807",
+        "file_max_bytes": "9223372036854775807",
+        "version": 2,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": [
+        {
+          "type": "settings.updated",
+          "settings_version": 2,
+          "recovery_path": "/admin/settings"
+        }
+      ]
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：最大配置可写入拒绝漏事件",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "9223372036854775807",
+            "image_max_bytes": "9223372036854775807",
+            "file_max_bytes": "9223372036854775807",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 200,
+          "code": null
+        }
+      ],
+      "after": {
+        "retention_days": "9223372036854775807",
+        "image_max_bytes": "9223372036854775807",
+        "file_max_bytes": "9223372036854775807",
+        "version": 2,
+        "updated_at": "2026-10-23T01:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：最大配置可写入拒绝重复事件",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "9223372036854775807",
+            "image_max_bytes": "9223372036854775807",
+            "file_max_bytes": "9223372036854775807",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 200,
+          "code": null
+        }
+      ],
+      "after": {
+        "retention_days": "9223372036854775807",
+        "image_max_bytes": "9223372036854775807",
+        "file_max_bytes": "9223372036854775807",
+        "version": 2,
+        "updated_at": "2026-10-23T01:00:00Z"
+      },
+      "events": [
+        {
+          "type": "settings.updated",
+          "settings_version": 2,
+          "recovery_path": "/admin/settings"
+        },
+        {
+          "type": "settings.updated",
+          "settings_version": 2,
+          "recovery_path": "/admin/settings"
+        }
+      ]
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：M匹配拒写即使同值",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 9007199254740991
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 409,
+          "code": "GLOBAL_SETTINGS_VERSION_EXHAUSTED",
+          "latest_version": 9007199254740991,
+          "retryable": false,
+          "recovery_path": "/admin/settings"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：M过期优先冲突",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 9007199254740990
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 409,
+          "code": "GLOBAL_SETTINGS_CONFLICT",
+          "latest_version": 9007199254740991,
+          "retryable": false,
+          "recovery_path": "/admin/settings"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：普通过期拒写",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 409,
+          "code": "GLOBAL_SETTINGS_CONFLICT",
+          "latest_version": 2,
+          "retryable": false,
+          "recovery_path": "/admin/settings"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：未认证",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z",
+          "auth": "anonymous"
+        }
+      ],
+      "results": [
+        {
+          "status": 401,
+          "code": "AUTHENTICATION_REQUIRED"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：Bot越权",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z",
+          "auth": "bot"
+        }
+      ],
+      "results": [
+        {
+          "status": 403,
+          "code": "FORBIDDEN"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：Cookie缺CSRF",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z",
+          "auth": "cookie",
+          "same_origin": true
+        }
+      ],
+      "results": [
+        {
+          "status": 403,
+          "code": "FORBIDDEN"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：Cookie非同源",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z",
+          "auth": "cookie",
+          "csrf": true,
+          "same_origin": false
+        }
+      ],
+      "results": [
+        {
+          "status": 403,
+          "code": "FORBIDDEN"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：Cookie缺Origin和Referer",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z",
+          "auth": "cookie",
+          "csrf": true
+        }
+      ],
+      "results": [
+        {
+          "status": 403,
+          "code": "FORBIDDEN"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类retention_days0",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": 0,
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 400,
+          "code": "INVALID_REQUEST"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类retention_days'0'",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "0",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 422,
+          "code": "VALIDATION_FAILED"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类retention_days'01'",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "01",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 422,
+          "code": "VALIDATION_FAILED"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类retention_days'-1'",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "-1",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 422,
+          "code": "VALIDATION_FAILED"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类retention_days'9223372036854775808'",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "9223372036854775808",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 422,
+          "code": "VALIDATION_FAILED"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类retention_daysNone",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": null,
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 400,
+          "code": "INVALID_REQUEST"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类image_max_bytes0",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": 0,
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 400,
+          "code": "INVALID_REQUEST"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类image_max_bytes'0'",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "0",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 422,
+          "code": "VALIDATION_FAILED"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类image_max_bytes'01'",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "01",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 422,
+          "code": "VALIDATION_FAILED"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类image_max_bytes'-1'",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "-1",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 422,
+          "code": "VALIDATION_FAILED"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类image_max_bytes'9223372036854775808'",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "9223372036854775808",
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 422,
+          "code": "VALIDATION_FAILED"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类image_max_bytesNone",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": null,
+            "file_max_bytes": "52428800",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 400,
+          "code": "INVALID_REQUEST"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类file_max_bytes0",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": 0,
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 400,
+          "code": "INVALID_REQUEST"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类file_max_bytes'0'",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "0",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 422,
+          "code": "VALIDATION_FAILED"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类file_max_bytes'01'",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "01",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 422,
+          "code": "VALIDATION_FAILED"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类file_max_bytes'-1'",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "-1",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 422,
+          "code": "VALIDATION_FAILED"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类file_max_bytes'9223372036854775808'",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "9223372036854775808",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 422,
+          "code": "VALIDATION_FAILED"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类file_max_bytesNone",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": null,
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 400,
+          "code": "INVALID_REQUEST"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类expected_version'1'",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": "1"
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 400,
+          "code": "INVALID_REQUEST"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类expected_versionTrue",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": true
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 400,
+          "code": "INVALID_REQUEST"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类expected_version0",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 0
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 422,
+          "code": "VALIDATION_FAILED"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类expected_version-1",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": -1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 422,
+          "code": "VALIDATION_FAILED"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类expected_version9007199254740992",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 9007199254740992
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 422,
+          "code": "VALIDATION_FAILED"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：错误分类expected_version1.5",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1.5
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 422,
+          "code": "VALIDATION_FAILED"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：未知字段优先400",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 1,
+            "unknown": true
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 400,
+          "code": "INVALID_REQUEST"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：缺字段400",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "expected_version": 1
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 400,
+          "code": "INVALID_REQUEST"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：耗尽拒绝写或事件after",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 9007199254740991
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 409,
+          "code": "GLOBAL_SETTINGS_VERSION_EXHAUSTED",
+          "latest_version": 9007199254740991,
+          "retryable": false,
+          "recovery_path": "/admin/settings"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 1,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：耗尽拒绝写或事件events",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 9007199254740991
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 409,
+          "code": "GLOBAL_SETTINGS_VERSION_EXHAUSTED",
+          "latest_version": 9007199254740991,
+          "retryable": false,
+          "recovery_path": "/admin/settings"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": [
+        {
+          "type": "settings.updated",
+          "settings_version": 1,
+          "recovery_path": "/admin/settings"
+        }
+      ]
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：耗尽错误码不可伪装冲突",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 9007199254740991
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 409,
+          "code": "GLOBAL_SETTINGS_CONFLICT",
+          "latest_version": 9007199254740991,
+          "retryable": false,
+          "recovery_path": "/admin/settings"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：耗尽不得归零",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cas",
+      "before": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "steps": [
+        {
+          "request": {
+            "retention_days": "30",
+            "image_max_bytes": "10485760",
+            "file_max_bytes": "52428800",
+            "expected_version": 9007199254740991
+          },
+          "server_time": "2026-10-23T01:00:00Z"
+        }
+      ],
+      "results": [
+        {
+          "status": 409,
+          "code": "GLOBAL_SETTINGS_VERSION_EXHAUSTED",
+          "latest_version": 9007199254740991,
+          "retryable": false,
+          "recovery_path": "/admin/settings"
+        }
+      ],
+      "after": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 0,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "events": []
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：恰好整30天可清理",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "30",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-09-23T00:00:00Z",
+      "delivery": "acked",
+      "unacknowledged": false,
+      "necessary_parent": false,
+      "other_attachment_reference": false,
+      "active_download": false,
+      "delete_message": true,
+      "delete_attachment": true
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：差1秒未满整天",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "30",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-09-23T00:00:01Z",
+      "delivery": "acked",
+      "unacknowledged": false,
+      "necessary_parent": false,
+      "other_attachment_reference": false,
+      "active_download": false,
+      "delete_message": false,
+      "delete_attachment": false
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：未来时间不清理",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "30",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-10-24T00:00:00Z",
+      "delivery": "acked",
+      "unacknowledged": false,
+      "necessary_parent": false,
+      "other_attachment_reference": false,
+      "active_download": false,
+      "delete_message": false,
+      "delete_attachment": false
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：最大保留天数不溢出",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "9223372036854775807",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "0001-01-01T00:00:00Z",
+      "delivery": "acked",
+      "unacknowledged": false,
+      "necessary_parent": false,
+      "other_attachment_reference": false,
+      "active_download": false,
+      "delete_message": false,
+      "delete_attachment": false
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：很大合法保留期",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "1000000000000000000",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-09-23T00:00:00Z",
+      "delivery": "acked",
+      "unacknowledged": false,
+      "necessary_parent": false,
+      "other_attachment_reference": false,
+      "active_download": false,
+      "delete_message": false,
+      "delete_attachment": false
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：编辑已读离线不重置创建年龄",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "30",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-09-23T00:00:00Z",
+      "delivery": "acked",
+      "unacknowledged": false,
+      "necessary_parent": false,
+      "other_attachment_reference": false,
+      "active_download": false,
+      "delete_message": true,
+      "delete_attachment": true,
+      "edited_at": "2026-10-22T00:00:00Z",
+      "read": false,
+      "offline": true
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：普通引用不永久保护父消息",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "30",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-09-23T00:00:00Z",
+      "delivery": "acked",
+      "unacknowledged": false,
+      "necessary_parent": false,
+      "other_attachment_reference": false,
+      "active_download": false,
+      "delete_message": true,
+      "delete_attachment": true,
+      "ordinary_reference": true
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：缩短后后续批次可清理",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "1",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-09-23T00:00:00Z",
+      "delivery": "acked",
+      "unacknowledged": false,
+      "necessary_parent": false,
+      "other_attachment_reference": false,
+      "active_download": false,
+      "delete_message": true,
+      "delete_attachment": true
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：保护队列pending",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "30",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-09-23T00:00:00Z",
+      "delivery": "pending",
+      "unacknowledged": false,
+      "necessary_parent": false,
+      "other_attachment_reference": false,
+      "active_download": false,
+      "delete_message": false,
+      "delete_attachment": false
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：保护队列leased",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "30",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-09-23T00:00:00Z",
+      "delivery": "leased",
+      "unacknowledged": false,
+      "necessary_parent": false,
+      "other_attachment_reference": false,
+      "active_download": false,
+      "delete_message": false,
+      "delete_attachment": false
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：保护队列retry_wait",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "30",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-09-23T00:00:00Z",
+      "delivery": "retry_wait",
+      "unacknowledged": false,
+      "necessary_parent": false,
+      "other_attachment_reference": false,
+      "active_download": false,
+      "delete_message": false,
+      "delete_attachment": false
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：保护队列failed",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "30",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-09-23T00:00:00Z",
+      "delivery": "failed",
+      "unacknowledged": false,
+      "necessary_parent": false,
+      "other_attachment_reference": false,
+      "active_download": false,
+      "delete_message": false,
+      "delete_attachment": false
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：保护unacknowledged",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "30",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-09-23T00:00:00Z",
+      "delivery": "acked",
+      "unacknowledged": true,
+      "necessary_parent": false,
+      "other_attachment_reference": false,
+      "active_download": false,
+      "delete_message": false,
+      "delete_attachment": false
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：保护necessary_parent",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "30",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-09-23T00:00:00Z",
+      "delivery": "acked",
+      "unacknowledged": false,
+      "necessary_parent": true,
+      "other_attachment_reference": false,
+      "active_download": false,
+      "delete_message": false,
+      "delete_attachment": false
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：保护附件other_attachment_reference",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "30",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-09-23T00:00:00Z",
+      "delivery": "acked",
+      "unacknowledged": false,
+      "necessary_parent": false,
+      "other_attachment_reference": true,
+      "active_download": false,
+      "delete_message": true,
+      "delete_attachment": false
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：保护附件active_download",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "30",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-09-23T00:00:00Z",
+      "delivery": "acked",
+      "unacknowledged": false,
+      "necessary_parent": false,
+      "other_attachment_reference": false,
+      "active_download": true,
+      "delete_message": true,
+      "delete_attachment": false
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：禁止巨大天数提前清理",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "9223372036854775807",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-09-23T00:00:00Z",
+      "delivery": "acked",
+      "unacknowledged": false,
+      "necessary_parent": false,
+      "other_attachment_reference": false,
+      "active_download": false,
+      "delete_message": true,
+      "delete_attachment": true
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：禁止失败队列过期清理",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "30",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-09-23T00:00:00Z",
+      "delivery": "failed",
+      "unacknowledged": false,
+      "necessary_parent": false,
+      "other_attachment_reference": false,
+      "active_download": false,
+      "delete_message": true,
+      "delete_attachment": true
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：禁止删除仍被引用附件",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "30",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-09-23T00:00:00Z",
+      "delivery": "acked",
+      "unacknowledged": false,
+      "necessary_parent": false,
+      "other_attachment_reference": true,
+      "active_download": false,
+      "delete_message": true,
+      "delete_attachment": true
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：禁止未来清理",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "30",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-10-24T00:00:00Z",
+      "delivery": "acked",
+      "unacknowledged": false,
+      "necessary_parent": false,
+      "other_attachment_reference": false,
+      "active_download": false,
+      "delete_message": true,
+      "delete_attachment": true
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：禁止未满整日清理",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "cleanup",
+      "retention_days": "30",
+      "now": "2026-10-23T00:00:00Z",
+      "created_at": "2026-09-23T00:00:01Z",
+      "delivery": "acked",
+      "unacknowledged": false,
+      "necessary_parent": false,
+      "other_attachment_reference": false,
+      "active_download": false,
+      "delete_message": true,
+      "delete_attachment": true
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：新版本管理GET应用",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 2,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 1,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "bearer",
+      "fetch": true,
+      "body_allowed": true,
+      "apply": true,
+      "cursor_committed": true
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：新版本管理GET应用拒绝错误应用",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 2,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 1,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "bearer",
+      "fetch": true,
+      "body_allowed": true,
+      "apply": false,
+      "cursor_committed": true
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：新版本管理GET应用不得阻断游标",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 2,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 1,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "bearer",
+      "fetch": true,
+      "body_allowed": true,
+      "apply": true,
+      "cursor_committed": false
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：Cookie可管理GET",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 2,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 1,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 3,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "cookie",
+      "fetch": true,
+      "body_allowed": true,
+      "apply": true,
+      "cursor_committed": true
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：Cookie可管理GET拒绝错误应用",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 2,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 1,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 3,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "cookie",
+      "fetch": true,
+      "body_allowed": true,
+      "apply": false,
+      "cursor_committed": true
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：Cookie可管理GET不得阻断游标",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 2,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 1,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 3,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "cookie",
+      "fetch": true,
+      "body_allowed": true,
+      "apply": true,
+      "cursor_committed": false
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：重复事件忽略",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 2,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 2,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "bearer",
+      "fetch": false,
+      "body_allowed": true,
+      "apply": false,
+      "cursor_committed": true
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：重复事件忽略拒绝错误应用",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 2,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 2,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "bearer",
+      "fetch": false,
+      "body_allowed": true,
+      "apply": true,
+      "cursor_committed": true
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：重复事件忽略不得阻断游标",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 2,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 2,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "bearer",
+      "fetch": false,
+      "body_allowed": true,
+      "apply": false,
+      "cursor_committed": false
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：旧事件忽略",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 2,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 3,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 3,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "bearer",
+      "fetch": false,
+      "body_allowed": true,
+      "apply": false,
+      "cursor_committed": true
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：旧事件忽略拒绝错误应用",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 2,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 3,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 3,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "bearer",
+      "fetch": false,
+      "body_allowed": true,
+      "apply": true,
+      "cursor_committed": true
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：旧事件忽略不得阻断游标",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 2,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 3,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 3,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "bearer",
+      "fetch": false,
+      "body_allowed": true,
+      "apply": false,
+      "cursor_committed": false
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：旧GET不得倒退",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 3,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 1,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "bearer",
+      "fetch": true,
+      "body_allowed": true,
+      "apply": false,
+      "cursor_committed": true
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：旧GET不得倒退拒绝错误应用",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 3,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 1,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "bearer",
+      "fetch": true,
+      "body_allowed": true,
+      "apply": true,
+      "cursor_committed": true
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：旧GET不得倒退不得阻断游标",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 3,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 1,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "bearer",
+      "fetch": true,
+      "body_allowed": true,
+      "apply": false,
+      "cursor_committed": false
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：未认证不得读取正文",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 2,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 1,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "anonymous",
+      "fetch": true,
+      "body_allowed": false,
+      "apply": false,
+      "cursor_committed": true
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：未认证不得读取正文拒绝错误应用",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 2,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 1,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "anonymous",
+      "fetch": true,
+      "body_allowed": false,
+      "apply": true,
+      "cursor_committed": true
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：未认证不得读取正文不得阻断游标",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 2,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 1,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "anonymous",
+      "fetch": true,
+      "body_allowed": false,
+      "apply": false,
+      "cursor_committed": false
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：Bot不得读取正文",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 2,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 1,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "bot",
+      "fetch": true,
+      "body_allowed": false,
+      "apply": false,
+      "cursor_committed": true
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：Bot不得读取正文拒绝错误应用",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 2,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 1,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "bot",
+      "fetch": true,
+      "body_allowed": false,
+      "apply": true,
+      "cursor_committed": true
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：Bot不得读取正文不得阻断游标",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 2,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 1,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 2,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "bot",
+      "fetch": true,
+      "body_allowed": false,
+      "apply": false,
+      "cursor_committed": false
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：最大版本事件",
+    "schema": "GlobalSettings",
+    "valid": true,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 9007199254740991,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 9007199254740990,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "bearer",
+      "fetch": true,
+      "body_allowed": true,
+      "apply": true,
+      "cursor_committed": true
+    },
+    "state_valid": true
+  },
+  {
+    "name": "全局配置：最大版本事件拒绝错误应用",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 9007199254740991,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 9007199254740990,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "bearer",
+      "fetch": true,
+      "body_allowed": true,
+      "apply": false,
+      "cursor_committed": true
+    },
+    "state_valid": false
+  },
+  {
+    "name": "全局配置：最大版本事件不得阻断游标",
+    "schema": "GlobalSettings",
+    "valid": false,
+    "value": {
+      "retention_days": "30",
+      "image_max_bytes": "10485760",
+      "file_max_bytes": "52428800",
+      "version": 1,
+      "updated_at": "2026-10-23T00:00:00Z"
+    },
+    "schema_valid": true,
+    "global_settings_state": {
+      "kind": "sync",
+      "event": {
+        "type": "settings.updated",
+        "change_seq": "12",
+        "settings_version": 9007199254740991,
+        "recovery_path": "/admin/settings"
+      },
+      "local_version": 9007199254740990,
+      "response": {
+        "retention_days": "30",
+        "image_max_bytes": "10485760",
+        "file_max_bytes": "52428800",
+        "version": 9007199254740991,
+        "updated_at": "2026-10-23T00:00:00Z"
+      },
+      "auth": "bearer",
+      "fetch": true,
+      "body_allowed": true,
+      "apply": true,
+      "cursor_committed": false
+    },
+    "state_valid": false
+  },
+
+  {
+    "name": "全局配置：耗尽必须已达M",
+    "schema": "GlobalSettingsConflict",
+    "valid": false,
+    "value": {
+      "error": {
+        "code": "GLOBAL_SETTINGS_VERSION_EXHAUSTED",
+        "message": "耗尽",
+        "request_id": "synthetic",
+        "retryable": false,
+        "latest_version": 1,
+        "recovery_path": "/admin/settings"
+      }
+    }
+  },
+
+  {
+    "name": "全局配置：全局与既有changes完整同步页",
+    "schema": "SyncPage",
+    "valid": true,
+    "value": {
+      "epoch": "epoch-a",
+      "changes": [
+        {
+          "type": "message.upsert",
+          "change_seq": "1",
+          "message": {
+            "id": "11111111-1111-4111-8111-111111111111",
+            "bot_id": "22222222-2222-4222-8222-222222222222",
+            "bot_seq": "9007199254740993",
+            "revision": 1,
+            "sender": "application",
+            "format": "plain",
+            "text": "合成文本",
+            "attachments": [],
+            "reply_to_message_id": null,
+            "buttons": [],
+            "created_at": "2026-10-22T00:00:00Z",
+            "updated_at": "2026-10-22T00:00:00Z"
+          }
+        },
+        {
+          "type": "message.deleted",
+          "change_seq": "2",
+          "id": "11111111-1111-4111-8111-111111111111",
+          "bot_id": "22222222-2222-4222-8222-222222222222",
+          "bot_seq": "9007199254740993",
+          "revision": 2,
+          "deleted_at": "2026-10-22T00:00:00Z"
+        },
+        {
+          "type": "bot.upsert",
+          "change_seq": "3",
+          "bot": {
+            "id": "12345678-1234-4123-8123-123456789abc",
+            "name": "测试通知",
+            "enabled": true,
+            "capabilities": {
+              "send": true,
+              "receive": false
+            },
+            "version": 1,
+            "credentials": {
+              "api_token": {
+                "credential_id": "public-test-id",
+                "generation": 1
+              },
+              "webhook_key": {
+                "credential_id": "other-public-id",
+                "generation": 1
+              }
+            },
+            "connection": {
+              "state": "unknown",
+              "last_poll_at": null
+            }
+          }
+        },
+        {
+          "type": "bot.deleted",
+          "change_seq": "4",
+          "id": "22222222-2222-4222-8222-222222222222",
+          "version": 2,
+          "deleted_at": "2026-10-22T00:00:00Z"
+        },
+        {
+          "type": "read.updated",
+          "change_seq": "5",
+          "read": {
+            "bot_id": "22222222-2222-4222-8222-222222222222",
+            "read_seq": "9007199254740993",
+            "version": 2,
+            "updated_at": "2026-10-22T00:00:00Z"
+          }
+        },
+        {
+          "type": "delivery.upsert",
+          "change_seq": "6",
+          "delivery": {
+            "delivery_id": "12345678-1234-4234-8234-123456789abc",
+            "event_id": "12345678-1234-4234-8234-123456789abd",
+            "bot_id": "12345678-1234-4234-8234-123456789abc",
+            "state": "pending",
+            "state_version": 1,
+            "attempt": 8,
+            "retry_generation": "0",
+            "created_at": "2026-10-22T01:00:00Z",
+            "updated_at": "2026-10-22T01:00:00Z",
+            "lease_until": null,
+            "next_attempt_at": null,
+            "acked_at": null,
+            "error_code": null
+          }
+        },
+        {
+          "type": "settings.updated",
+          "change_seq": "12",
+          "settings_version": 2,
+          "recovery_path": "/admin/settings"
+        }
+      ],
+      "next_cursor": "opaque-cycle-complete",
+      "has_more": false,
+      "server_high_watermark": "12",
+      "server_time": "2026-10-22T00:00:00Z"
+    },
+    "operationId": "syncClientChanges",
+    "status": 200
+  },
+  {
+    "name": "全局配置：同步页拒绝事件越过高水位",
+    "schema": "SyncPage",
+    "valid": false,
+    "value": {
+      "epoch": "epoch-a",
+      "changes": [
+        {
+          "type": "message.upsert",
+          "change_seq": "1",
+          "message": {
+            "id": "11111111-1111-4111-8111-111111111111",
+            "bot_id": "22222222-2222-4222-8222-222222222222",
+            "bot_seq": "9007199254740993",
+            "revision": 1,
+            "sender": "application",
+            "format": "plain",
+            "text": "合成文本",
+            "attachments": [],
+            "reply_to_message_id": null,
+            "buttons": [],
+            "created_at": "2026-10-22T00:00:00Z",
+            "updated_at": "2026-10-22T00:00:00Z"
+          }
+        },
+        {
+          "type": "message.deleted",
+          "change_seq": "2",
+          "id": "11111111-1111-4111-8111-111111111111",
+          "bot_id": "22222222-2222-4222-8222-222222222222",
+          "bot_seq": "9007199254740993",
+          "revision": 2,
+          "deleted_at": "2026-10-22T00:00:00Z"
+        },
+        {
+          "type": "bot.upsert",
+          "change_seq": "3",
+          "bot": {
+            "id": "12345678-1234-4123-8123-123456789abc",
+            "name": "测试通知",
+            "enabled": true,
+            "capabilities": {
+              "send": true,
+              "receive": false
+            },
+            "version": 1,
+            "credentials": {
+              "api_token": {
+                "credential_id": "public-test-id",
+                "generation": 1
+              },
+              "webhook_key": {
+                "credential_id": "other-public-id",
+                "generation": 1
+              }
+            },
+            "connection": {
+              "state": "unknown",
+              "last_poll_at": null
+            }
+          }
+        },
+        {
+          "type": "bot.deleted",
+          "change_seq": "4",
+          "id": "22222222-2222-4222-8222-222222222222",
+          "version": 2,
+          "deleted_at": "2026-10-22T00:00:00Z"
+        },
+        {
+          "type": "read.updated",
+          "change_seq": "5",
+          "read": {
+            "bot_id": "22222222-2222-4222-8222-222222222222",
+            "read_seq": "9007199254740993",
+            "version": 2,
+            "updated_at": "2026-10-22T00:00:00Z"
+          }
+        },
+        {
+          "type": "delivery.upsert",
+          "change_seq": "6",
+          "delivery": {
+            "delivery_id": "12345678-1234-4234-8234-123456789abc",
+            "event_id": "12345678-1234-4234-8234-123456789abd",
+            "bot_id": "12345678-1234-4234-8234-123456789abc",
+            "state": "pending",
+            "state_version": 1,
+            "attempt": 8,
+            "retry_generation": "0",
+            "created_at": "2026-10-22T01:00:00Z",
+            "updated_at": "2026-10-22T01:00:00Z",
+            "lease_until": null,
+            "next_attempt_at": null,
+            "acked_at": null,
+            "error_code": null
+          }
+        },
+        {
+          "type": "settings.updated",
+          "change_seq": "13",
+          "settings_version": 2,
+          "recovery_path": "/admin/settings"
+        }
+      ],
+      "next_cursor": "opaque-cycle-complete",
+      "has_more": false,
+      "server_high_watermark": "12",
+      "server_time": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "name": "全局配置：同步页拒绝全局事件错误版本",
+    "schema": "SyncPage",
+    "valid": false,
+    "value": {
+      "epoch": "epoch-a",
+      "changes": [
+        {
+          "type": "message.upsert",
+          "change_seq": "1",
+          "message": {
+            "id": "11111111-1111-4111-8111-111111111111",
+            "bot_id": "22222222-2222-4222-8222-222222222222",
+            "bot_seq": "9007199254740993",
+            "revision": 1,
+            "sender": "application",
+            "format": "plain",
+            "text": "合成文本",
+            "attachments": [],
+            "reply_to_message_id": null,
+            "buttons": [],
+            "created_at": "2026-10-22T00:00:00Z",
+            "updated_at": "2026-10-22T00:00:00Z"
+          }
+        },
+        {
+          "type": "message.deleted",
+          "change_seq": "2",
+          "id": "11111111-1111-4111-8111-111111111111",
+          "bot_id": "22222222-2222-4222-8222-222222222222",
+          "bot_seq": "9007199254740993",
+          "revision": 2,
+          "deleted_at": "2026-10-22T00:00:00Z"
+        },
+        {
+          "type": "bot.upsert",
+          "change_seq": "3",
+          "bot": {
+            "id": "12345678-1234-4123-8123-123456789abc",
+            "name": "测试通知",
+            "enabled": true,
+            "capabilities": {
+              "send": true,
+              "receive": false
+            },
+            "version": 1,
+            "credentials": {
+              "api_token": {
+                "credential_id": "public-test-id",
+                "generation": 1
+              },
+              "webhook_key": {
+                "credential_id": "other-public-id",
+                "generation": 1
+              }
+            },
+            "connection": {
+              "state": "unknown",
+              "last_poll_at": null
+            }
+          }
+        },
+        {
+          "type": "bot.deleted",
+          "change_seq": "4",
+          "id": "22222222-2222-4222-8222-222222222222",
+          "version": 2,
+          "deleted_at": "2026-10-22T00:00:00Z"
+        },
+        {
+          "type": "read.updated",
+          "change_seq": "5",
+          "read": {
+            "bot_id": "22222222-2222-4222-8222-222222222222",
+            "read_seq": "9007199254740993",
+            "version": 2,
+            "updated_at": "2026-10-22T00:00:00Z"
+          }
+        },
+        {
+          "type": "delivery.upsert",
+          "change_seq": "6",
+          "delivery": {
+            "delivery_id": "12345678-1234-4234-8234-123456789abc",
+            "event_id": "12345678-1234-4234-8234-123456789abd",
+            "bot_id": "12345678-1234-4234-8234-123456789abc",
+            "state": "pending",
+            "state_version": 1,
+            "attempt": 8,
+            "retry_generation": "0",
+            "created_at": "2026-10-22T01:00:00Z",
+            "updated_at": "2026-10-22T01:00:00Z",
+            "lease_until": null,
+            "next_attempt_at": null,
+            "acked_at": null,
+            "error_code": null
+          }
+        },
+        {
+          "type": "settings.updated",
+          "change_seq": "12",
+          "settings_version": "2",
+          "recovery_path": "/admin/settings"
+        }
+      ],
+      "next_cursor": "opaque-cycle-complete",
+      "has_more": false,
+      "server_high_watermark": "12",
+      "server_time": "2026-10-22T00:00:00Z"
+    }
+  },
+  {
+    "name": "全局配置：同步页拒绝全局事件不泄露正文",
+    "schema": "SyncPage",
+    "valid": false,
+    "value": {
+      "epoch": "epoch-a",
+      "changes": [
+        {
+          "type": "message.upsert",
+          "change_seq": "1",
+          "message": {
+            "id": "11111111-1111-4111-8111-111111111111",
+            "bot_id": "22222222-2222-4222-8222-222222222222",
+            "bot_seq": "9007199254740993",
+            "revision": 1,
+            "sender": "application",
+            "format": "plain",
+            "text": "合成文本",
+            "attachments": [],
+            "reply_to_message_id": null,
+            "buttons": [],
+            "created_at": "2026-10-22T00:00:00Z",
+            "updated_at": "2026-10-22T00:00:00Z"
+          }
+        },
+        {
+          "type": "message.deleted",
+          "change_seq": "2",
+          "id": "11111111-1111-4111-8111-111111111111",
+          "bot_id": "22222222-2222-4222-8222-222222222222",
+          "bot_seq": "9007199254740993",
+          "revision": 2,
+          "deleted_at": "2026-10-22T00:00:00Z"
+        },
+        {
+          "type": "bot.upsert",
+          "change_seq": "3",
+          "bot": {
+            "id": "12345678-1234-4123-8123-123456789abc",
+            "name": "测试通知",
+            "enabled": true,
+            "capabilities": {
+              "send": true,
+              "receive": false
+            },
+            "version": 1,
+            "credentials": {
+              "api_token": {
+                "credential_id": "public-test-id",
+                "generation": 1
+              },
+              "webhook_key": {
+                "credential_id": "other-public-id",
+                "generation": 1
+              }
+            },
+            "connection": {
+              "state": "unknown",
+              "last_poll_at": null
+            }
+          }
+        },
+        {
+          "type": "bot.deleted",
+          "change_seq": "4",
+          "id": "22222222-2222-4222-8222-222222222222",
+          "version": 2,
+          "deleted_at": "2026-10-22T00:00:00Z"
+        },
+        {
+          "type": "read.updated",
+          "change_seq": "5",
+          "read": {
+            "bot_id": "22222222-2222-4222-8222-222222222222",
+            "read_seq": "9007199254740993",
+            "version": 2,
+            "updated_at": "2026-10-22T00:00:00Z"
+          }
+        },
+        {
+          "type": "delivery.upsert",
+          "change_seq": "6",
+          "delivery": {
+            "delivery_id": "12345678-1234-4234-8234-123456789abc",
+            "event_id": "12345678-1234-4234-8234-123456789abd",
+            "bot_id": "12345678-1234-4234-8234-123456789abc",
+            "state": "pending",
+            "state_version": 1,
+            "attempt": 8,
+            "retry_generation": "0",
+            "created_at": "2026-10-22T01:00:00Z",
+            "updated_at": "2026-10-22T01:00:00Z",
+            "lease_until": null,
+            "next_attempt_at": null,
+            "acked_at": null,
+            "error_code": null
+          }
+        },
+        {
+          "type": "settings.updated",
+          "change_seq": "12",
+          "settings_version": 2,
+          "recovery_path": "/admin/settings",
+          "retention_days": "30"
+        }
+      ],
+      "next_cursor": "opaque-cycle-complete",
+      "has_more": false,
+      "server_high_watermark": "12",
+      "server_time": "2026-10-22T00:00:00Z"
+    }
   }
 ]
