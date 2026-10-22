@@ -7334,5 +7334,1285 @@
         "expected": true
       }
     }
+  },
+
+  {
+    "name": "设备会话列表",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "operationId": "listDeviceSessions",
+    "status": 200
+  },
+  {
+    "name": "设备会话Web列表",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "web",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true
+  },
+  {
+    "name": "设备会话禁止泄漏token",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z",
+          "token": "secret"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": false
+  },
+  {
+    "name": "设备会话禁止泄漏csrf_token",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z",
+          "csrf_token": "secret"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": false
+  },
+  {
+    "name": "设备会话禁止泄漏password_hash",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z",
+          "password_hash": "secret"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": false
+  },
+  {
+    "name": "设备会话禁止泄漏push_token",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z",
+          "push_token": "secret"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": false
+  },
+  {
+    "name": "设备会话禁止泄漏providers",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z",
+          "providers": "secret"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": false
+  },
+  {
+    "name": "设备会话禁止泄漏session_generation",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z",
+          "session_generation": "secret"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": false
+  },
+  {
+    "name": "设备会话到期时间必须UTC",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T08:00:00+08:00",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": false
+  },
+  {
+    "name": "设备会话权限listDeviceSessions['AdminBearer']",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "listDeviceSessions",
+      "security": {
+        "AdminBearer": []
+      }
+    }
+  },
+  {
+    "name": "设备会话权限listDeviceSessions['WebCookie']",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "listDeviceSessions",
+      "security": {
+        "WebCookie": []
+      }
+    }
+  },
+  {
+    "name": "设备会话列表无凭据拒绝",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": false,
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "listDeviceSessions",
+      "security": {}
+    }
+  },
+  {
+    "name": "设备会话权限listDeviceSessions['BotAPIToken']",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": false,
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "listDeviceSessions",
+      "security": {
+        "BotAPIToken": []
+      }
+    }
+  },
+  {
+    "name": "设备会话权限listDeviceSessions['WebhookKey']",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": false,
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "listDeviceSessions",
+      "security": {
+        "WebhookKey": []
+      }
+    }
+  },
+  {
+    "name": "设备会话权限revokeDeviceSession['AdminBearer']",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "revokeDeviceSession",
+      "security": {
+        "AdminBearer": []
+      }
+    }
+  },
+  {
+    "name": "设备会话权限revokeDeviceSession['WebCookie']",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": false,
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "revokeDeviceSession",
+      "security": {
+        "WebCookie": []
+      }
+    }
+  },
+  {
+    "name": "设备会话权限revokeDeviceSession['WebCookie', 'CSRF']",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "revokeDeviceSession",
+      "security": {
+        "WebCookie": [],
+        "CSRF": []
+      }
+    }
+  },
+  {
+    "name": "设备会话权限revokeDeviceSession['BotAPIToken']",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": false,
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "revokeDeviceSession",
+      "security": {
+        "BotAPIToken": []
+      }
+    }
+  },
+  {
+    "name": "设备会话权限revokeDeviceSession['WebhookKey']",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": false,
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "revokeDeviceSession",
+      "security": {
+        "WebhookKey": []
+      }
+    }
+  },
+  {
+    "name": "设备会话错误AUTHENTICATION_REQUIRED",
+    "schema": "Error",
+    "value": {
+      "error": {
+        "code": "AUTHENTICATION_REQUIRED",
+        "message": "合成脱敏错误",
+        "request_id": "synthetic-device",
+        "retryable": false
+      }
+    },
+    "valid": true,
+    "operationId": "revokeDeviceSession",
+    "status": 401
+  },
+  {
+    "name": "设备会话错误FORBIDDEN",
+    "schema": "Error",
+    "value": {
+      "error": {
+        "code": "FORBIDDEN",
+        "message": "合成脱敏错误",
+        "request_id": "synthetic-device",
+        "retryable": false
+      }
+    },
+    "valid": true,
+    "operationId": "revokeDeviceSession",
+    "status": 403
+  },
+  {
+    "name": "设备会话错误RESOURCE_NOT_FOUND",
+    "schema": "Error",
+    "value": {
+      "error": {
+        "code": "RESOURCE_NOT_FOUND",
+        "message": "合成脱敏错误",
+        "request_id": "synthetic-device",
+        "retryable": false
+      }
+    },
+    "valid": true,
+    "operationId": "revokeDeviceSession",
+    "status": 404
+  },
+  {
+    "name": "设备会话Bearer撤销",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "device_session_state": {
+      "action": "revoke",
+      "current_session_id": "caller",
+      "actor": "admin",
+      "credential": "bearer",
+      "csrf": false,
+      "same_origin": false,
+      "target": "owned",
+      "active": true,
+      "session_id": "old",
+      "callback_session_id": "old",
+      "revoked": false,
+      "expected_status": 204,
+      "expected_callback": true,
+      "expected_invalidated": [
+        "old:fcm",
+        "old:oppo",
+        "old:ws"
+      ],
+      "expected_untouched": [
+        "other-session",
+        "bot-token"
+      ]
+    }
+  },
+  {
+    "name": "设备会话Cookie撤销",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "device_session_state": {
+      "action": "revoke",
+      "current_session_id": "caller",
+      "actor": "admin",
+      "credential": "cookie",
+      "csrf": true,
+      "same_origin": true,
+      "target": "owned",
+      "active": true,
+      "session_id": "old",
+      "callback_session_id": "old",
+      "revoked": false,
+      "expected_status": 204,
+      "expected_callback": true,
+      "expected_invalidated": [
+        "old:fcm",
+        "old:oppo",
+        "old:ws"
+      ],
+      "expected_untouched": [
+        "other-session",
+        "bot-token"
+      ]
+    }
+  },
+  {
+    "name": "设备会话Cookie缺CSRF",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "device_session_state": {
+      "action": "revoke",
+      "current_session_id": "caller",
+      "actor": "admin",
+      "credential": "cookie",
+      "csrf": false,
+      "same_origin": true,
+      "target": "owned",
+      "active": true,
+      "session_id": "old",
+      "callback_session_id": "old",
+      "revoked": false,
+      "expected_status": 403,
+      "expected_callback": true,
+      "expected_invalidated": [],
+      "expected_untouched": [
+        "other-session",
+        "bot-token"
+      ]
+    }
+  },
+  {
+    "name": "设备会话Cookie跨源",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "device_session_state": {
+      "action": "revoke",
+      "current_session_id": "caller",
+      "actor": "admin",
+      "credential": "cookie",
+      "csrf": true,
+      "same_origin": false,
+      "target": "owned",
+      "active": true,
+      "session_id": "old",
+      "callback_session_id": "old",
+      "revoked": false,
+      "expected_status": 403,
+      "expected_callback": true,
+      "expected_invalidated": [],
+      "expected_untouched": [
+        "other-session",
+        "bot-token"
+      ]
+    }
+  },
+  {
+    "name": "设备会话Bot越权",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "device_session_state": {
+      "action": "revoke",
+      "current_session_id": "caller",
+      "actor": "bot",
+      "credential": "bearer",
+      "csrf": false,
+      "same_origin": false,
+      "target": "owned",
+      "active": true,
+      "session_id": "old",
+      "callback_session_id": "old",
+      "revoked": false,
+      "expected_status": 403,
+      "expected_callback": true,
+      "expected_invalidated": [],
+      "expected_untouched": [
+        "other-session",
+        "bot-token"
+      ]
+    }
+  },
+  {
+    "name": "设备会话未知设备",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "device_session_state": {
+      "action": "revoke",
+      "current_session_id": "caller",
+      "actor": "admin",
+      "credential": "bearer",
+      "csrf": false,
+      "same_origin": false,
+      "target": "unknown",
+      "active": true,
+      "session_id": "old",
+      "callback_session_id": "old",
+      "revoked": false,
+      "expected_status": 404,
+      "expected_callback": true,
+      "expected_invalidated": [],
+      "expected_untouched": [
+        "other-session",
+        "bot-token"
+      ]
+    }
+  },
+  {
+    "name": "设备会话他人设备",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "device_session_state": {
+      "action": "revoke",
+      "current_session_id": "caller",
+      "actor": "admin",
+      "credential": "bearer",
+      "csrf": false,
+      "same_origin": false,
+      "target": "other",
+      "active": true,
+      "session_id": "old",
+      "callback_session_id": "old",
+      "revoked": false,
+      "expected_status": 404,
+      "expected_callback": true,
+      "expected_invalidated": [],
+      "expected_untouched": [
+        "other-session",
+        "bot-token"
+      ]
+    }
+  },
+  {
+    "name": "设备会话撤销会话拒绝请求",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "device_session_state": {
+      "action": "revoke",
+      "current_session_id": "caller",
+      "actor": "admin",
+      "credential": "bearer",
+      "csrf": false,
+      "same_origin": false,
+      "target": "owned",
+      "active": false,
+      "session_id": "old",
+      "callback_session_id": "old",
+      "revoked": false,
+      "expected_status": 401,
+      "expected_callback": false,
+      "expected_invalidated": [],
+      "expected_untouched": [
+        "other-session",
+        "bot-token"
+      ]
+    }
+  },
+  {
+    "name": "设备会话撤销后迟到回调",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "device_session_state": {
+      "action": "revoke",
+      "current_session_id": "caller",
+      "actor": "admin",
+      "credential": "bearer",
+      "csrf": false,
+      "same_origin": false,
+      "target": "owned",
+      "active": true,
+      "session_id": "old",
+      "callback_session_id": "old",
+      "revoked": true,
+      "expected_status": 204,
+      "expected_callback": false,
+      "expected_invalidated": [
+        "old:fcm",
+        "old:oppo",
+        "old:ws"
+      ],
+      "expected_untouched": [
+        "other-session",
+        "bot-token"
+      ]
+    }
+  },
+  {
+    "name": "设备会话重登隔离旧回调",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "device_session_state": {
+      "action": "revoke",
+      "current_session_id": "caller",
+      "actor": "admin",
+      "credential": "bearer",
+      "csrf": false,
+      "same_origin": false,
+      "target": "owned",
+      "active": true,
+      "session_id": "new",
+      "callback_session_id": "old",
+      "revoked": false,
+      "expected_status": 204,
+      "expected_callback": false,
+      "expected_invalidated": [
+        "new:fcm",
+        "new:oppo",
+        "new:ws"
+      ],
+      "expected_untouched": [
+        "other-session",
+        "bot-token"
+      ]
+    }
+  },
+  {
+    "name": "设备会话新代次回调",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "device_session_state": {
+      "action": "revoke",
+      "current_session_id": "caller",
+      "actor": "admin",
+      "credential": "bearer",
+      "csrf": false,
+      "same_origin": false,
+      "target": "owned",
+      "active": true,
+      "session_id": "new",
+      "callback_session_id": "new",
+      "revoked": false,
+      "expected_status": 204,
+      "expected_callback": true,
+      "expected_invalidated": [
+        "new:fcm",
+        "new:oppo",
+        "new:ws"
+      ],
+      "expected_untouched": [
+        "other-session",
+        "bot-token"
+      ]
+    }
+  },
+  {
+    "name": "设备会话logout仅当前会话",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "device_session_state": {
+      "action": "logout",
+      "current_session_id": "caller",
+      "actor": "admin",
+      "credential": "bearer",
+      "csrf": false,
+      "same_origin": false,
+      "target": "owned",
+      "active": true,
+      "session_id": "old",
+      "callback_session_id": "old",
+      "revoked": false,
+      "expected_status": 204,
+      "expected_callback": true,
+      "expected_invalidated": [
+        "caller:fcm",
+        "caller:oppo",
+        "caller:ws"
+      ],
+      "expected_untouched": [
+        "other-session",
+        "bot-token"
+      ]
+    }
+  },
+  {
+    "name": "设备会话禁止迟到复活",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "device_session_state": {
+      "action": "revoke",
+      "current_session_id": "caller",
+      "actor": "admin",
+      "credential": "bearer",
+      "csrf": false,
+      "same_origin": false,
+      "target": "owned",
+      "active": true,
+      "session_id": "old",
+      "callback_session_id": "old",
+      "revoked": true,
+      "expected_status": 204,
+      "expected_callback": true,
+      "expected_invalidated": [
+        "old:fcm",
+        "old:oppo",
+        "old:ws"
+      ],
+      "expected_untouched": [
+        "other-session",
+        "bot-token"
+      ]
+    },
+    "state_valid": false
+  },
+  {
+    "name": "设备会话禁止跨代次写入",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "device_session_state": {
+      "action": "revoke",
+      "current_session_id": "caller",
+      "actor": "admin",
+      "credential": "bearer",
+      "csrf": false,
+      "same_origin": false,
+      "target": "owned",
+      "active": true,
+      "session_id": "new",
+      "callback_session_id": "old",
+      "revoked": false,
+      "expected_status": 204,
+      "expected_callback": true,
+      "expected_invalidated": [
+        "new:fcm",
+        "new:oppo",
+        "new:ws"
+      ],
+      "expected_untouched": [
+        "other-session",
+        "bot-token"
+      ]
+    },
+    "state_valid": false
+  },
+  {
+    "name": "设备会话禁止漏撤provider",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "device_session_state": {
+      "action": "revoke",
+      "current_session_id": "caller",
+      "actor": "admin",
+      "credential": "bearer",
+      "csrf": false,
+      "same_origin": false,
+      "target": "owned",
+      "active": true,
+      "session_id": "old",
+      "callback_session_id": "old",
+      "revoked": false,
+      "expected_status": 204,
+      "expected_callback": true,
+      "expected_invalidated": [
+        "old:fcm",
+        "old:ws"
+      ],
+      "expected_untouched": [
+        "other-session",
+        "bot-token"
+      ]
+    },
+    "state_valid": false
+  },
+  {
+    "name": "设备会话禁止logout撤其他设备",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "valid": true,
+    "device_session_state": {
+      "action": "logout",
+      "current_session_id": "caller",
+      "actor": "admin",
+      "credential": "bearer",
+      "csrf": false,
+      "same_origin": false,
+      "target": "owned",
+      "active": true,
+      "session_id": "old",
+      "callback_session_id": "old",
+      "revoked": false,
+      "expected_status": 204,
+      "expected_callback": true,
+      "expected_invalidated": [
+        "old:fcm",
+        "old:oppo",
+        "old:ws"
+      ],
+      "expected_untouched": [
+        "other-session",
+        "bot-token"
+      ]
+    },
+    "state_valid": false
+  },
+  {
+    "name": "设备会话顶层凭据拒绝",
+    "schema": "DeviceSessionPage",
+    "value": {
+      "items": [
+        {
+          "id": "11111111-1111-4111-8111-111111111111",
+          "administrator": {
+            "username": "admin"
+          },
+          "client_type": "android",
+          "device_id": "22222222-2222-4222-8222-222222222222",
+          "device_name": "合成设备",
+          "idle_expires_at": "2026-10-23T00:00:00Z",
+          "absolute_expires_at": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false,
+      "token": "secret"
+    },
+    "valid": false
   }
+
 ]

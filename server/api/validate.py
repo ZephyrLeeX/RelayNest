@@ -291,6 +291,21 @@ def ws_state_valid(state):
     return False
 
 
+def device_session_state_valid(state):
+    """核对合成权限和代次声明，不执行真实撤销、外发或WS断连。"""
+    status = (401 if not state['active'] else 403 if state['actor'] != 'admin'
+              or (state['credential'] == 'cookie' and not (state['csrf'] and state['same_origin']))
+              else 404 if state['target'] != 'owned' else 204)
+    callback = (state['active'] and not state['revoked']
+                and state['callback_session_id'] == state['session_id'])
+    target = state['current_session_id'] if state['action'] == 'logout' else state['session_id']
+    invalidated = ([target + ':' + kind for kind in ('fcm', 'oppo', 'ws')]
+                   if status == 204 else [])
+    return (status == state['expected_status'] and callback == state['expected_callback']
+            and invalidated == state['expected_invalidated']
+            and state['expected_untouched'] == ['other-session', 'bot-token'])
+
+
 def range_intervals(value, size):
     """将合法示例映射至预期区间；只是契约边界计算，不验证文件服务。"""
     result = []
@@ -315,6 +330,21 @@ def resolve(document, value):
         value = target
     return value
 
+
+DEVICE_POLICY = {'identity': 'Session.device_id-target-Session.id-generation',
+ 'generation': 'new-session-id-every-login-never-reuse',
+ 'scope': 'current-administrator-active-sessions-only',
+ 'cookie_write': 'csrf-and-same-origin-origin-or-referer',
+ 'revoke': 'atomic-entire-target-session-all-providers-and-ws',
+ 'late_callback': 'reject-revoked-or-mismatched-session-id-before-commit',
+ 'logout': 'current-session-only-other-devices-and-bot-credentials-unchanged'}
+DEVICE_PAGE = {'type': 'object',
+ 'properties': {'items': {'type': 'array', 'items': {'$ref': '#/components/schemas/Session'}},
+                'next_cursor': {'oneOf': [{'$ref': '#/components/schemas/OpaqueCursor'},
+                                          {'type': 'null'}]},
+                'has_more': {'type': 'boolean'}},
+ 'required': ['items', 'next_cursor', 'has_more'],
+ 'additionalProperties': False}
 
 WS_POLICY = {'supported_major': 1,
  'origin': 'native-absent-allowed-present-must-pass-configured-origin-policy',
@@ -433,6 +463,9 @@ def main():
         if ('ws_state' in case
                 and ws_state_valid(case['ws_state']) != case.get('state_valid', True)):
             failures.append(case['name'] + ' WS状态声明')
+        if ('device_session_state' in case
+                and device_session_state_valid(case['device_session_state']) != case.get('state_valid', True)):
+            failures.append(case['name'] + ' 设备会话状态声明')
         if 'sync_state' in case and not sync_state_valid(case['sync_state']):
             failures.append(case['name'] + ' 同步状态声明')
         if 'declaration' in case:
@@ -507,7 +540,33 @@ def main():
                     raise SystemExit('JSON 大小限制缺失：' + oid)
     baseline_ids = {'login', 'getSession', 'logout', 'listBots', 'createBot',
                     'patchBot', 'deleteBot', 'resetAPIToken', 'resetWebhookKey'}
-    if set(operation_map) != baseline_ids | set(new_security) | delivery_ids:
+    # 固定新增设备事务声明，确保权限、响应、Schema和代次策略不能被静默削弱。
+    for path, method, oid, statuses in (
+            ('/devices', 'get', 'listDeviceSessions', {'200', '400', '401', '403', '429', '503'}),
+            ('/devices/{id}/session', 'delete', 'revokeDeviceSession',
+             {'204', '400', '401', '403', '404', '429', '503'})):
+        operation = document['paths'][path][method]
+        if (operation['operationId'] != oid or set(operation['responses']) != statuses
+                or operation.get('x-device-session-policy') != DEVICE_POLICY
+                or 'requestBody' in operation):
+            raise SystemExit('设备会话冻结声明不符：' + path)
+    listing = operation_map['listDeviceSessions']
+    revoke = operation_map['revokeDeviceSession']
+    if listing['responses']['200']['content']['application/json']['schema'] != {
+            '$ref': '#/components/schemas/DeviceSessionPage'}:
+        raise SystemExit('设备列表缺少安全元数据投影')
+    if (len(revoke.get('parameters', [])) != 1
+            or {key: revoke['parameters'][0].get(key) for key in ('name', 'in', 'required', 'schema')}
+            != {'name': 'id', 'in': 'path', 'required': True,
+                'schema': {'$ref': '#/components/schemas/ID'}}
+            or 'content' in revoke['responses']['204']
+            or revoke.get('x-error-codes') != {'401': ['AUTHENTICATION_REQUIRED'],
+                                               '403': ['FORBIDDEN'], '404': ['RESOURCE_NOT_FOUND']}):
+        raise SystemExit('设备撤销参数/响应/错误声明不符')
+    if {key: value for key, value in schemas['DeviceSessionPage'].items()
+            if key != 'description'} != DEVICE_PAGE:
+        raise SystemExit('设备会话分页Schema不符')
+    if set(operation_map) != baseline_ids | set(new_security) | delivery_ids | {'listDeviceSessions', 'revokeDeviceSession'}:
         raise SystemExit('冻结操作集合不符')
     if any(method in document['paths']['/client/messages/{id}'] for method in ('put', 'patch')):
         raise SystemExit('不得提供 Android 编辑接口')

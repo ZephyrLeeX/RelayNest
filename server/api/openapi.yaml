@@ -152,6 +152,113 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LoginRequest'
+  /devices:
+    get:
+      operationId: listDeviceSessions
+      summary: 设备会话元数据列表
+      description: 列出当前管理员的有效Web/Android设备会话，复用Session；不返回任何凭据、密码摘要、CSRF或provider token。device_id用于撤销定位，id是不可复用的会话身份/代次；每次重新登录生成新id，不用客户端时间判代次。
+      security:
+      - AdminBearer: []
+      - WebCookie: []
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              description: 受保护响应固定 no-store。
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceSessionPage'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+        '400':
+          $ref: '#/components/responses/400'
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          $ref: '#/components/schemas/OpaqueCursor'
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+        description: 有界分页；服务端资源控制限制实际页大小，客户端沿 next_cursor 继续。
+      x-device-session-policy:
+        identity: Session.device_id-target-Session.id-generation
+        generation: new-session-id-every-login-never-reuse
+        scope: current-administrator-active-sessions-only
+        cookie_write: csrf-and-same-origin-origin-or-referer
+        revoke: atomic-entire-target-session-all-providers-and-ws
+        late_callback: reject-revoked-or-mismatched-session-id-before-commit
+        logout: current-session-only-other-devices-and-bot-credentials-unchanged
+  /devices/{id}/session:
+    delete:
+      operationId: revokeDeviceSession
+      summary: 撤销指定设备当前会话
+      description: id路径参数为Session.device_id。先鉴权并在提交前重新验证；仅当前管理员有权目标，未知/其他管理员设备统一404
+        RESOURCE_NOT_FOUND。事务内定位目标当前有效Session.id并撤销整个会话及所有provider映射，阻止新发送，关闭其全部WS（沿session_revoked）；旧提示不得展示缓存正文。操作只作用于事务所选代次，迟到provider回调/在途结果提交前必须比对会话身份与有效性，不得复活旧映射或改写重新登录的新代次。重新登录必须生成新Session.id；device_id可保持。logout仍仅撤销当前会话，不影响其他设备或Bot凭据。Cookie写须CSRF及同源Origin/Referer，Bearer无需CSRF。无请求体；204无正文。对已无有效会话目标返回404；重试前可重新列表，不承诺跨重新登录重试幂等。
+      security:
+      - AdminBearer: []
+      - WebCookie: []
+        CSRF: []
+      responses:
+        '204':
+          description: 目标会话已撤销；无正文。若撤销自身Web会话，清除relaynest_session Cookie。
+          headers:
+            Cache-Control:
+              description: 受保护响应固定 no-store。
+              schema:
+                type: string
+                const: no-store
+            Set-Cookie:
+              description: 仅撤销自身Web会话时清除relaynest_session（Max-Age=0）；其他目标或Android不设置。
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+        '400':
+          $ref: '#/components/responses/400'
+        '404':
+          $ref: '#/components/responses/404'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ID'
+        description: 目标Session.device_id；不是会话id或provider标识。
+      x-error-codes:
+        '401':
+        - AUTHENTICATION_REQUIRED
+        '403':
+        - FORBIDDEN
+        '404':
+        - RESOURCE_NOT_FOUND
+      x-device-session-policy:
+        identity: Session.device_id-target-Session.id-generation
+        generation: new-session-id-every-login-never-reuse
+        scope: current-administrator-active-sessions-only
+        cookie_write: csrf-and-same-origin-origin-or-referer
+        revoke: atomic-entire-target-session-all-providers-and-ws
+        late_callback: reject-revoked-or-mismatched-session-id-before-commit
+        logout: current-session-only-other-devices-and-bot-credentials-unchanged
   /auth/session:
     get:
       operationId: getSession
@@ -1966,6 +2073,25 @@ components:
       required:
       - username
       additionalProperties: false
+    DeviceSessionPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Session'
+        next_cursor:
+          oneOf:
+          - $ref: '#/components/schemas/OpaqueCursor'
+          - type: 'null'
+        has_more:
+          type: boolean
+      required:
+      - items
+      - next_cursor
+      - has_more
+      additionalProperties: false
+      description: 当前管理员有效设备会话的有界元数据页；无凭据、推送token或CSRF。过期/撤销会话不列出；分页不承诺跨页快照，操作时重新鉴权。时间复用Session服务端UTC到期时间。
     Session:
       type: object
       properties:

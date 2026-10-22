@@ -183,3 +183,20 @@ F01回归：verify合成声明的 `verified_cursor_purpose` 表示服务端已�
 以上共22个同步域新增 Schema（前卡12+4，本卡6），复用 Message/Bot/DeliveryMetadata 与基础类型。原S02仍补设备注册/注销、FCM/通知配置及其所属设置资源/变更分支；原S03仍补全局配置资源及其变更分支，不能提前把任意 object 或未解析引用加进 SyncChange。父S01联合契约覆盖不等于完整 G-API，不改变P1/P2放行；手机/OPPO/NAS留正式验收。
 
 `ws_state` 是合成状态声明。OpenAPI、Schema、权限、恢复状态和破坏探针均不能证明真实 HTTP/WS握手、Origin部署配置、Token签发/防篡改、心跳计时、断网退避、SQLite事务/并发、Android/Room 或设备运行行为；这些仍为 NOT_RUN。
+
+## P03-07-S02-S01 设备会话契约
+
+相对 `/api/v1` 新增两个管理接口，复用 `Session`，不定义注册或通知偏好资源：
+
+| 路径 / operationId | 权限 | 响应 |
+| --- | --- | --- |
+| `GET /devices` / `listDeviceSessions` | Android 管理员 Bearer 或 Web Cookie | 200 `DeviceSessionPage`；400/401/403/429/503 |
+| `DELETE /devices/{id}/session` / `revokeDeviceSession` | Android 管理员 Bearer 或 Web Cookie + CSRF + 同源 Origin/Referer | 204 无正文；400/401/403/404/429/503 |
+
+`DeviceSessionPage` 是唯一新增 Schema，keys 为 `items: Session[]`、`next_cursor`、`has_more`。复用 `cursor`/`limit` 有界分页，只列当前管理员有效的 Web/Android 会话，过期或撤销会话不列出；分页不承诺跨页快照。列表拒绝 token、CSRF、密码摘要、推送凭据和其他未知字段。时间直接复用 `Session.idle_expires_at` / `absolute_expires_at`，均由服务端产生 UTC RFC3339，不能用客户端时间判定代次。全部成功/错误响应沿用 `Cache-Control: no-store`；错误复用 `Error`，401 `AUTHENTICATION_REQUIRED`、403 `FORBIDDEN`、未知或其他管理员设备统一404 `RESOURCE_NOT_FOUND`，不披露资源归属；400格式错误，429/503沿公共响应。
+
+后卡只需读取 `Session.id`、`device_id`、`client_type`、上述两个到期时间与两操作的 `x-device-session-policy`：路径 `{id}` 是 `Session.device_id`；`Session.id` 本身就是不可复用的会话身份/代次，每次重新登录必须生成新值，无需新增 generation 数字或修改旧 Session Schema。服务端事务选中并撤销该设备当前有效会话代次，使其所有 provider 映射与 WS 失效、阻止新发送；WS 继续已有 `session_revoked` / 停止同步、关闭及清理会话规则。旧回调、迟到外发结果在提交前必须比对会话身份及有效性，不得复活旧映射、解绑或覆盖重新登录的新会话。已经外发的通知无法追回，不把契约声明当作真实断连/外发撤回证据。
+
+撤销自身 Web 会话时清 Cookie，撤销其他设备不清调用方 Cookie。`logout` 保持只撤销当前会话及其所有通道/WS，不影响其他设备或 Bot 凭据。已无有效会话的目标返回404；DELETE无请求体，不承诺跨重新登录的重试幂等，重试前可重读列表。后卡注册接口必须绑定当前认证设备/会话，不接受客户端选择其他设备/会话；本卡没有预造注册字段或 provider Schema。
+
+`examples.json` 的 `device_session_state` 仅核对权限、撤销范围、迟到回调和重登隔离的合成状态声明；正反例和破坏探针不等于运行时撤销、真实 WS 断连、SDK、多 worker 或手机/NAS测试。父验收1及7/8会话部分由本段及本卡报告追溯，注册/通知及父卡完整收口仍由后两卡承担。
