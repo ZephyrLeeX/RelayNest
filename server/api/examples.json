@@ -3119,5 +3119,167 @@
       "format": "plain",
       "text": "\ud800"
     }
+  },
+  {
+    "name": "响应206 Content-Range bytes 9-0/1 尾部LF",
+    "schema": "ContentRange",
+    "valid": false,
+    "value": "bytes 9-0/1\n",
+    "operationId": "downloadAttachment",
+    "status": 206,
+    "header": "Content-Range",
+    "schema_valid": false
+  },
+  {
+    "name": "响应206 Content-Range bytes 9-0/1 尾部CR",
+    "schema": "ContentRange",
+    "valid": false,
+    "value": "bytes 9-0/1\r",
+    "operationId": "downloadAttachment",
+    "status": 206,
+    "header": "Content-Range",
+    "schema_valid": false
+  },
+  {
+    "name": "响应206 Content-Range bytes 9-0/1 尾部CRLF",
+    "schema": "ContentRange",
+    "valid": false,
+    "value": "bytes 9-0/1\r\n",
+    "operationId": "downloadAttachment",
+    "status": 206,
+    "header": "Content-Range",
+    "schema_valid": false
+  },
+  {
+    "name": "响应206 Content-Range bytes 9-0/1 尾部额外字符",
+    "schema": "ContentRange",
+    "valid": false,
+    "value": "bytes 9-0/1x",
+    "operationId": "downloadAttachment",
+    "status": 206,
+    "header": "Content-Range",
+    "schema_valid": false
+  },
+  {
+    "name": "响应206 Content-Range bytes 0-1/100 尾部LF",
+    "schema": "ContentRange",
+    "valid": false,
+    "value": "bytes 0-1/100\n",
+    "operationId": "downloadAttachment",
+    "status": 206,
+    "header": "Content-Range",
+    "schema_valid": false
+  },
+  {
+    "name": "响应206 Content-Range bytes 0-1/100 尾部CR",
+    "schema": "ContentRange",
+    "valid": false,
+    "value": "bytes 0-1/100\r",
+    "operationId": "downloadAttachment",
+    "status": 206,
+    "header": "Content-Range",
+    "schema_valid": false
+  },
+  {
+    "name": "响应206 Content-Range bytes 0-1/100 尾部CRLF",
+    "schema": "ContentRange",
+    "valid": false,
+    "value": "bytes 0-1/100\r\n",
+    "operationId": "downloadAttachment",
+    "status": 206,
+    "header": "Content-Range",
+    "schema_valid": false
+  },
+  {
+    "name": "响应206 Content-Range bytes 0-1/100 尾部额外字符",
+    "schema": "ContentRange",
+    "valid": false,
+    "value": "bytes 0-1/100x",
+    "operationId": "downloadAttachment",
+    "status": 206,
+    "header": "Content-Range",
+    "schema_valid": false
+  },
+  {
+    "name": "响应416 Content-Range bytes */100 尾部LF",
+    "schema": "ContentRange",
+    "valid": false,
+    "value": "bytes */100\n",
+    "operationId": "downloadAttachment",
+    "status": 416,
+    "header": "Content-Range",
+    "schema_valid": false
+  },
+  {
+    "name": "响应416 Content-Range bytes */100 尾部CR",
+    "schema": "ContentRange",
+    "valid": false,
+    "value": "bytes */100\r",
+    "operationId": "downloadAttachment",
+    "status": 416,
+    "header": "Content-Range",
+    "schema_valid": false
+  },
+  {
+    "name": "响应416 Content-Range bytes */100 尾部CRLF",
+    "schema": "ContentRange",
+    "valid": false,
+    "value": "bytes */100\r\n",
+    "operationId": "downloadAttachment",
+    "status": 416,
+    "header": "Content-Range",
+    "schema_valid": false
+  },
+  {
+    "name": "响应416 Content-Range bytes */100 尾部额外字符",
+    "schema": "ContentRange",
+    "valid": false,
+    "value": "bytes */100x",
+    "operationId": "downloadAttachment",
+    "status": 416,
+    "header": "Content-Range",
+    "schema_valid": false
+  },
+  {
+    "name": "拒绝不完整或非法Content-Range ''",
+    "schema": "ContentRange",
+    "valid": false,
+    "value": ""
+  },
+  {
+    "name": "拒绝不完整或非法Content-Range 'bytes 0-1/'",
+    "schema": "ContentRange",
+    "valid": false,
+    "value": "bytes 0-1/"
+  },
+  {
+    "name": "拒绝不完整或非法Content-Range 'bytes */'",
+    "schema": "ContentRange",
+    "valid": false,
+    "value": "bytes */"
+  },
+  {
+    "name": "拒绝不完整或非法Content-Range 'bytes ０-１/１００'",
+    "schema": "ContentRange",
+    "valid": false,
+    "value": "bytes ０-１/１００"
+  },
+  {
+    "name": "拒绝不完整或非法Content-Range 'bytes */１００'",
+    "schema": "ContentRange",
+    "valid": false,
+    "value": "bytes */１００"
+  },
+  {
+    "name": "拒绝不完整或非法Content-Range ' bytes */100'",
+    "schema": "ContentRange",
+    "valid": false,
+    "value": " bytes */100"
+  },
+  {
+    "name": "拒绝不完整或非法Content-Range 'bytes 0-101/100'",
+    "schema": "ContentRange",
+    "valid": false,
+    "value": "bytes 0-101/100"
   }
 ]

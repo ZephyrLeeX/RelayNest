@@ -965,7 +965,7 @@ paths:
                 allOf:
                 - $ref: '#/components/schemas/ContentRange'
                 - type: string
-                  pattern: ^bytes [0-9]+-[0-9]+/[0-9]+$
+                  pattern: ^bytes [0-9]+-[0-9]+/[0-9]+(?![\s\S])
               description: 单区间必须返回；多区间由各part携带，不在顶层返回。
           content:
             application/octet-stream:
@@ -1011,7 +1011,7 @@ paths:
                 allOf:
                 - $ref: '#/components/schemas/ContentRange'
                 - type: string
-                  pattern: ^bytes \*/[0-9]+$
+                  pattern: ^bytes \*/[0-9]+(?![\s\S])
               description: 必须为 bytes */size。
           content:
             application/json:
@@ -1746,7 +1746,8 @@ components:
         Range 均416。
     ContentRange:
       type: string
-      pattern: ^bytes (?:[0-9]+-[0-9]+/[0-9]+|\*/[0-9]+)$
+      # 显式断言后面没有任何字符，避免 $ 在最终 LF 前匹配；兼容 JSON Schema 正则。
+      pattern: ^bytes (?:[0-9]+-[0-9]+/[0-9]+|\*/[0-9]+)(?![\s\S])
       description: 206 单区间为 bytes start-end/size；416 为 bytes */size。区间/长度与真实文件一致，运行时验证。 206 必须满足 0 <= start <= end
         < size；416 为不含区间的 */size。
       x-content-range: true
