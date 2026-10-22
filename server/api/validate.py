@@ -1093,6 +1093,23 @@ def health_response_valid(document, state):
             and state['body'] == response['content'][state['content_type']]['example'])
 
 
+def response_body_schema(path, method, operation, response, case):
+    """媒体由固定操作决定；夹具不能换媒体或借公开操作绕过 JSON 校验。"""
+    public_bodies = {
+        ('/health/live', 'get', 'getHealthLive', '200'): 'HealthOK',
+        ('/health/ready', 'get', 'getHealthReady', '200'): 'HealthOK',
+        ('/health/ready', 'get', 'getHealthReady', '503'): 'HealthUnavailable',
+    }
+    public_schema = public_bodies.get((path, method, operation['operationId'], str(case['status'])))
+    expected_media = 'text/plain; charset=utf-8' if public_schema else 'application/json'
+    if (case.get('media_type', 'application/json') != expected_media
+            or (public_schema and case['schema'] != public_schema)):
+        raise ValueError('正文夹具媒体/公开Schema错误')
+    if expected_media not in response.get('content', {}):
+        raise ValueError('正文响应媒体缺失')
+    return response['content'][expected_media]['schema']
+
+
 def main():
     document = yaml.safe_load((ROOT / 'openapi.yaml').read_text(encoding='utf-8'))
     validate_spec(document)
@@ -1112,6 +1129,15 @@ def main():
     failures = []
     operation_map = {op['operationId']: op for item in document['paths'].values()
                      for method, op in item.items() if method != 'parameters'}
+    operation_locations = {op['operationId']: (path, method)
+                           for path, item in document['paths'].items()
+                           for method, op in item.items() if method != 'parameters'}
+    # JSON 正文不得增加另一媒体供夹具改选；附件流及无正文响应仍走原路径。
+    for operation in operation_map.values():
+        for declared_response in operation['responses'].values():
+            content = resolve(document, declared_response).get('content', {})
+            if 'application/json' in content and set(content) != {'application/json'}:
+                raise SystemExit('JSON响应媒体声明错误：' + operation['operationId'])
     for case in cases:
         # 紧凑夹具展开后仍以真实字符串执行 Schema/UTF-8 字节校验。
         case = copy.deepcopy(case)
@@ -1175,8 +1201,16 @@ def main():
                 failures.append(case['name'] + ' 操作响应状态缺失')
                 continue
             response = resolve(document, declared_response)
-            response_schema = (response['headers'][case['header']]['schema'] if 'header' in case
-                               else response['content'][case.get('media_type', 'application/json')]['schema'])
+            if 'header' in case:
+                response_schema = response['headers'][case['header']]['schema']
+            else:
+                path, method = operation_locations[case['operationId']]
+                try:
+                    response_schema = response_body_schema(
+                        path, method, operation_map[case['operationId']], response, case)
+                except ValueError as error:
+                    failures.append(case['name'] + ' ' + str(error))
+                    continue
             wrapped = {**response_schema, 'components': {'schemas': schemas}}
             response_valid = ContractValidator(wrapped, format_checker=FormatChecker()).is_valid(case['value'])
             code_rules = operation_map[case['operationId']].get('x-error-codes', {}).get(str(case['status']))
