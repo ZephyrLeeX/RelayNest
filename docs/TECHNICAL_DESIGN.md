@@ -98,6 +98,12 @@ JSON 请求使用 `application/json`，拒绝未知字段和超限请求。受�
 
 ### 3.2 路由与权限
 
+全局设置规划输入（POLICY01，须独立审计后由 S01 冻结 API）：`retention_days`、`image_max_bytes`、`file_max_bytes` 均为 1～9223372036854775807 的规范十进制字符串，规则同 §5.4；默认分别为 `"30"`、`"10485760"`、`"52428800"`。不修改公共 `Sequence`、现有 `Attachment.size` 或上传契约，附件技术边界不是 T8 默认值构成的业务上限。
+
+全局资源的 `version`/`expected_version` 沿公共 `Version` 的 JSON integer、从 1 开始，并仅在新全局设置专用 schema 中交集约束 maximum=9007199254740991（2^53−1）；不修改公共 `Version` 或设备版本。CAS 在同一事务核对、更新字段、递增版本、记录服务端 `updated_at`（UTC RFC3339 Z）与 `settings.updated` 变更；成功写入（含同值写入）增 1。GET 返回完整设置/版本/时间；初始资源在持久化时以版本 1 和服务端时间创建。
+
+规划错误：未知字段/类型或结构不符为 400；字符串语法、0、超 int64、expected_version 非整数/越界等字段语义为 422（结构类型错误优先 400）。过期 CAS 返回 409 `GLOBAL_SETTINGS_CONFLICT`，携带最新版本和 `/admin/settings` 重读路径；版本已达上限且 expected_version 匹配时返回 409 `GLOBAL_SETTINGS_VERSION_EXHAUSTED`、`retryable=false`，同样返回最新版本及重读路径。先验证输入、再核对 CAS、最后判断耗尽；耗尽不得写入/发变更、回绕、归零或自动换代。GET 继续可用，写入恢复需后续经确认的契约迁移。请求体超限沿既有 413；保留既有认证、Cookie 写 CSRF/同源规则。S01 必须为各分支建立专用错误 schema/正反例，不冒用设备错误。
+
 以下路由统一位于 `/api/v1`；管理员 Bearer 与 Web Cookie 对应同一唯一管理员，Bot Token 不得用于管理员路由。
 
 | 方法与路径 | 身份 | 契约 |
@@ -230,6 +236,7 @@ Bot Hub 首版上传为单文件流式请求，失败可以重试并保持幂等
 ### 5.4 历史清理
 
 - 以消息 `created_at` 计算全局保留期限，默认 30 天；编辑/已读不重置时间。已 ACK 的旧消息在下一轮满足条件时可清理，不额外延长 30 天。
+- 保留天数为正 int64 规范十进制字符串（1～9223372036854775807），禁止 0、前导零、符号、小数、指数和 JSON 数字；这是表示/存储技术边界，不另设业务上限。清理比较 UTC 实际经过的整日年龄 `floor((now-created_at)/86400秒) >= retention_days`；使用日/秒分解的安全整数运算，未来时间不满足期限。不将天数乘成 Duration，不将巨大天数从 now 相减；巨大合法值自然不会满足清理条件。仍保持现有 RFC3339 Z 时间字段。
 - 每小时执行小批次（默认 200 条），在删除事务再次检查：是否有 pending/leased/retry_wait/failed 投递，是否为这些投递所需父消息/附件。保护优先于时间，查询与删除不可分离造成竞态。
 - 本 Bot 普通历史引用不永久保护父消息；不存在的引用显示过期。受保护投递和失败记录没有隐含 TTL，资源不足时拒绝新写入，不自动丢弃。
 - 删除消息时写 `message.deleted`；Bot 删除写 `bot.deleted`。变更日志默认保留 30 天，最旧可用游标 floor 单调前进；内容和变更日志保留分别判断，不为保护消息无限保留所有旧变更。
@@ -240,6 +247,8 @@ Bot Hub 首版上传为单文件流式请求，失败可以重试并保持幂等
 ### 6.1 增量协议
 
 `GET /client/sync?cursor=<opaque>&limit=200` 返回 `{epoch,changes,next_cursor,has_more,server_high_watermark}`。每次追赶固定一个高水位 H，按 `(cursor,H]` 分页。changes 包括消息 upsert（返回当前 revision，允许高于事件记录版本）、删除、Bot/设置变更、已读及投递状态，不返回已删除正文。客户端按实体版本应用；重复删除/旧版本是幂等 no-op。
+
+全局设置变更规划为 `settings.updated` 的明确分支，携带全局设置版本与 `/admin/settings` 获取关联；重复/旧版本幂等忽略。与设备通知设置分支区分，不通过 changes 返回管理配置正文或扩大读取权限；具体 schema 由 S01 在最终 main 上冻结。
 
 同一服务端读事务获取事件及当前投影，避免返回已删除对象的旧内容。已过期事件涉及已删除实体时返回 tombstone/无正文删除结果，不能造成整个批次失败。App 用 Room 事务保存批次及 next_cursor；未提交前崩溃则重放，不先更新游标。WS、FCM、前台打开和 WorkManager 全部进入同一单飞 SyncCoordinator。
 
