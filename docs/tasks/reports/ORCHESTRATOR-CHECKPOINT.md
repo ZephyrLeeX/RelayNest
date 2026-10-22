@@ -13,7 +13,7 @@
 
 ## 当前恢复点（2026-10-23）
 
-最近确认主树 `main@18d3f3ad5c5e3ca64ed3f7bfa45546bb86ac5d9e`（P04-01-PLAN01精确集成/I01后，snapshot13前）。唯一任务台账仍registry；本轮持续执行，远未完成P4～P15。
+最近确认主树 `main@d6a30a7eca7149101ea7ac59fc3a6ad523812788`（P04-02-PLAN01精确集成/I01后，snapshot14前）。唯一任务台账仍registry；本轮持续执行，远未完成P4～P15。
 
 - P00-01/02/04、P02-01～04、P03-01～06及08～12均已独立审计精确集成。G-GIT/G-MP/G-FCM/G-API=pass（MP/FCM为历史PoC限定，API仅契约）；CORE/DEPLOY/SHELF/SHELF-API/OPPO=pending。
 - P03-07同步/设备/全局配置/健康契约及最终综合证据均已独审精确集成。最终卡实施7ec2ae3、独审PASS34425b4、main组合981692f、I01 375a270；父五项/S03八项证据齐全。root已据最终独审及精确集成证据登记P03-07/S03/最终卡done与G-API契约pass，无需新用户授权。运行时/正式AC未验。
@@ -51,9 +51,10 @@ bootstrap原实现9cb95c4经A01 532ea26发现BS-A01-01（seed可冒充实际追�
 - 各已审源树及分支保留，旧/tmp可能消失但Git对象/引用不prune/remove/clean，不重置。auth-init规划源树已释放；新auth-init-impl树准备后由调度派发唯一开发者，迁移0002及共同依赖/CLI/storage测试文件串行独占。
 - 本文件不是全部完成报告，不创建新聊天/定时任务/自动化，也不授权push、Release、真实部署或MP重建升级。P13～15虽已授权，仍等核心实际完成/G-SHELF实质门槛，不改RelayShelf后端/数据库。
 
-## 当前P4派发点
+## 当前P4派发点（恢复时以registry和实际agent为准）
 
-- P04-01-PLAN01规划73d4fa47c02a4478e3a81acf0f60f2740e63f252、独立A01 PASS 34acc46f40d425f5bda8296a4bd8f11b1c43caeb已无冲突精确集成；main组合c69d8304277fb9f1ab9a9409e708acac5a0573a6，I01报告18d3f3ad5c5e3ca64ed3f7bfa45546bb86ac5d9e。三文档blob与源一致、相对链接通过、原卡全部行/验收保留、server源码/API六文件未动。旧auth-init规划树保留释放；snapshot13后从最终main准备auth-init-impl干净新树，供新开发agent单卡实施P04-01，精确路径/branch/base依工具交接。
-- 只读准备确认：CLI main仅listen、尚无storage接线；auth未创建；storage.Open/Read/Write可复用；当前迁移仅0001，0002须独占串行分配。新增真实0002需维护原升级失败/回滚/锁夹具，不能删测试。设计Argon2id 64MiB/3/1；依赖具体版本由开发查证，不臆定升级。
-- 干净Go检查需先Web npm ci/build生成gitignored embed dist；Go1.27.3/Node22.23.2/npm10.9.8依既有mise锁核实际路径。P04-01必跑竞争init、重复初始化拒绝、密码摘要、无明文/参数日志、reset代次原子性，以及受影响storage/CLI回归。非源码规划阶段不跑业务测试。
-- 当前扫描其余核心todo依赖尚未齐备，不能为并发绕过前置；P04-01/02完成后按实际DAG重新扫描独立分支。
+- 主树snapshot13 `fd7ca5173c540796aa97e3efb9bf90a7adc94c32`，G-API契约pass已由root据最终独审/集成登记，P03-07及S03done。P04-01-PLAN01规划最终`73d4fa47c02a4478e3a81acf0f60f2740e63f252`、审计`34acc46f40d425f5bda8296a4bd8f11b1c43caeb`、集成`c69d8304277fb9f1ab9a9409e708acac5a0573a6`/I01 `18d3f3ad5c5e3ca64ed3f7bfa45546bb86ac5d9e`，已done。
+- P04-01源码树`/home/lijx/.codex/worktrees/auth-init-impl/RelayNest`、branch codex/auth-init-impl、base fd7ca517；实现9a97d7e1a062551b187aa6c35d40eea75739240a。审计复现密码提示SIGINT退出后PTY ECHO仍关闭，须编号修复、独立复审PASS后精确集成；当前未done，旧race通过不替代此失败。源码树及0002由当前被派开发/修复者独占，本轮文档集成未访问该动态树或index。
+- 开发交接待审：固定管理员id=1、username原样区分大小写不trim；Argon2id64MiB/3/1；generation int64从1至MaxInt64耗尽原子拒绝reset；摘要与代次同事务；提供ReadAdministrator/InitAdministrator/ResetPassword。0002本实现占用但待精确集成，下一编号0003仅集成后确认。Go1.27.3/SQLite锁保持，必要x/crypto0.58.0、x/term0.47.0、传递x/sys0.49.0为本实现依赖，须审计核对。真实CLI/SQLite与未测会话/WS/手机等分开。
+- P04-02-PLAN01文档规划71682be3f1f91ea0a05b2a6237a6d68d218bd6e6、独立A01 PASS 100f9314d7137d298d049c139318b290ceed95e9已精确集成；main组合b5519a6b339303ed11fbabbf06cbfdf5990c6a4d，I01 d6a30a7eca7149101ea7ac59fc3a6ad523812788。五文档blob/链接/原五验收通过，server/API未动，无父子依赖环。建议S01依P04-01+PLAN01、S02依S01，父保留P04-01并汇合两子卡；沿父G-GIT，root登记。旧session-plan树保留释放；不建S01实现树，不分配迁移，须等P04-01最终修复独审集成后的最新main和真实接口交接。
+- 干净Go检查先Web npm ci/build生成gitignored embed dist；工具沿mise锁，测试用临时DB，不连接生产。root唯一写registry，含用户原dirty内容不stage；`.directory`不动。本快照由集成角色仅显式路径提交。持续推进P4～P15，不把该恢复点称全部完成。
