@@ -6,6 +6,122 @@ info:
 servers:
 - url: /api/v1
 paths:
+  /health/live:
+    get:
+      operationId: getHealthLive
+      summary: 公开根健康存活探针
+      description: 根路径，覆盖全局/api/v1；已存在Go处理器。ready仅由数据库/挂载Probe决定；未接入、失败、超时或停止为503，FCM不可用仅降级。此声明不证明存储Probe已接入。
+      servers:
+      - url: /
+      security: []
+      x-health-policy:
+        live: process-only
+        ready: database-and-mount-probe
+        unready:
+        - probe-absent
+        - probe-failed
+        - probe-timeout
+        - stopping
+        push_failure: degraded-not-unready
+        public_detail: fixed-text-only
+      responses:
+        '200':
+          description: 进程存活/已就绪
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+          content:
+            text/plain; charset=utf-8:
+              schema:
+                $ref: '#/components/schemas/HealthOK'
+              example: "ok\n"
+  /health/ready:
+    get:
+      operationId: getHealthReady
+      summary: 公开根健康就绪探针
+      description: 根路径，覆盖全局/api/v1；已存在Go处理器。ready仅由数据库/挂载Probe决定；未接入、失败、超时或停止为503，FCM不可用仅降级。此声明不证明存储Probe已接入。
+      servers:
+      - url: /
+      security: []
+      x-health-policy:
+        live: process-only
+        ready: database-and-mount-probe
+        unready:
+        - probe-absent
+        - probe-failed
+        - probe-timeout
+        - stopping
+        push_failure: degraded-not-unready
+        public_detail: fixed-text-only
+      responses:
+        '200':
+          description: 进程存活/已就绪
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+          content:
+            text/plain; charset=utf-8:
+              schema:
+                $ref: '#/components/schemas/HealthOK'
+              example: "ok\n"
+        '503':
+          description: 未就绪，不公开探针细节
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+          content:
+            text/plain; charset=utf-8:
+              schema:
+                $ref: '#/components/schemas/HealthUnavailable'
+              example: "unavailable\n"
+  /admin/status:
+    get:
+      operationId: getAdminStatus
+      summary: 管理员系统状态脱敏汇总
+      description: 仅唯一管理员Bearer或Web Cookie，Bot Token/Webhook/匿名拒绝；只读不需CSRF。只返回汇总允许列表，不提供正文或任意错误串。此路由为待实现契约；汇总读取失败返回受保护JSON
+        Error 503，FCM降级仍可返回200。
+      security:
+      - AdminBearer: []
+      - WebCookie: []
+      x-management-projection: system-status-metadata-only
+      responses:
+        '200':
+          description: 脱敏状态汇总
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSystemStatus'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
   /client/ws:
     get:
       operationId: connectClientWS
@@ -2192,6 +2308,149 @@ paths:
               $ref: '#/components/schemas/NotificationSettingsUpdate'
 components:
   schemas:
+    HealthOK:
+      type: string
+      const: "ok\n"
+    HealthUnavailable:
+      type: string
+      const: "unavailable\n"
+    StatusCount:
+      type: integer
+      minimum: 0
+      maximum: 9007199254740991
+      description: 汇总计数的JSON安全整数上限，不是队列容量限制；超出时不得返回失真值。
+    QueueStatus:
+      type: object
+      properties:
+        pending:
+          $ref: '#/components/schemas/StatusCount'
+        leased:
+          $ref: '#/components/schemas/StatusCount'
+        retry_wait:
+          $ref: '#/components/schemas/StatusCount'
+        failed:
+          $ref: '#/components/schemas/StatusCount'
+        oldest_waiting_at:
+          oneOf:
+          - $ref: '#/components/schemas/UTCDateTime'
+          - type: 'null'
+      required:
+      - pending
+      - leased
+      - retry_wait
+      - failed
+      - oldest_waiting_at
+      additionalProperties: false
+      allOf:
+      - if:
+          properties:
+            pending:
+              const: 0
+            retry_wait:
+              const: 0
+        then:
+          properties:
+            oldest_waiting_at:
+              type: 'null'
+        else:
+          properties:
+            oldest_waiting_at:
+              $ref: '#/components/schemas/UTCDateTime'
+      description: 应用投递全局汇总，含停用Bot的保留队列；failed计失败投递，不计业务命令结果。最旧等待取pending/retry_wait最早入队时刻，未等待为null，leased不计等待。
+    ConnectionStatus:
+      type: object
+      properties:
+        ws_online_sessions:
+          $ref: '#/components/schemas/StatusCount'
+        recent_poll_bots:
+          $ref: '#/components/schemas/StatusCount'
+        unknown_bots:
+          $ref: '#/components/schemas/StatusCount'
+        webhook_state:
+          const: unknown
+      required:
+      - ws_online_sessions
+      - recent_poll_bots
+      - unknown_bots
+      - webhook_state
+      additionalProperties: false
+      description: WS计当前有效管理员会话连接；recent_poll/unknown按应用Bot汇总，遵循既有Bot.connection判定，不新增近期阈值。Webhook-only计入unknown，webhook_state永远unknown；WS在线不代表应用消费者或Webhook持续在线。
+    AttachmentRecoveryStatus:
+      type: object
+      properties:
+        anomaly_count:
+          $ref: '#/components/schemas/StatusCount'
+        last_error_code:
+          enum:
+          - null
+          - ATTACHMENT_RECOVERY_FAILED
+          - ATTACHMENT_STORAGE_UNAVAILABLE
+          - ATTACHMENT_OTHER
+      required:
+      - anomaly_count
+      - last_error_code
+      additionalProperties: false
+    DatabaseStatus:
+      type: object
+      properties:
+        state:
+          enum:
+          - available
+          - unavailable
+          - unknown
+        last_error_code:
+          enum:
+          - null
+          - DB_UNAVAILABLE
+          - DB_BUSY
+          - DB_IO_ERROR
+          - DB_OTHER
+      required:
+      - state
+      - last_error_code
+      additionalProperties: false
+    PushStatus:
+      type: object
+      properties:
+        state:
+          enum:
+          - available
+          - degraded
+          - unknown
+        last_error_code:
+          enum:
+          - null
+          - PUSH_UNAVAILABLE
+          - PUSH_REJECTED
+          - PUSH_OTHER
+      required:
+      - state
+      - last_error_code
+      additionalProperties: false
+    AdminSystemStatus:
+      type: object
+      properties:
+        observed_at:
+          $ref: '#/components/schemas/UTCDateTime'
+        queue:
+          $ref: '#/components/schemas/QueueStatus'
+        connections:
+          $ref: '#/components/schemas/ConnectionStatus'
+        attachment_recovery:
+          $ref: '#/components/schemas/AttachmentRecoveryStatus'
+        database:
+          $ref: '#/components/schemas/DatabaseStatus'
+        push:
+          $ref: '#/components/schemas/PushStatus'
+      required:
+      - observed_at
+      - queue
+      - connections
+      - attachment_recovery
+      - database
+      - push
+      additionalProperties: false
+      description: 管理员只读系统元数据允许列表；不含消息正文、callback_data、附件URL/路径、原始异常、SQL、凭据或FCM注册。错误仅映射稳定分类码，无自由文本；null表示无可展示错误记录，unknown表示尚无观测。不是settings或配置版本投影。
     PushProvider:
       type: string
       enum:

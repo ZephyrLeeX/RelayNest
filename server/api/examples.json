@@ -21717,5 +21717,1935 @@
     "credentials": "secret"
   },
   "valid": false
-}
+},
+  {
+    "name": "健康状态：FCM降级可读取汇总",
+    "schema": "AdminSystemStatus",
+    "valid": true,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    },
+    "operationId": "getAdminStatus",
+    "status": 200
+  },
+  {
+    "name": "健康状态：无等待及未知状态",
+    "schema": "AdminSystemStatus",
+    "valid": true,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 0,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": null
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "unknown",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "unknown",
+        "last_error_code": null
+      }
+    }
+  },
+  {
+    "name": "健康状态：拒绝汇总新增body",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      },
+      "body": "secret"
+    },
+    "operationId": "getAdminStatus",
+    "status": 200
+  },
+  {
+    "name": "健康状态：拒绝汇总新增raw_error",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      },
+      "raw_error": "/private/db"
+    },
+    "operationId": "getAdminStatus",
+    "status": 200
+  },
+  {
+    "name": "健康状态：拒绝汇总新增fcm_token",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      },
+      "fcm_token": "secret"
+    },
+    "operationId": "getAdminStatus",
+    "status": 200
+  },
+  {
+    "name": "健康状态：拒绝汇总新增attachment_url",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      },
+      "attachment_url": "https://example.invalid/a"
+    },
+    "operationId": "getAdminStatus",
+    "status": 200
+  },
+  {
+    "name": "健康状态：拒绝汇总新增version",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      },
+      "version": 1
+    },
+    "operationId": "getAdminStatus",
+    "status": 200
+  },
+  {
+    "name": "健康状态：负数",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": -1,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：非安全整数",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 9007199254740992,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：计数非整数",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1.5,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：Webhook在线",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "online"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：轮询冒充在线",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": "online",
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：原始DB错误",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": "secret=/private/db"
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：推送原始错误",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "Authorization: secret"
+      }
+    }
+  },
+  {
+    "name": "健康状态：附件路径",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "/private/file"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：等待缺时间",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": null
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：非UTC",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T08:00:00+08:00",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：无等待伪时间",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 0,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：管理权限AdminBearer",
+    "schema": "AdminSystemStatus",
+    "valid": true,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    },
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "getAdminStatus",
+      "security": {
+        "AdminBearer": []
+      }
+    }
+  },
+  {
+    "name": "健康状态：管理权限WebCookie",
+    "schema": "AdminSystemStatus",
+    "valid": true,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    },
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "getAdminStatus",
+      "security": {
+        "WebCookie": []
+      }
+    }
+  },
+  {
+    "name": "健康状态：管理权限BotAPIToken",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    },
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "getAdminStatus",
+      "security": {
+        "BotAPIToken": []
+      }
+    }
+  },
+  {
+    "name": "健康状态：管理权限WebhookKey",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    },
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "getAdminStatus",
+      "security": {
+        "WebhookKey": []
+      }
+    }
+  },
+  {
+    "name": "健康状态：管理权限None",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    },
+    "schema_valid": true,
+    "declaration": {
+      "operationId": "getAdminStatus",
+      "security": {}
+    }
+  },
+  {
+    "name": "健康状态：getHealthLive200",
+    "schema": "HealthOK",
+    "valid": true,
+    "value": "ok\n",
+    "operationId": "getHealthLive",
+    "status": 200,
+    "media_type": "text/plain; charset=utf-8"
+  },
+  {
+    "name": "健康状态：getHealthLive200拒绝细节<class 'str'>",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok",
+    "operationId": "getHealthLive",
+    "status": 200,
+    "media_type": "text/plain; charset=utf-8"
+  },
+  {
+    "name": "健康状态：getHealthLive200拒绝细节<class 'dict'>",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": {
+      "error": {
+        "message": "secret"
+      }
+    },
+    "operationId": "getHealthLive",
+    "status": 200,
+    "media_type": "text/plain; charset=utf-8"
+  },
+  {
+    "name": "健康状态：getHealthLive200拒绝细节<class 'str'>",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\nsecret=/private/db\n",
+    "operationId": "getHealthLive",
+    "status": 200,
+    "media_type": "text/plain; charset=utf-8"
+  },
+  {
+    "name": "健康状态：getHealthReady200",
+    "schema": "HealthOK",
+    "valid": true,
+    "value": "ok\n",
+    "operationId": "getHealthReady",
+    "status": 200,
+    "media_type": "text/plain; charset=utf-8"
+  },
+  {
+    "name": "健康状态：getHealthReady200拒绝细节<class 'str'>",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok",
+    "operationId": "getHealthReady",
+    "status": 200,
+    "media_type": "text/plain; charset=utf-8"
+  },
+  {
+    "name": "健康状态：getHealthReady200拒绝细节<class 'dict'>",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": {
+      "error": {
+        "message": "secret"
+      }
+    },
+    "operationId": "getHealthReady",
+    "status": 200,
+    "media_type": "text/plain; charset=utf-8"
+  },
+  {
+    "name": "健康状态：getHealthReady200拒绝细节<class 'str'>",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\nsecret=/private/db\n",
+    "operationId": "getHealthReady",
+    "status": 200,
+    "media_type": "text/plain; charset=utf-8"
+  },
+  {
+    "name": "健康状态：getHealthReady503",
+    "schema": "HealthUnavailable",
+    "valid": true,
+    "value": "unavailable\n",
+    "operationId": "getHealthReady",
+    "status": 503,
+    "media_type": "text/plain; charset=utf-8"
+  },
+  {
+    "name": "健康状态：getHealthReady503拒绝细节<class 'str'>",
+    "schema": "HealthUnavailable",
+    "valid": false,
+    "value": "unavailable",
+    "operationId": "getHealthReady",
+    "status": 503,
+    "media_type": "text/plain; charset=utf-8"
+  },
+  {
+    "name": "健康状态：getHealthReady503拒绝细节<class 'dict'>",
+    "schema": "HealthUnavailable",
+    "valid": false,
+    "value": {
+      "error": {
+        "message": "secret"
+      }
+    },
+    "operationId": "getHealthReady",
+    "status": 503,
+    "media_type": "text/plain; charset=utf-8"
+  },
+  {
+    "name": "健康状态：getHealthReady503拒绝细节<class 'str'>",
+    "schema": "HealthUnavailable",
+    "valid": false,
+    "value": "unavailable\nsecret=/private/db\n",
+    "operationId": "getHealthReady",
+    "status": 503,
+    "media_type": "text/plain; charset=utf-8"
+  },
+  {
+    "name": "健康状态：探针状态{'probe': 'ok', 'stopping': False, 'push': 'available', 'live_status': 200, 'ready_status': 200}",
+    "schema": "HealthOK",
+    "valid": true,
+    "value": "ok\n",
+    "health_state": {
+      "probe": "ok",
+      "stopping": false,
+      "push": "available",
+      "live_status": 200,
+      "ready_status": 200
+    }
+  },
+  {
+    "name": "健康状态：探针错误状态{'probe': 'ok', 'stopping': False, 'push': 'available', 'live_status': 200, 'ready_status': 200}",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_state": {
+      "probe": "ok",
+      "stopping": false,
+      "push": "available",
+      "live_status": 200,
+      "ready_status": 503
+    },
+    "state_valid": false
+  },
+  {
+    "name": "健康状态：探针状态{'probe': 'ok', 'stopping': False, 'push': 'degraded', 'live_status': 200, 'ready_status': 200}",
+    "schema": "HealthOK",
+    "valid": true,
+    "value": "ok\n",
+    "health_state": {
+      "probe": "ok",
+      "stopping": false,
+      "push": "degraded",
+      "live_status": 200,
+      "ready_status": 200
+    }
+  },
+  {
+    "name": "健康状态：探针错误状态{'probe': 'ok', 'stopping': False, 'push': 'degraded', 'live_status': 200, 'ready_status': 200}",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_state": {
+      "probe": "ok",
+      "stopping": false,
+      "push": "degraded",
+      "live_status": 200,
+      "ready_status": 503
+    },
+    "state_valid": false
+  },
+  {
+    "name": "健康状态：探针状态{'probe': 'absent', 'stopping': False, 'push': 'available', 'live_status': 200, 'ready_status': 503}",
+    "schema": "HealthOK",
+    "valid": true,
+    "value": "ok\n",
+    "health_state": {
+      "probe": "absent",
+      "stopping": false,
+      "push": "available",
+      "live_status": 200,
+      "ready_status": 503
+    }
+  },
+  {
+    "name": "健康状态：探针错误状态{'probe': 'absent', 'stopping': False, 'push': 'available', 'live_status': 200, 'ready_status': 503}",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_state": {
+      "probe": "absent",
+      "stopping": false,
+      "push": "available",
+      "live_status": 200,
+      "ready_status": 200
+    },
+    "state_valid": false
+  },
+  {
+    "name": "健康状态：探针状态{'probe': 'failed', 'stopping': False, 'push': 'available', 'live_status': 200, 'ready_status': 503}",
+    "schema": "HealthOK",
+    "valid": true,
+    "value": "ok\n",
+    "health_state": {
+      "probe": "failed",
+      "stopping": false,
+      "push": "available",
+      "live_status": 200,
+      "ready_status": 503
+    }
+  },
+  {
+    "name": "健康状态：探针错误状态{'probe': 'failed', 'stopping': False, 'push': 'available', 'live_status': 200, 'ready_status': 503}",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_state": {
+      "probe": "failed",
+      "stopping": false,
+      "push": "available",
+      "live_status": 200,
+      "ready_status": 200
+    },
+    "state_valid": false
+  },
+  {
+    "name": "健康状态：探针状态{'probe': 'timed_out', 'stopping': False, 'push': 'available', 'live_status': 200, 'ready_status': 503}",
+    "schema": "HealthOK",
+    "valid": true,
+    "value": "ok\n",
+    "health_state": {
+      "probe": "timed_out",
+      "stopping": false,
+      "push": "available",
+      "live_status": 200,
+      "ready_status": 503
+    }
+  },
+  {
+    "name": "健康状态：探针错误状态{'probe': 'timed_out', 'stopping': False, 'push': 'available', 'live_status': 200, 'ready_status': 503}",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_state": {
+      "probe": "timed_out",
+      "stopping": false,
+      "push": "available",
+      "live_status": 200,
+      "ready_status": 200
+    },
+    "state_valid": false
+  },
+  {
+    "name": "健康状态：探针状态{'probe': 'ok', 'stopping': True, 'push': 'available', 'live_status': 200, 'ready_status': 503}",
+    "schema": "HealthOK",
+    "valid": true,
+    "value": "ok\n",
+    "health_state": {
+      "probe": "ok",
+      "stopping": true,
+      "push": "available",
+      "live_status": 200,
+      "ready_status": 503
+    }
+  },
+  {
+    "name": "健康状态：探针错误状态{'probe': 'ok', 'stopping': True, 'push': 'available', 'live_status': 200, 'ready_status': 503}",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_state": {
+      "probe": "ok",
+      "stopping": true,
+      "push": "available",
+      "live_status": 200,
+      "ready_status": 200
+    },
+    "state_valid": false
+  },
+  {
+    "name": "健康状态：拒绝嵌套泄漏queue",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z",
+        "raw_error": "secret=/private/db"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：拒绝嵌套泄漏connections",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown",
+        "raw_error": "secret=/private/db"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：拒绝嵌套泄漏attachment_recovery",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED",
+        "raw_error": "secret=/private/db"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：拒绝嵌套泄漏database",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null,
+        "raw_error": "secret=/private/db"
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：拒绝嵌套泄漏push",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE",
+        "raw_error": "secret=/private/db"
+      }
+    }
+  },
+  {
+    "name": "健康状态：拒绝缺少observed_at",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：拒绝缺少queue",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：拒绝缺少connections",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：拒绝缺少attachment_recovery",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：拒绝缺少database",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：拒绝缺少push",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-10-22T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      }
+    }
+  },
+  {
+    "name": "健康状态：拒绝无效日期",
+    "schema": "AdminSystemStatus",
+    "valid": false,
+    "value": {
+      "observed_at": "2026-99-99T00:00:00Z",
+      "queue": {
+        "pending": 1,
+        "leased": 2,
+        "retry_wait": 0,
+        "failed": 3,
+        "oldest_waiting_at": "2026-10-21T23:00:00Z"
+      },
+      "connections": {
+        "ws_online_sessions": 1,
+        "recent_poll_bots": 2,
+        "unknown_bots": 1,
+        "webhook_state": "unknown"
+      },
+      "attachment_recovery": {
+        "anomaly_count": 1,
+        "last_error_code": "ATTACHMENT_RECOVERY_FAILED"
+      },
+      "database": {
+        "state": "available",
+        "last_error_code": null
+      },
+      "push": {
+        "state": "degraded",
+        "last_error_code": "PUSH_UNAVAILABLE"
+      }
+    }
+  },
+  {
+    "name": "健康状态：管理JSON错误401",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "AUTHENTICATION_REQUIRED",
+        "message": "请求暂不可用",
+        "request_id": "synthetic-status-request",
+        "retryable": false
+      }
+    },
+    "operationId": "getAdminStatus",
+    "status": 401
+  },
+  {
+    "name": "健康状态：管理错误拒绝纯文本401",
+    "schema": "Error",
+    "valid": false,
+    "value": "unavailable\n",
+    "operationId": "getAdminStatus",
+    "status": 401
+  },
+  {
+    "name": "健康状态：管理JSON错误403",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "FORBIDDEN",
+        "message": "请求暂不可用",
+        "request_id": "synthetic-status-request",
+        "retryable": false
+      }
+    },
+    "operationId": "getAdminStatus",
+    "status": 403
+  },
+  {
+    "name": "健康状态：管理错误拒绝纯文本403",
+    "schema": "Error",
+    "valid": false,
+    "value": "unavailable\n",
+    "operationId": "getAdminStatus",
+    "status": 403
+  },
+  {
+    "name": "健康状态：管理JSON错误429",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "RATE_LIMITED",
+        "message": "请求暂不可用",
+        "request_id": "synthetic-status-request",
+        "retryable": true
+      }
+    },
+    "operationId": "getAdminStatus",
+    "status": 429
+  },
+  {
+    "name": "健康状态：管理错误拒绝纯文本429",
+    "schema": "Error",
+    "valid": false,
+    "value": "unavailable\n",
+    "operationId": "getAdminStatus",
+    "status": 429
+  },
+  {
+    "name": "健康状态：管理JSON错误503",
+    "schema": "Error",
+    "valid": true,
+    "value": {
+      "error": {
+        "code": "STORAGE_UNAVAILABLE",
+        "message": "请求暂不可用",
+        "request_id": "synthetic-status-request",
+        "retryable": true
+      }
+    },
+    "operationId": "getAdminStatus",
+    "status": 503
+  },
+  {
+    "name": "健康状态：管理错误拒绝纯文本503",
+    "schema": "Error",
+    "valid": false,
+    "value": "unavailable\n",
+    "operationId": "getAdminStatus",
+    "status": 503
+  },
+  {
+    "name": "健康状态：公开信封getHealthLive200",
+    "schema": "HealthOK",
+    "valid": true,
+    "value": "ok\n",
+    "health_response": {
+      "operationId": "getHealthLive",
+      "status": 200,
+      "content_type": "text/plain; charset=utf-8",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "body": "ok\n"
+    },
+    "declaration": {
+      "operationId": "getHealthLive",
+      "security": {}
+    }
+  },
+  {
+    "name": "健康状态：拒绝公开信封getHealthLive200媒体",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_response": {
+      "operationId": "getHealthLive",
+      "status": 200,
+      "content_type": "application/json",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "body": "ok\n"
+    }
+  },
+  {
+    "name": "健康状态：拒绝公开信封getHealthLive200状态",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_response": {
+      "operationId": "getHealthLive",
+      "status": 401,
+      "content_type": "text/plain; charset=utf-8",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "body": "ok\n"
+    }
+  },
+  {
+    "name": "健康状态：拒绝公开信封getHealthLive200正文",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_response": {
+      "operationId": "getHealthLive",
+      "status": 200,
+      "content_type": "text/plain; charset=utf-8",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "body": "ok\ndetail"
+    }
+  },
+  {
+    "name": "健康状态：拒绝公开信封getHealthLive200缓存",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_response": {
+      "operationId": "getHealthLive",
+      "status": 200,
+      "content_type": "text/plain; charset=utf-8",
+      "headers": {
+        "Cache-Control": "public",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "body": "ok\n"
+    }
+  },
+  {
+    "name": "健康状态：拒绝公开信封getHealthLive200嗅探",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_response": {
+      "operationId": "getHealthLive",
+      "status": 200,
+      "content_type": "text/plain; charset=utf-8",
+      "headers": {
+        "Cache-Control": "no-store"
+      },
+      "body": "ok\n"
+    }
+  },
+  {
+    "name": "健康状态：拒绝公开信封getHealthLive200额外细节头",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_response": {
+      "operationId": "getHealthLive",
+      "status": 200,
+      "content_type": "text/plain; charset=utf-8",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+        "X-Probe-Error": "secret"
+      },
+      "body": "ok\n"
+    }
+  },
+  {
+    "name": "健康状态：公开信封getHealthReady200",
+    "schema": "HealthOK",
+    "valid": true,
+    "value": "ok\n",
+    "health_response": {
+      "operationId": "getHealthReady",
+      "status": 200,
+      "content_type": "text/plain; charset=utf-8",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "body": "ok\n"
+    },
+    "declaration": {
+      "operationId": "getHealthReady",
+      "security": {}
+    }
+  },
+  {
+    "name": "健康状态：拒绝公开信封getHealthReady200媒体",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_response": {
+      "operationId": "getHealthReady",
+      "status": 200,
+      "content_type": "application/json",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "body": "ok\n"
+    }
+  },
+  {
+    "name": "健康状态：拒绝公开信封getHealthReady200状态",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_response": {
+      "operationId": "getHealthReady",
+      "status": 401,
+      "content_type": "text/plain; charset=utf-8",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "body": "ok\n"
+    }
+  },
+  {
+    "name": "健康状态：拒绝公开信封getHealthReady200正文",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_response": {
+      "operationId": "getHealthReady",
+      "status": 200,
+      "content_type": "text/plain; charset=utf-8",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "body": "ok\ndetail"
+    }
+  },
+  {
+    "name": "健康状态：拒绝公开信封getHealthReady200缓存",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_response": {
+      "operationId": "getHealthReady",
+      "status": 200,
+      "content_type": "text/plain; charset=utf-8",
+      "headers": {
+        "Cache-Control": "public",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "body": "ok\n"
+    }
+  },
+  {
+    "name": "健康状态：拒绝公开信封getHealthReady200嗅探",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_response": {
+      "operationId": "getHealthReady",
+      "status": 200,
+      "content_type": "text/plain; charset=utf-8",
+      "headers": {
+        "Cache-Control": "no-store"
+      },
+      "body": "ok\n"
+    }
+  },
+  {
+    "name": "健康状态：拒绝公开信封getHealthReady200额外细节头",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_response": {
+      "operationId": "getHealthReady",
+      "status": 200,
+      "content_type": "text/plain; charset=utf-8",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+        "X-Probe-Error": "secret"
+      },
+      "body": "ok\n"
+    }
+  },
+  {
+    "name": "健康状态：公开信封getHealthReady503",
+    "schema": "HealthOK",
+    "valid": true,
+    "value": "ok\n",
+    "health_response": {
+      "operationId": "getHealthReady",
+      "status": 503,
+      "content_type": "text/plain; charset=utf-8",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "body": "unavailable\n"
+    },
+    "declaration": {
+      "operationId": "getHealthReady",
+      "security": {}
+    }
+  },
+  {
+    "name": "健康状态：拒绝公开信封getHealthReady503媒体",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_response": {
+      "operationId": "getHealthReady",
+      "status": 503,
+      "content_type": "application/json",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "body": "unavailable\n"
+    }
+  },
+  {
+    "name": "健康状态：拒绝公开信封getHealthReady503状态",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_response": {
+      "operationId": "getHealthReady",
+      "status": 401,
+      "content_type": "text/plain; charset=utf-8",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "body": "unavailable\n"
+    }
+  },
+  {
+    "name": "健康状态：拒绝公开信封getHealthReady503正文",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_response": {
+      "operationId": "getHealthReady",
+      "status": 503,
+      "content_type": "text/plain; charset=utf-8",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "body": "unavailable\ndetail"
+    }
+  },
+  {
+    "name": "健康状态：拒绝公开信封getHealthReady503缓存",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_response": {
+      "operationId": "getHealthReady",
+      "status": 503,
+      "content_type": "text/plain; charset=utf-8",
+      "headers": {
+        "Cache-Control": "public",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "body": "unavailable\n"
+    }
+  },
+  {
+    "name": "健康状态：拒绝公开信封getHealthReady503嗅探",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_response": {
+      "operationId": "getHealthReady",
+      "status": 503,
+      "content_type": "text/plain; charset=utf-8",
+      "headers": {
+        "Cache-Control": "no-store"
+      },
+      "body": "unavailable\n"
+    }
+  },
+  {
+    "name": "健康状态：拒绝公开信封getHealthReady503额外细节头",
+    "schema": "HealthOK",
+    "valid": false,
+    "value": "ok\n",
+    "schema_valid": true,
+    "health_response": {
+      "operationId": "getHealthReady",
+      "status": 503,
+      "content_type": "text/plain; charset=utf-8",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+        "X-Probe-Error": "secret"
+      },
+      "body": "unavailable\n"
+    }
+  }
 ]

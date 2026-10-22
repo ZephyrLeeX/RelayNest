@@ -1,6 +1,6 @@
 # RelayNest API 契约
 
-`openapi.yaml` 是 OpenAPI 3.1.0 契约，统一前缀 `/api/v1`。当前已定义认证、Bot 管理、两套凭据、消息创建/编辑、独立 callback、标准 Webhook、Android 历史/详情、附件及应用投递/失败管理；不表示 Go 服务已实现这些路由。P03-07 继续串行补充设备、设置、同步、已读与 WS。
+`openapi.yaml` 是 OpenAPI 3.1.0 契约，管理/业务路径前缀 `/api/v1`，公开根健康探针使用操作级 `servers: [{url: /}]`。当前已定义认证、Bot 管理、两套凭据、消息创建/编辑、独立 callback、标准 Webhook、Android 历史/详情、附件及应用投递/失败管理；不表示 Go 服务已实现这些路由。P03-07 继续串行补充设备、设置、同步、已读与 WS。
 
 依据：`docs/TECHNICAL_DESIGN.md` §2、§3、§4、§5.3、§7、§8；安全边界遵循 `docs/ARCHITECTURE.md` §1/§5。唯一管理员离线初始化/重置密码，不开放注册，不依赖 RelayShelf。
 
@@ -261,3 +261,24 @@ GET和PUT的200是 `NotificationSettingsState{settings,server_time}`；settings�
 | 6 D1～D3 | 固定通用文案、显式vendor、首次FCM、仅未来事件、FCM无豁免及DND资格永久丢弃；本段政策与job状态例，外部展示NOT_RUN。 |
 | 7 联合夹具/快照 | 全部旧注册/会话例保留，新配置全状态、before/result/merge、跨设备/同设备多Session、租约/串行、旧快照及敏感字段正反例；隔离破坏检查见本卡实施报告。 |
 | 8 完整交接/非回归 | 本文枚举三卡5条路径7个操作（含恢复GET和条件DELETE）、权限/状态/Schema及同步扩展；锁/旧组件/765例比较见实施报告；原S03只接剩余全局分支。真实运行时与G-API未验收。 |
+
+
+## P03-07-S03-S02 根健康与管理员状态
+
+| 实际路径 | operationId | 身份及响应 |
+| --- | --- | --- |
+| `GET /health/live` | `getHealthLive` | 公开 `security: []`；200 `ok\n` |
+| `GET /health/ready` | `getHealthReady` | 公开；200 `ok\n` / 503 `unavailable\n` |
+| `GET /api/v1/admin/status` | `getAdminStatus` | 管理员 AdminBearer 或 WebCookie；200 AdminSystemStatus，401/403/429/503 共享 JSON Error |
+
+两根探针是有意的公开纯文本例外：`text/plain; charset=utf-8`、`Cache-Control: no-store`、`X-Content-Type-Options: nosniff`，正文包含末尾换行且无探针细节。公开 503 不引用管理 Error，不继承 `/api/v1`。其余管理保护和 JSON 错误保持原规则；管理员状态只读无 CSRF，Bot Token、Webhook Key、匿名均无权。
+
+`AdminSystemStatus` 的 `observed_at` 复用 UTCDateTime；`queue` 为 QueueStatus（pending/leased/retry_wait/failed 数量及 oldest_waiting_at），含停用 Bot 的保留队列，最旧等待是 pending/retry_wait 最早入队时刻，无等待为 null；leased 不计等待。`connections` 为 ConnectionStatus：ws_online_sessions 计有效管理员会话连接，recent_poll_bots/unknown_bots 沿用现有应用 Bot 判定，不新增“近期”产品阈值；Webhook-only 计入 unknown，webhook_state 固定 unknown。WS 在线、应用近期轮询与未知含义不同，不从 Webhook 入站请求推断持续在线。
+
+`attachment_recovery` 为 AttachmentRecoveryStatus（异常数量及稳定分类码），`database` 为 DatabaseStatus（available/unavailable/unknown），`push` 为 PushStatus（available/degraded/unknown）。错误只返回各 Schema 枚举的稳定分类码，null 表示无可展示错误记录；unknown 表示尚无观测。不返回自由错误串、正文、callback_data、附件地址、路径、SQL、凭据或 FCM 注册；所有对象拒绝未知字段。StatusCount 的 0～9007199254740991 是 JSON 精确表示的普通实现边界，不是产品队列容量/丢弃规则，超出不能伪造计数。未新增 settings 字段、配置版本、监控平台或运行时接口。
+
+现有 `httpapi/router.go` 已注册两个根路径；`health.Live/Ready/respond` 已固定输出。Live 仅进程存活，Ready 接受 Probe；未接入、失败、超时（当前处理器一秒上下文）或停止返回503。T8要求 Probe 验证数据库及挂载，但本卡没有接入或验证真实存储 Probe。FCM 不可用属于降级，不能成为整体 unready 原因；管理员推送降级仍可200读取汇总，汇总读取失败使用受保护 JSON 503。`/admin/status` 及汇总分类码是待实现契约，不能称为现有运行时能力。
+
+校验新增 HealthOK/HealthUnavailable、上述汇总 Schema；Schema/权限正反例、`health_response` 合成纯文本信封（媒体/状态/固定正文/两头）、`health_state` 合成就绪声明独立于 WS HTTP101/frame。操作路径、根 servers、安全、内容类型、响应头、就绪/降级策略和全部新 Schema 均由固定声明对照校验；公开权限例外仅两个固定 health 操作，旧管理权限继续核验。全部既有示例继续原样执行。
+
+移交 P06-08：实现 Probe 和管理员只读汇总/错误映射，接入前先按本表鉴权与固定响应，再做故障注入及真实 HTTP 验证。P4/P5 使用这些路径/Schema/错误边界，P8/P9继续验证部署和手机/NAS现场。当前结构/夹具/破坏探针 PASS 不等于运行时、HTTP部署、推送厂商或真机验收；这些均 NOT_RUN。settings 后续从本卡实际集成后的最新 main 重验；最终 S03-S03 同时依赖 settings 与本卡，本卡不放行 G-API。

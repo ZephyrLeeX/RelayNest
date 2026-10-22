@@ -938,12 +938,176 @@ NOTIFICATION_SCHEMAS = {'NotificationSettingsVersion': {'type': 'integer',
                                         'then': {'properties': {'provider': {'const': 'fcm'}}}}]}}
 
 
+# T8公开探针及管理投影固定声明；旧组件/操作继续走原校验。
+HEALTH_SCHEMAS = {'HealthOK': {'type': 'string', 'const': 'ok\n'},
+ 'HealthUnavailable': {'type': 'string', 'const': 'unavailable\n'},
+ 'StatusCount': {'type': 'integer',
+                 'minimum': 0,
+                 'maximum': 9007199254740991,
+                 'description': '汇总计数的JSON安全整数上限，不是队列容量限制；超出时不得返回失真值。'},
+ 'QueueStatus': {'type': 'object',
+                 'properties': {'pending': {'$ref': '#/components/schemas/StatusCount'},
+                                'leased': {'$ref': '#/components/schemas/StatusCount'},
+                                'retry_wait': {'$ref': '#/components/schemas/StatusCount'},
+                                'failed': {'$ref': '#/components/schemas/StatusCount'},
+                                'oldest_waiting_at': {'oneOf': [{'$ref': '#/components/schemas/UTCDateTime'},
+                                                                {'type': 'null'}]}},
+                 'required': ['pending', 'leased', 'retry_wait', 'failed', 'oldest_waiting_at'],
+                 'additionalProperties': False,
+                 'allOf': [{'if': {'properties': {'pending': {'const': 0},
+                                                  'retry_wait': {'const': 0}}},
+                            'then': {'properties': {'oldest_waiting_at': {'type': 'null'}}},
+                            'else': {'properties': {'oldest_waiting_at': {'$ref': '#/components/schemas/UTCDateTime'}}}}],
+                 'description': '应用投递全局汇总，含停用Bot的保留队列；failed计失败投递，不计业务命令结果。最旧等待取pending/retry_wait最早入队时刻，未等待为null，leased不计等待。'},
+ 'ConnectionStatus': {'type': 'object',
+                      'properties': {'ws_online_sessions': {'$ref': '#/components/schemas/StatusCount'},
+                                     'recent_poll_bots': {'$ref': '#/components/schemas/StatusCount'},
+                                     'unknown_bots': {'$ref': '#/components/schemas/StatusCount'},
+                                     'webhook_state': {'const': 'unknown'}},
+                      'required': ['ws_online_sessions',
+                                   'recent_poll_bots',
+                                   'unknown_bots',
+                                   'webhook_state'],
+                      'additionalProperties': False,
+                      'description': 'WS计当前有效管理员会话连接；recent_poll/unknown按应用Bot汇总，遵循既有Bot.connection判定，不新增近期阈值。Webhook-only计入unknown，webhook_state永远unknown；WS在线不代表应用消费者或Webhook持续在线。'},
+ 'AttachmentRecoveryStatus': {'type': 'object',
+                              'properties': {'anomaly_count': {'$ref': '#/components/schemas/StatusCount'},
+                                             'last_error_code': {'enum': [None,
+                                                                          'ATTACHMENT_RECOVERY_FAILED',
+                                                                          'ATTACHMENT_STORAGE_UNAVAILABLE',
+                                                                          'ATTACHMENT_OTHER']}},
+                              'required': ['anomaly_count', 'last_error_code'],
+                              'additionalProperties': False},
+ 'DatabaseStatus': {'type': 'object',
+                    'properties': {'state': {'enum': ['available', 'unavailable', 'unknown']},
+                                   'last_error_code': {'enum': [None,
+                                                                'DB_UNAVAILABLE',
+                                                                'DB_BUSY',
+                                                                'DB_IO_ERROR',
+                                                                'DB_OTHER']}},
+                    'required': ['state', 'last_error_code'],
+                    'additionalProperties': False},
+ 'PushStatus': {'type': 'object',
+                'properties': {'state': {'enum': ['available', 'degraded', 'unknown']},
+                               'last_error_code': {'enum': [None,
+                                                            'PUSH_UNAVAILABLE',
+                                                            'PUSH_REJECTED',
+                                                            'PUSH_OTHER']}},
+                'required': ['state', 'last_error_code'],
+                'additionalProperties': False},
+ 'AdminSystemStatus': {'type': 'object',
+                       'properties': {'observed_at': {'$ref': '#/components/schemas/UTCDateTime'},
+                                      'queue': {'$ref': '#/components/schemas/QueueStatus'},
+                                      'connections': {'$ref': '#/components/schemas/ConnectionStatus'},
+                                      'attachment_recovery': {'$ref': '#/components/schemas/AttachmentRecoveryStatus'},
+                                      'database': {'$ref': '#/components/schemas/DatabaseStatus'},
+                                      'push': {'$ref': '#/components/schemas/PushStatus'}},
+                       'required': ['observed_at',
+                                    'queue',
+                                    'connections',
+                                    'attachment_recovery',
+                                    'database',
+                                    'push'],
+                       'additionalProperties': False,
+                       'description': '管理员只读系统元数据允许列表；不含消息正文、callback_data、附件URL/路径、原始异常、SQL、凭据或FCM注册。错误仅映射稳定分类码，无自由文本；null表示无可展示错误记录，unknown表示尚无观测。不是settings或配置版本投影。'}}
+HEALTH_PATHS = {'/health/live': {'get': {'operationId': 'getHealthLive',
+                          'summary': '公开根健康存活探针',
+                          'description': '根路径，覆盖全局/api/v1；已存在Go处理器。ready仅由数据库/挂载Probe决定；未接入、失败、超时或停止为503，FCM不可用仅降级。此声明不证明存储Probe已接入。',
+                          'servers': [{'url': '/'}],
+                          'security': [],
+                          'x-health-policy': {'live': 'process-only',
+                                              'ready': 'database-and-mount-probe',
+                                              'unready': ['probe-absent',
+                                                          'probe-failed',
+                                                          'probe-timeout',
+                                                          'stopping'],
+                                              'push_failure': 'degraded-not-unready',
+                                              'public_detail': 'fixed-text-only'},
+                          'responses': {'200': {'description': '进程存活/已就绪',
+                                                'headers': {'Cache-Control': {'schema': {'type': 'string',
+                                                                                         'const': 'no-store'}},
+                                                            'X-Content-Type-Options': {'schema': {'type': 'string',
+                                                                                                  'const': 'nosniff'}}},
+                                                'content': {'text/plain; charset=utf-8': {'schema': {'$ref': '#/components/schemas/HealthOK'},
+                                                                                          'example': 'ok\n'}}}}}},
+ '/health/ready': {'get': {'operationId': 'getHealthReady',
+                           'summary': '公开根健康就绪探针',
+                           'description': '根路径，覆盖全局/api/v1；已存在Go处理器。ready仅由数据库/挂载Probe决定；未接入、失败、超时或停止为503，FCM不可用仅降级。此声明不证明存储Probe已接入。',
+                           'servers': [{'url': '/'}],
+                           'security': [],
+                           'x-health-policy': {'live': 'process-only',
+                                               'ready': 'database-and-mount-probe',
+                                               'unready': ['probe-absent',
+                                                           'probe-failed',
+                                                           'probe-timeout',
+                                                           'stopping'],
+                                               'push_failure': 'degraded-not-unready',
+                                               'public_detail': 'fixed-text-only'},
+                           'responses': {'200': {'description': '进程存活/已就绪',
+                                                 'headers': {'Cache-Control': {'schema': {'type': 'string',
+                                                                                          'const': 'no-store'}},
+                                                             'X-Content-Type-Options': {'schema': {'type': 'string',
+                                                                                                   'const': 'nosniff'}}},
+                                                 'content': {'text/plain; charset=utf-8': {'schema': {'$ref': '#/components/schemas/HealthOK'},
+                                                                                           'example': 'ok\n'}}},
+                                         '503': {'description': '未就绪，不公开探针细节',
+                                                 'headers': {'Cache-Control': {'schema': {'type': 'string',
+                                                                                          'const': 'no-store'}},
+                                                             'X-Content-Type-Options': {'schema': {'type': 'string',
+                                                                                                   'const': 'nosniff'}}},
+                                                 'content': {'text/plain; charset=utf-8': {'schema': {'$ref': '#/components/schemas/HealthUnavailable'},
+                                                                                           'example': 'unavailable\n'}}}}}},
+ '/admin/status': {'get': {'operationId': 'getAdminStatus',
+                           'summary': '管理员系统状态脱敏汇总',
+                           'description': '仅唯一管理员Bearer或Web Cookie，Bot '
+                                          'Token/Webhook/匿名拒绝；只读不需CSRF。只返回汇总允许列表，不提供正文或任意错误串。此路由为待实现契约；汇总读取失败返回受保护JSON '
+                                          'Error 503，FCM降级仍可返回200。',
+                           'security': [{'AdminBearer': []}, {'WebCookie': []}],
+                           'x-management-projection': 'system-status-metadata-only',
+                           'responses': {'200': {'description': '脱敏状态汇总',
+                                                 'headers': {'Cache-Control': {'schema': {'type': 'string',
+                                                                                          'const': 'no-store'}}},
+                                                 'content': {'application/json': {'schema': {'$ref': '#/components/schemas/AdminSystemStatus'}}}},
+                                         '401': {'$ref': '#/components/responses/401'},
+                                         '403': {'$ref': '#/components/responses/403'},
+                                         '429': {'$ref': '#/components/responses/429'},
+                                         '503': {'$ref': '#/components/responses/503'}}}}}
+
+
+def health_state_valid(state):
+    """合成声明模型，不调用Probe/HTTP；推送可用性不参与就绪判定。"""
+    ready = 200 if state['probe'] == 'ok' and not state['stopping'] else 503
+    return state['live_status'] == 200 and state['ready_status'] == ready
+
+
+def health_response_valid(document, state):
+    """验证固定公开响应信封；不将此夹具称为真实HTTP测试。"""
+    path = {'getHealthLive': '/health/live', 'getHealthReady': '/health/ready'}.get(state['operationId'])
+    if path is None:
+        return False
+    response = document['paths'][path]['get']['responses'].get(str(state['status']))
+    if response is None or state['content_type'] != 'text/plain; charset=utf-8':
+        return False
+    expected_headers = {name: header['schema']['const'] for name, header in response['headers'].items()}
+    return (state['headers'] == expected_headers
+            and state['body'] == response['content'][state['content_type']]['example'])
+
+
 def main():
     document = yaml.safe_load((ROOT / 'openapi.yaml').read_text(encoding='utf-8'))
     validate_spec(document)
     schemas = document['components']['schemas']
     for schema in schemas.values():
         Draft202012Validator.check_schema(schema)
+    # health根servers/公开权限/纯文本及管理JSON分别固定，不能扩大公开例外。
+    for path, expected in HEALTH_PATHS.items():
+        if document['paths'].get(path) != expected:
+            raise SystemExit('健康/管理操作声明错误：' + path)
+    if document['servers'] != [{'url': '/api/v1'}]:
+        raise SystemExit('管理API前缀不得被公开根探针改写')
+    for name, expected in HEALTH_SCHEMAS.items():
+        if schemas.get(name) != expected:
+            raise SystemExit('健康/管理Schema错误：' + name)
     cases = json.loads((ROOT / 'examples.json').read_text(encoding='utf-8'))
     failures = []
     operation_map = {op['operationId']: op for item in document['paths'].values()
@@ -991,9 +1155,18 @@ def main():
             failures.append(case['name'] + ' 注册事务状态声明')
         if 'sync_state' in case and not sync_state_valid(case['sync_state']):
             failures.append(case['name'] + ' 同步状态声明')
+        if ('health_state' in case
+                and health_state_valid(case['health_state']) != case.get('state_valid', True)):
+            failures.append(case['name'] + ' 健康状态声明')
+        if ('health_response' in case
+                and health_response_valid(document, case['health_response']) != case['valid']):
+            failures.append(case['name'] + ' 公开纯文本信封')
         if 'declaration' in case:
             declaration = case['declaration']
-            allowed = declaration['security'] in operation_map[declaration['operationId']]['security']
+            declared_security = operation_map[declaration['operationId']]['security']
+            allowed = (declaration['security'] in declared_security
+                       or (declaration['operationId'] in ('getHealthLive', 'getHealthReady')
+                           and declared_security == [] and declaration['security'] == {}))
             if allowed != case['valid']:
                 failures.append(case['name'] + ' 权限声明')
         if 'operationId' in case:
@@ -1003,7 +1176,7 @@ def main():
                 continue
             response = resolve(document, declared_response)
             response_schema = (response['headers'][case['header']]['schema'] if 'header' in case
-                               else response['content']['application/json']['schema'])
+                               else response['content'][case.get('media_type', 'application/json')]['schema'])
             wrapped = {**response_schema, 'components': {'schemas': schemas}}
             response_valid = ContractValidator(wrapped, format_checker=FormatChecker()).is_valid(case['value'])
             code_rules = operation_map[case['operationId']].get('x-error-codes', {}).get(str(case['status']))
@@ -1039,7 +1212,7 @@ def main():
             if method == 'parameters':
                 continue
             oid = operation['operationId']
-            if oid == 'login':
+            if oid in ('login', 'getHealthLive', 'getHealthReady'):
                 expected = []
             elif oid in new_security:
                 expected = [{scheme: []} for scheme in new_security[oid]]
@@ -1151,7 +1324,7 @@ def main():
                       'SyncReadUpdate', 'SyncDeliveryUpsert', 'SyncDeviceNotifications']
     if schemas['SyncChange']['oneOf'] != [{'$ref': '#/components/schemas/' + name} for name in expected_union]:
         raise SystemExit('同步union设备通知分支不完整')
-    if set(operation_map) != baseline_ids | set(new_security) | delivery_ids | {'listDeviceSessions', 'revokeDeviceSession'}:
+    if set(operation_map) != baseline_ids | set(new_security) | delivery_ids | {'listDeviceSessions', 'revokeDeviceSession', 'getHealthLive', 'getHealthReady', 'getAdminStatus'}:
         raise SystemExit('冻结操作集合不符')
     if any(method in document['paths']['/client/messages/{id}'] for method in ('put', 'patch')):
         raise SystemExit('不得提供 Android 编辑接口')
