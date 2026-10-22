@@ -151,7 +151,7 @@ func TestPersistenceAndSequence(t *testing.T) {
 	if gotEpoch != epoch {
 		t.Fatal("epoch changed on reopen")
 	}
-	if err := reopened.reader.QueryRow("SELECT max(version) FROM schema_migrations").Scan(&version); err != nil || version != 1 {
+	if err := reopened.reader.QueryRow("SELECT max(version) FROM schema_migrations").Scan(&version); err != nil || version != 2 {
 		t.Fatalf("persisted schema version=%d err=%v", version, err)
 	}
 	if err := reopened.reader.QueryRow("SELECT change_seq FROM changes").Scan(&seq); err != nil || seq != 2 {
@@ -175,7 +175,7 @@ func TestConcurrentOpen(t *testing.T) {
 			}
 			defer s.Close()
 			var count int
-			if err := s.reader.QueryRow("SELECT count(*) FROM schema_migrations").Scan(&count); err != nil || count != 1 {
+			if err := s.reader.QueryRow("SELECT count(*) FROM schema_migrations").Scan(&count); err != nil || count != 2 {
 				t.Errorf("ledger count=%d err=%v", count, err)
 			}
 		}()
@@ -197,7 +197,7 @@ func TestRejectLedgerWithoutRebuild(t *testing.T) {
 	for name, statement := range map[string]string{
 		"checksum": "UPDATE schema_migrations SET checksum='wrong' WHERE version=1",
 		"name":     "UPDATE schema_migrations SET name='0001_changed.sql' WHERE version=1",
-		"future":   "INSERT INTO schema_migrations VALUES(2,'0002_future.sql','unknown','now')",
+		"future":   "INSERT INTO schema_migrations VALUES(3,'0003_future.sql','unknown','now')",
 		"gap":      "UPDATE schema_migrations SET version=3 WHERE version=1",
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -228,16 +228,54 @@ func TestRejectLedgerWithoutRebuild(t *testing.T) {
 }
 
 func TestMigrationUpgradeFailureAndLock(t *testing.T) {
+	t.Run("real administrator upgrade", func(t *testing.T) {
+		ctx := context.Background()
+		db, err := openPool(filepath.Join(t.TempDir(), "old.sqlite"), Config{BusyTimeout: time.Second}, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer db.Close()
+		first, err := migrations.Files.ReadFile("0001_initial.sql")
+		if err != nil {
+			t.Fatal(err)
+		}
+		old := fstest.MapFS{"0001_initial.sql": &fstest.MapFile{Data: first}}
+		if err := migrate(ctx, db, old); err != nil {
+			t.Fatal(err)
+		}
+		var epoch, after string
+		if err := db.QueryRow("SELECT sync_epoch FROM system_state").Scan(&epoch); err != nil {
+			t.Fatal(err)
+		}
+		if err := migrate(ctx, db, migrations.Files); err != nil {
+			t.Fatal(err)
+		}
+		if err := db.QueryRow("SELECT sync_epoch FROM system_state").Scan(&after); err != nil || epoch != after {
+			t.Fatal("upgrade lost system state", err)
+		}
+		var count int
+		if err := db.QueryRow("SELECT count(*) FROM administrator").Scan(&count); err != nil || count != 0 {
+			t.Fatal("administrator upgrade failed", err)
+		}
+		if err := migrate(ctx, db, old); err == nil {
+			t.Fatal("old binary accepted administrator schema")
+		}
+	})
 	s, cfg := openTest(t)
 	ctx := context.Background()
 	first, err := migrations.Files.ReadFile("0001_initial.sql")
 	if err != nil {
 		t.Fatal(err)
 	}
+	second, err := migrations.Files.ReadFile("0002_admin.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
 	source := fstest.MapFS{
 		"0001_initial.sql": &fstest.MapFile{Data: first},
-		"0002_upgrade.sql": &fstest.MapFile{Data: []byte("CREATE TABLE upgraded(id INTEGER PRIMARY KEY); INSERT INTO upgraded VALUES(9);")},
-		"0003_failure.sql": &fstest.MapFile{Data: []byte("CREATE TABLE partial(id); INSERT INTO missing VALUES(1);")},
+		"0002_admin.sql":   &fstest.MapFile{Data: second},
+		"0003_upgrade.sql": &fstest.MapFile{Data: []byte("CREATE TABLE upgraded(id INTEGER PRIMARY KEY); INSERT INTO upgraded VALUES(9);")},
+		"0004_failure.sql": &fstest.MapFile{Data: []byte("CREATE TABLE partial(id); INSERT INTO missing VALUES(1);")},
 	}
 	if err := migrate(ctx, s.writer, source); err == nil {
 		t.Fatal("expected migration failure")
@@ -246,10 +284,10 @@ func TestMigrationUpgradeFailureAndLock(t *testing.T) {
 	if err := s.reader.QueryRow("SELECT count(*) FROM sqlite_master WHERE name IN ('partial','upgraded')").Scan(&count); err != nil || count != 0 {
 		t.Fatalf("partial upgrade remained: %d %v", count, err)
 	}
-	if err := s.reader.QueryRow("SELECT max(version) FROM schema_migrations").Scan(&count); err != nil || count != 1 {
+	if err := s.reader.QueryRow("SELECT max(version) FROM schema_migrations").Scan(&count); err != nil || count != 2 {
 		t.Fatalf("failed upgrade changed ledger: %d %v", count, err)
 	}
-	delete(source, "0003_failure.sql")
+	delete(source, "0004_failure.sql")
 	// 第二写池模拟独立启动者；写锁未释放前不能迁移，也不能跳过台账校验。
 	conn, err := s.writer.Conn(ctx)
 	if err != nil {
@@ -288,7 +326,7 @@ func TestMigrationUpgradeFailureAndLock(t *testing.T) {
 	if err := migrate(ctx, upgraded, source); err != nil {
 		t.Fatal(err)
 	}
-	if err := upgraded.QueryRow("SELECT max(version) FROM schema_migrations").Scan(&count); err != nil || count != 2 {
+	if err := upgraded.QueryRow("SELECT max(version) FROM schema_migrations").Scan(&count); err != nil || count != 3 {
 		t.Fatalf("persisted upgrade version=%d err=%v", count, err)
 	}
 	// 旧二进制拒绝已经升级的新数据库。
