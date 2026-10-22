@@ -1,6 +1,7 @@
 """校验结构、示例及权限声明；字节/Range 扩展仅验证契约，不模拟 HTTP 服务。"""
 
 import copy
+from datetime import datetime
 import json
 import re
 from pathlib import Path
@@ -112,11 +113,110 @@ def sync_state_valid(state):
     return False
 
 
+def bootstrap_envelope(validator, enabled, instance, schema):
+    """仅检查重建响应的跨字段边界，事务与客户端切换仍由实现任务验证。"""
+    if not enabled or not isinstance(instance, dict):
+        return
+    try:
+        high = int(instance['server_high_watermark'])
+        floor = int(instance['retention_floor'])
+        keys = [(item['message']['bot_id'], int(item['message']['bot_seq']))
+                for item in instance['messages']]
+        if floor > high or any(int(item['created_change_seq']) > high
+                               for item in instance['messages']):
+            yield ValidationError('bootstrap记录创建位置或floor超过H')
+        if keys != sorted(set(keys)):
+            yield ValidationError('bootstrap消息必须按不可变键严格递增且无重复')
+        if instance['has_more'] != (instance['next_token'] is not None):
+            yield ValidationError('bootstrap末页token边界错误')
+        issued = datetime.fromisoformat(instance['issued_at'].replace('Z', '+00:00'))
+        expires = datetime.fromisoformat(instance['expires_at'].replace('Z', '+00:00'))
+        now = datetime.fromisoformat(instance['server_time'].replace('Z', '+00:00'))
+        if (expires - issued).total_seconds() != 900 or not issued <= now < expires:
+            yield ValidationError('bootstrap固定有效期必须为15分钟且响应未过期')
+        bot_ids = [bot['id'] for bot in instance['bots']]
+        read_ids = [read['bot_id'] for read in instance['read_states']]
+        if len(set(bot_ids)) != len(bot_ids) or set(read_ids) != set(bot_ids) or len(read_ids) != len(bot_ids):
+            yield ValidationError('Bot及共享已读快照必须逐Bot一一对应')
+        if any(key[0] not in bot_ids for key in keys):
+            yield ValidationError('bootstrap消息必须属于冻结Bot集合')
+    except (KeyError, TypeError, ValueError):
+        # 结构和字段格式交由标准Schema拒绝，避免扩展对非法夹具抛异常。
+        return
+
+
+def bootstrap_verified(validator, enabled, instance, schema):
+    if not enabled or not isinstance(instance, dict):
+        return
+    try:
+        high, floor, position = (int(instance[key]) for key in
+                                ('server_high_watermark', 'retention_floor', 'catchup_position'))
+        if not floor <= high <= position:
+            yield ValidationError('复核要求floor≤原H≤已完成追赶位置')
+    except (KeyError, TypeError, ValueError):
+        return
+
+
+def bootstrap_state_valid(state):
+    """合成恢复声明，显式区分预期拒绝与真实服务端/Room验证。"""
+    kind = state['kind']
+    if kind == 'token':
+        invalid = (not state['integrity'] or state['identity'] != state['token_identity']
+                   or state['position'] != state['token_position'])
+        restart = (state['now'] >= state['expires'] or state['epoch'] != state['token_epoch']
+                   or int(state['floor']) > int(state['h']))
+        status = 400 if invalid else 410 if restart else 200
+        return status == state['expected_status']
+    if kind == 'verify':
+        if not state['receipt'] or not state['all_pages_complete']:
+            status = 400
+        elif not state['bootstrap_valid']:
+            status = 410
+        elif (not state['sync_integrity'] or state['identity'] != state['sync_identity']
+              or state['epoch'] != state['sync_epoch'] or not state['cycle_complete']
+              or int(state['position']) < int(state['h'])):
+            status = 400
+        else:
+            status = 200
+        code = ('INVALID_BOOTSTRAP_TOKEN' if not state['receipt'] or not state['all_pages_complete']
+                else 'BOOTSTRAP_RESET_REQUIRED' if status == 410
+                else 'INVALID_SYNC_CURSOR' if status == 400 else None)
+        return status == state['expected_status'] and code == state['expected_code']
+    if kind == 'page':
+        # 当前投影扫描；删除可使页变空，附件消失不伪造文件可用。
+        rows = sorted(state['rows'], key=lambda row: (row['bot_id'], int(row['bot_seq'])))
+        eligible = [row for row in rows if int(row['created']) <= int(state['h'])
+                    and (row['bot_id'], int(row['bot_seq'])) >
+                        (state['position'][0], int(state['position'][1]))]
+        scanned = eligible[:state['limit']]
+        expected = [{'id':row['id'], 'revision':row['revision'],
+                     'attachment_exists':row['attachment_exists']}
+                    for row in scanned if not row['deleted']]
+        position = [scanned[-1]['bot_id'], scanned[-1]['bot_seq']] if scanned else state['position']
+        return ((state['returned'] == expected and state['next_position'] == position
+                 and state['has_more'] == (len(eligible) > state['limit'])) == state['expected'])
+    if kind == 'generation':
+        permitted = (state['all_pages'] and state['sync_complete']
+                     and int(state['catchup_position']) >= int(state['h'])
+                     and state['epoch'] == state['initial_epoch']
+                     and int(state['floor']) <= int(state['h']) and state['token_valid'])
+        valid = (state['switch'] == permitted and state['preserve_outbox']
+                 and state['preserve_uploads'] and state['atomic']
+                 and (not state['switch'] or state['remove_old_cache'])
+                 and state['message_result'] == max(state['message_local'], state['message_incoming'])
+                 and state['bot_result'] == max(state['bot_local'], state['bot_incoming'])
+                 and not state['hint_advances_cursor'])
+        return valid == state['expected']
+    return False
+
+
 ContractValidator = validators.extend(Draft202012Validator, {
     'x-utf8-max-bytes': utf8_max_bytes,
     'x-byte-ranges': byte_ranges,
     'x-content-range': content_range,
     'x-sync-envelope': sync_envelope,
+    'x-bootstrap-envelope': bootstrap_envelope,
+    'x-bootstrap-verified': bootstrap_verified,
 })
 
 
@@ -179,6 +279,8 @@ def main():
             intervals = range_intervals(case['value'], case['range_size'])
             if intervals != case['intervals'] or (206 if intervals else 416) != case['status']:
                 failures.append(case['name'] + ' 区间/状态')
+        if 'bootstrap_state' in case and not bootstrap_state_valid(case['bootstrap_state']):
+            failures.append(case['name'] + ' bootstrap状态声明')
         if 'sync_state' in case and not sync_state_valid(case['sync_state']):
             failures.append(case['name'] + ' 同步状态声明')
         if 'declaration' in case:
@@ -206,6 +308,7 @@ def main():
         'createClientMessage': ['AdminBearer'], 'createCallback': ['AdminBearer'],
         'listClientMessages': ['AdminBearer'], 'getClientMessage': ['AdminBearer'],
         'syncClientChanges': ['AdminBearer'], 'updateClientRead': ['AdminBearer'],
+        'bootstrapClient': ['AdminBearer'],
         'uploadAttachment': ['AdminBearer', 'BotAPIToken'],
         'downloadAttachment': ['AdminBearer', 'BotAPIToken'],
     }
@@ -215,7 +318,7 @@ def main():
     idempotent = {'createBotMessage', 'editBotMessage', 'createWebhookMessage',
                   'createClientMessage', 'createCallback', 'uploadAttachment', 'retryDelivery'}
     reference_ops = set(new_security) - {'listClientMessages', 'getClientMessage',
-                                         'syncClientChanges', 'updateClientRead'} - delivery_ids
+                                         'syncClientChanges', 'updateClientRead', 'bootstrapClient'} - delivery_ids
     for path, item in document['paths'].items():
         for method, operation in item.items():
             if method == 'parameters':
@@ -372,6 +475,87 @@ def main():
             'type': 'object', 'properties': {'through_seq': {'$ref': '#/components/schemas/Sequence'}},
             'required': ['through_seq'], 'additionalProperties': False}:
         raise SystemExit('已读请求必须严格使用bot_seq序号')
+    bootstrap = operation_map['bootstrapClient']
+    expected_bootstrap = {'initial_snapshot': 'short-read-transaction-H-epoch-bots-shared-read',
+     'cross_request_transaction': False,
+     'order': ['bot_id', 'bot_seq'],
+     'bot_order': 'ascending-UUID-text',
+     'message_boundary': 'created-change_seq <= H',
+     'position': 'last-scanned-bot_id-and-immutable-bot_seq',
+     'projection': 'per-page-current-revision-deletion-and-attachment-existence-recheck',
+     'deleted': 'omit-body-and-replay-tombstone-after-H',
+     'missing_attachment': 'retain-message-reference-download-404-ATTACHMENT_MISSING',
+     'snapshot': 'repeat-fixed-bots-and-read_states-on-every-page',
+     'token_binding': ['administrator_id',
+                       'epoch',
+                       'high_watermark',
+                       'position',
+                       'snapshot_id',
+                       'issued_at',
+                       'expires_at',
+                       'purpose',
+                       'all_pages_complete'],
+     'token_integrity': 'server-verified-opaque',
+     'ttl_seconds': 900,
+     'sliding_expiry': False,
+     'repeat_page': 'same-position-recheck-current-projection-not-byte-replay',
+     'invalid_token': {'status': 400, 'code': 'INVALID_BOOTSTRAP_TOKEN'},
+     'restart': {'status': 410,
+                 'code': 'BOOTSTRAP_RESET_REQUIRED',
+                 'conditions': ['now >= expires_at', 'epoch != token.epoch', 'floor > H']},
+     'initial_sync_cursor': 'completed-cycle-at-H-same-administrator-and-epoch',
+     'verification': 'after-all-pages-and-completed-sync-cycle-at-or-after-H-recheck-epoch-floor',
+     'verification_cursor_error': {'status': 400, 'code': 'INVALID_SYNC_CURSOR'},
+     'generation': ['independent-staging',
+                    'preserve-outbox-and-upload-tasks',
+                    'merge-message-max-revision',
+                    'merge-bot-and-read-by-version',
+                    'apply-terminal-tombstones',
+                    'finish-all-pages',
+                    'catch-up-(H,current]',
+                    'verify-epoch-floor',
+                    'atomic-generation-switch-and-remove-old-server-cache'],
+     'hints': 'never-advance-cursor',
+     'page_limit': 200,
+     'query_rules': {'page': 'no-sync_cursor; token-is-resume-purpose-or-absent',
+                     'verify': 'require-final-page-receipt-token-and-completed-sync_cursor; '
+                               'limit-ignored',
+                     'invalid_query': '400-INVALID_BOOTSTRAP_TOKEN'},
+     'token_purpose': {'next_token': 'resume-after-scanned-position',
+                       'page_token': 'receipt-after-scanned-position-with-all_pages_complete-flag'}}
+    if bootstrap.get('x-bootstrap-policy') != expected_bootstrap:
+        raise SystemExit('bootstrap快照/令牌/恢复声明错误')
+    if bootstrap.get('x-client-type') != 'android':
+        raise SystemExit('bootstrap仅允许Android管理员')
+    if bootstrap.get('x-error-codes') != {
+            '400': ['INVALID_BOOTSTRAP_TOKEN', 'INVALID_SYNC_CURSOR'],
+            '410': ['BOOTSTRAP_RESET_REQUIRED']}:
+        raise SystemExit('bootstrap错误码声明错误')
+    params = {item['name']: item for item in bootstrap['parameters']}
+    if set(params) != {'phase', 'token', 'sync_cursor', 'limit'} or params['limit']['schema'] != {
+            'type': 'integer', 'minimum': 1, 'maximum': 200, 'default': 200}:
+        raise SystemExit('bootstrap参数与有界页大小错误')
+    if params['phase']['schema'] != {'type': 'string', 'enum': ['page', 'verify'], 'default': 'page'}:
+        raise SystemExit('bootstrap阶段声明错误')
+    for key in ('token', 'sync_cursor'):
+        if params[key]['schema'] != {'$ref': '#/components/schemas/OpaqueCursor'}:
+            raise SystemExit('bootstrap令牌必须不透明：' + key)
+    page = schemas['BootstrapPage']
+    if page.get('x-bootstrap-envelope') is not True or page['properties']['messages'].get('maxItems') != 200:
+        raise SystemExit('bootstrap缺少跨字段边界检查')
+    if schemas['BootstrapVerified'].get('x-bootstrap-verified') is not True:
+        raise SystemExit('bootstrap缺少最终复核边界检查')
+    for name in ('BootstrapPage', 'BootstrapMessage', 'BootstrapVerified'):
+        schema = schemas[name]
+        if schema.get('additionalProperties') is not False or set(schema['required']) != set(schema['properties']):
+            raise SystemExit('bootstrap对象必须严格且字段完整：' + name)
+    for key in ('server_high_watermark', 'retention_floor'):
+        if page['properties'][key] != {'$ref': '#/components/schemas/Sequence'}:
+            raise SystemExit('bootstrap必须复用Sequence：' + key)
+    if schemas['BootstrapMessage']['properties'] != {
+            'created_change_seq': {'$ref': '#/components/schemas/Sequence'},
+            'message': {'$ref': '#/components/schemas/Message'}}:
+        raise SystemExit('bootstrap必须复用当前Message投影及创建序号')
     schemes = document['components']['securitySchemes']
     for name in ('AdminBearer', 'BotAPIToken', 'WebhookKey'):
         if schemes[name]['type'] != 'http' or schemes[name]['scheme'] != 'bearer':

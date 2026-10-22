@@ -1363,6 +1363,140 @@ paths:
         - RESOURCE_NOT_FOUND
         '403':
         - PERMISSION_DENIED
+  /client/bootstrap:
+    get:
+      operationId: bootstrapClient
+      security:
+      - AdminBearer: []
+      x-client-type: android
+      responses:
+        '200':
+          description: 成功
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+              description: 受保护响应固定 no-store。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BootstrapResponse'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '410':
+          $ref: '#/components/responses/410'
+        '413':
+          $ref: '#/components/responses/413'
+        '422':
+          $ref: '#/components/responses/422'
+        '429':
+          $ref: '#/components/responses/429'
+        '503':
+          $ref: '#/components/responses/503'
+      summary: 服务端缓存重建快照、分页及切换前复核
+      description: 仅Android管理员。首次不传token，短读事务冻结H/epoch/Bot/共享已读并创建15分钟会话。按Bot UUID文本升序、Bot内不可变bot_seq升序扫描创建change_seq≤H的现存消息；每页短读并复核当前revision、删除及附件现存性。删除不返回旧正文；附件消失保留消息原引用，下载返回404
+        ATTACHMENT_MISSING。固定快照仅为初值，后续sync按实体版本合并，删除为终态。重复请求同位置可因删除/编辑得到不同当前投影，空页仍可有下一token；位置按已扫描键推进，不按剩余条数推算。token不得解码或拼接，绑定管理员/H/epoch/位置和原到期时间。末页page_token仍用于verify，next_token为null。全部页完成后从sync_cursor追赶；phase=verify必须携带末页page_token及同身份同epoch已完成轮次且位置≥H的sync_cursor。服务端验证末页标记并重检epoch/floor；返回verified后客户端事务原子切换generation。复核后发现epoch/floor失效仍重新开始，不以通知推进游标。此为契约，Android未实现。
+        page_token是本页完成后签发的receipt用途令牌，位置为已扫描末键并绑定all_pages_complete；next_token为resume用途令牌，不能互换用途。page模式禁止sync_cursor；verify缺少必填参数或拿非末页receipt均400
+        INVALID_BOOTSTRAP_TOKEN，limit仅page生效。server_high_watermark始终为原快照H，复核catchup_position来自已完成同步游标，不以响应时间推断追赶结束。
+      parameters:
+      - name: phase
+        in: query
+        schema:
+          type: string
+          enum:
+          - page
+          - verify
+          default: page
+      - name: token
+        in: query
+        schema:
+          $ref: '#/components/schemas/OpaqueCursor'
+      - name: sync_cursor
+        in: query
+        description: 仅verify必填；page禁止。缺token的verify、非末页token均400 INVALID_BOOTSTRAP_TOKEN。
+        schema:
+          $ref: '#/components/schemas/OpaqueCursor'
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 200
+      x-error-codes:
+        '400':
+        - INVALID_BOOTSTRAP_TOKEN
+        - INVALID_SYNC_CURSOR
+        '410':
+        - BOOTSTRAP_RESET_REQUIRED
+      x-bootstrap-policy:
+        initial_snapshot: short-read-transaction-H-epoch-bots-shared-read
+        cross_request_transaction: false
+        order:
+        - bot_id
+        - bot_seq
+        bot_order: ascending-UUID-text
+        message_boundary: created-change_seq <= H
+        position: last-scanned-bot_id-and-immutable-bot_seq
+        projection: per-page-current-revision-deletion-and-attachment-existence-recheck
+        deleted: omit-body-and-replay-tombstone-after-H
+        missing_attachment: retain-message-reference-download-404-ATTACHMENT_MISSING
+        snapshot: repeat-fixed-bots-and-read_states-on-every-page
+        token_binding:
+        - administrator_id
+        - epoch
+        - high_watermark
+        - position
+        - snapshot_id
+        - issued_at
+        - expires_at
+        - purpose
+        - all_pages_complete
+        token_integrity: server-verified-opaque
+        ttl_seconds: 900
+        sliding_expiry: false
+        repeat_page: same-position-recheck-current-projection-not-byte-replay
+        invalid_token:
+          status: 400
+          code: INVALID_BOOTSTRAP_TOKEN
+        restart:
+          status: 410
+          code: BOOTSTRAP_RESET_REQUIRED
+          conditions:
+          - now >= expires_at
+          - epoch != token.epoch
+          - floor > H
+        initial_sync_cursor: completed-cycle-at-H-same-administrator-and-epoch
+        verification: after-all-pages-and-completed-sync-cycle-at-or-after-H-recheck-epoch-floor
+        verification_cursor_error:
+          status: 400
+          code: INVALID_SYNC_CURSOR
+        generation:
+        - independent-staging
+        - preserve-outbox-and-upload-tasks
+        - merge-message-max-revision
+        - merge-bot-and-read-by-version
+        - apply-terminal-tombstones
+        - finish-all-pages
+        - catch-up-(H,current]
+        - verify-epoch-floor
+        - atomic-generation-switch-and-remove-old-server-cache
+        hints: never-advance-cursor
+        page_limit: 200
+        query_rules:
+          page: no-sync_cursor; token-is-resume-purpose-or-absent
+          verify: require-final-page-receipt-token-and-completed-sync_cursor; limit-ignored
+          invalid_query: 400-INVALID_BOOTSTRAP_TOKEN
+        token_purpose:
+          next_token: resume-after-scanned-position
+          page_token: receipt-after-scanned-position-with-all_pages_complete-flag
   /client/sync:
     get:
       operationId: syncClientChanges
@@ -2727,6 +2861,104 @@ components:
       additionalProperties: false
       x-sync-envelope: true
       description: H为追赶轮次固定高水位；changes按change_seq严格递增且不超过H，最多min(limit,200)条。next_cursor始终非空：未完成绑定原H及最后已消费位置，完成推进至H并标记轮次结束，下次请求冻结新的H。空轮次合法且has_more=false。server_time为服务端生成批次时间，不参与并发比较。
+    BootstrapMessage:
+      type: object
+      properties:
+        created_change_seq:
+          $ref: '#/components/schemas/Sequence'
+        message:
+          $ref: '#/components/schemas/Message'
+      required:
+      - created_change_seq
+      - message
+      additionalProperties: false
+    BootstrapPage:
+      type: object
+      properties:
+        kind:
+          const: page
+          type: string
+        epoch:
+          $ref: '#/components/schemas/SyncEpoch'
+        server_high_watermark:
+          $ref: '#/components/schemas/Sequence'
+        retention_floor:
+          $ref: '#/components/schemas/Sequence'
+        bots:
+          type: array
+          items:
+            $ref: '#/components/schemas/Bot'
+        read_states:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReadState'
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/BootstrapMessage'
+          maxItems: 200
+        page_token:
+          $ref: '#/components/schemas/OpaqueCursor'
+        next_token:
+          oneOf:
+          - $ref: '#/components/schemas/OpaqueCursor'
+          - type: 'null'
+        has_more:
+          type: boolean
+        sync_cursor:
+          $ref: '#/components/schemas/OpaqueCursor'
+        issued_at:
+          $ref: '#/components/schemas/UTCDateTime'
+        expires_at:
+          $ref: '#/components/schemas/UTCDateTime'
+        server_time:
+          $ref: '#/components/schemas/UTCDateTime'
+      required:
+      - kind
+      - epoch
+      - server_high_watermark
+      - retention_floor
+      - bots
+      - read_states
+      - messages
+      - page_token
+      - next_token
+      - has_more
+      - sync_cursor
+      - issued_at
+      - expires_at
+      - server_time
+      additionalProperties: false
+      x-bootstrap-envelope: true
+    BootstrapVerified:
+      x-bootstrap-verified: true
+      type: object
+      properties:
+        kind:
+          const: verified
+          type: string
+        epoch:
+          $ref: '#/components/schemas/SyncEpoch'
+        server_high_watermark:
+          $ref: '#/components/schemas/Sequence'
+        retention_floor:
+          $ref: '#/components/schemas/Sequence'
+        catchup_position:
+          $ref: '#/components/schemas/Sequence'
+        server_time:
+          $ref: '#/components/schemas/UTCDateTime'
+      required:
+      - kind
+      - epoch
+      - server_high_watermark
+      - retention_floor
+      - catchup_position
+      - server_time
+      additionalProperties: false
+    BootstrapResponse:
+      oneOf:
+      - $ref: '#/components/schemas/BootstrapPage'
+      - $ref: '#/components/schemas/BootstrapVerified'
   responses:
     '400':
       description: 格式错误

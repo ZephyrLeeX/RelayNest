@@ -124,3 +124,19 @@ ACK请求为 `{consumer_id,lease_token}`。提交时按当前凭据代次、Bot�
 新 Schema：SyncEpoch、ReadState、UpdateReadRequest、UpdateReadResponse、SyncMessageUpsert、SyncMessageDelete、SyncBotUpsert、SyncBotDelete、SyncReadUpdate、SyncDeliveryUpsert、SyncChange、SyncPage。所有序号复用非负 SQLite64 字符串 Sequence，实体版本复用从 1 开始的整数 Version。
 
 `x-sync-envelope` 执行批次序号/高水位/有界分页结构检查，`x-sync-policy`/`x-read-policy` 冻结状态规则；examples 的 `sync_state` 核对合成游标、分页、投影、旧版本、max 合并和未读声明。它们不是运行时事务、并发、客户端、通知撤销或真实 WS 测试。bootstrap/WS 为后续 S01-S02/S01-S03；设备通知/全局设置留原 S02/S03。本批不声称 G-API 全域完成。
+
+## P03-07-S01-S02 bootstrap 与重建
+
+`GET /client/bootstrap`（`bootstrapClient`）仅允许 Android 管理员 Bearer；所有成功/错误响应 no-store。默认 `phase=page`、limit默认/上限200。首次省略 token，在短读事务冻结 H、epoch、Bot 与共享已读快照；后续请求不保持 SQLite 长读事务。每页返回固定 `bots/read_states` 快照和当前 `messages:[{created_change_seq,message}]`；按 Bot UUID 文本升序、Bot 内不可变 bot_seq 升序扫描，只包含创建 change_seq≤H 的记录。`server_high_watermark` 始终指本次原始 H；`retention_floor` 是该响应复核的当前 floor。H 与 bot_seq/read_seq 不混用。
+
+每页短读事务重新检查当前 revision、删除和附件文件现存性；删除消息不返回旧正文，附件消失仍保留消息引用，后续下载返回既有 `404 ATTACHMENT_MISSING`，不得伪造文件可用。快照之后的删除由 `(H,current]` tombstone 补齐。Bot、共享已读按实体 version 合并，消息按 revision 合并；高版本优先，删除是终态。快照不覆盖追赶阶段已取得的高版本。
+
+响应 `kind=page`：epoch/H/floor、bots/read_states/messages、page_token/next_token/has_more、sync_cursor、issued_at/expires_at/server_time 全部必填。page_token 是扫描本页后位置的签名 receipt（绑定是否完成全部页）；next_token 是从该扫描位置续页的 resume 令牌，两者用途不能互换。末页 next_token=null/has_more=false；删除可导致空非末页。重复相同续页令牌会重新复核当前投影，不承诺响应字节相同。初次不带令牌重试会创建新快照，客户端选定一代继续。
+
+令牌为服务端完整性验证的不透明值，绑定 administrator_id/epoch/high_watermark/position（bot_id,bot_seq）/snapshot_id/issued_at/expires_at/purpose/all_pages_complete。有效期严格为首次签发起900秒，续页和复核不续期。非法、篡改、跨身份、位置不符、用途或参数组合错误 → `400 INVALID_BOOTSTRAP_TOKEN`。`now>=expires_at`、epoch变化、`floor>H` → `410 BOOTSTRAP_RESET_REQUIRED`；floor=H仍有效。必须提示仅保留部分历史并重新启动重建，不跳过缺口，不记为发送失败。
+
+所有分页完成后，从响应 `sync_cursor`（同身份同epoch、已完成轮次位置H）调用已有 `/client/sync` 追赶 `(H,current]`。批次和游标原子保存，提示不会推进游标。再调用 `phase=verify&token=<末页page_token>&sync_cursor=<追赶完成游标>`；page阶段禁止sync_cursor，verify必须携带末页receipt和完成轮次且位置≥H的有效sync游标，limit仅page生效。先验证bootstrap令牌及epoch/floor，再验证sync游标；后者非法、跨身份/epoch、未完成或位置不足 → `400 INVALID_SYNC_CURSOR`。成功返回 `kind=verified`、epoch、原H、当前floor、catchup_position、server_time。该复核不冻结后续写入；切换后仍从已保存sync游标继续增量同步，发现epoch/floor失效继续重建。
+
+重建写入独立 generation，保留本地未确认 outbox 和上传任务。全部页、追赶、最终epoch/floor复核完成后，客户端在同一本地事务原子切换 generation，并移除不在服务器集合的旧缓存；失败或崩溃不能暴露半代数据，重放按版本幂等。issued_at/expires_at是本次重建会话的服务端签发/固定到期时间，server_time为响应时间；实体时间沿既有语义，不决定排序或版本胜负。
+
+新增 BootstrapMessage/BootstrapPage/BootstrapVerified/BootstrapResponse 四个严格 Schema，复用原 Message/Bot/ReadState/Sequence/Version/SyncEpoch/OpaqueCursor。`x-bootstrap-policy` 与两个 envelope 扩展及合成状态例核对快照、期限、分页、恢复门槛；不代表真实 SQLite 事务、HTTP鉴权/令牌实现、附件竞态或 Android/Room generation 已实现或实测。WS、设备通知/全局设置分支分别留后续 S01-S03、原 S02/S03，不放行 G-API。
