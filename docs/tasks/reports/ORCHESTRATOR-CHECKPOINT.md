@@ -2,6 +2,14 @@
 
 更新：2026-10-23。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot22：认证 HTTP 续作规划与保护工作树恢复点
+
+- P04-02-S02-PLAN01：来源实施 `3022e333def87c51795db442d623f79584633491`、独审 PASS `b138739f7a134a60750b56235a59b4535e38c08e`；main 从 `85305dfd3e4b4e15e78a208b5d75e8fd331deea0` 精确集成 `d6403d2` → `2f31ed8`，I01 `1cf5fa1`。四新文档 blob 同源，原 S02 七项/父五项验收保留，三相对链接存在、相关19节点依赖闭包无环、diff通过；无源码/API/SQL/依赖变更，未跑Go/Web业务测试。
+- 两子卡 `P04-02-S02-S01` → `P04-02-S02-S02`，先独审集成再派下一卡；root登记规划done及子卡后才派发。首卡接管 handler/测试/router；次卡负责 main/入口配置/关闭与全验收矩阵。底层session/origin/管理员只读；原S02/P04-02组合验收、G-API证据和真实NAS/手机/正式AC门槛不因规划通过而完成。
+- 保留 `/home/lijx/.codex/worktrees/auth-http/RelayNest`、`codex/auth-http` 原树；源码祖先 `b60f9ae09878bc6f3af06861ad19a90a73f088e1`，原规划/独审造成非FF。只精确cherry-pick最新main相对祖先八份文档提交与I01，无dirty路径冲突、无代码改写；来源准备HEAD `f1c739b9c9aaf84b2fb6a1eaad6edc9a88b69dda` 与main提交树相同。此快照提交后仅同步该文档提交，最终HEAD由交接登记，作为首卡可恢复基线。
+- 五原dirty：`server/cmd/relaynest/main.go`、`server/internal/httpapi/router.go`、`server/internal/auth/http.go`、`server/internal/auth/http_test.go`、`docs/tasks/reports/P04-02-S02-implementation.md`；已逐文件SHA-256核保留，不stage/reset/clean。首卡不得提交main和原checkpoint；保留dirty并不等于源码审计通过。
+- changes-foundation继续独立开发，本次未纳入；0004未由本卡分配。主registry仍由root唯一写，既有dirty与`.directory`未改/stage/提交。完成最终哈希/index复核并交接后释放main index；未push/部署/创建聊天。
+
 ## snapshot21：全局变更事务共同基础规划集成恢复点
 
 - P05-01-PLAN01：实施 `3ced9e53d581451dc6ee81e74ba7965a505056a7`、独审 PASS `856566263cb026ecbeeca055f9aabaddb03b43d0`；main 从 `928e031fe259d418c55272ebc19fd7b6b9a28e53` 按序精确集成 `d828a924bfdfa0cfbe96890548d6eb9a30e25c77` → 组合 `2b6e5aeb236c6a86cff6522366872e94319f85b9`；I01 `0f72e3e2e6fb4995288aa20674b5b2d1eb07db50`。无冲突/修正，四文档 blob 同源，父卡原文逐行保留，21相对链接存在、相关26节点依赖闭包无环、diff通过；无源码/API/SQL变更，未跑Go/Web业务测试。
