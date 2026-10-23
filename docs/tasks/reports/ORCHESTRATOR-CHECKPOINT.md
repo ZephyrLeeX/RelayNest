@@ -2,6 +2,13 @@
 
 更新：2026-10-23。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot23：全局变更事务共同基础实际集成恢复点
+
+- P05-01-S01 来源树 `/home/lijx/.codex/worktrees/changes-foundation/RelayNest`、`codex/changes-foundation`，base `85305dfd3e4b4e15e78a208b5d75e8fd331deea0`。实现 `9041072b5a86610d4e08440732f06b9492918011`、独审 PASS `3314661e6343e36acfa702538f9d7fe35ab7e64f` 已按序无冲突精确集成；main 从 `5e85e9f8b1e1567c4bd7a96cc8ae58dcf738aeab` 经 `6de2970ab1c18e97463b789cd39c2c68e96356d2` 到组合 `b245192604c09445ed21156b1832fcd9e9a1c785`，I01 `c8e782d264226e9204e61494e311ede640ca3bc1`。四文件 blob 同源，API/依赖/SQL/storage 未变；非缓存 changes/storage 测试、changes race、相关 vet、gofmt/diff 均通过。详见 [I01](P05-01-S01-I01.md)。
+- Bot 实际调用 `changes.Append(ctx, tx, Metadata)` / `Epoch(ctx, tx)`；业务与日志在同一 Store.Write 中，错误向外传播，Write 成功后才承诺序号。Sequence 线缆为十进制字符串，Revision 为整数；Type 八种冻结事件仅映射投影键。四种 ErrInvalid* 支持 errors.Is，底层错误保留，epoch 缺行保留 sql.ErrNoRows。消费者复用真实接口，不复制私有追加逻辑。
+- root 后续登记共同基础 done 并实际派发 Bot 存储；本快照提交后从精确最新 main 用 app 准备 `bot-store` 隔离树，路径/base/branch 由交接返回。本轮只准备，不实现、不预写 SQL；`0004` 仍未分配，由 root 实际派发时串行预留。主 registry 由 root 唯一写，既有 dirty 与 `.directory` 未改/stage/提交；完成树交接后释放 main index。
+- 认证 HTTP 首卡仍在 `auth-http` 隔离树开发 handler/router，主树 main.go 留待次卡；本次未触碰其源码或 index。Web、真实 NAS/手机与正式 E2E 未运行，父卡及其消费者组合验收不因本次基础通过而完成。未 push、部署、创建聊天或子 agent。
+
 ## snapshot22：认证 HTTP 续作规划与保护工作树恢复点
 
 - P04-02-S02-PLAN01：来源实施 `3022e333def87c51795db442d623f79584633491`、独审 PASS `b138739f7a134a60750b56235a59b4535e38c08e`；main 从 `85305dfd3e4b4e15e78a208b5d75e8fd331deea0` 精确集成 `d6403d2` → `2f31ed8`，I01 `1cf5fa1`。四新文档 blob 同源，原 S02 七项/父五项验收保留，三相对链接存在、相关19节点依赖闭包无环、diff通过；无源码/API/SQL/依赖变更，未跑Go/Web业务测试。
