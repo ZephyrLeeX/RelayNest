@@ -13,7 +13,7 @@
 
 ## 当前恢复点（2026-10-23）
 
-最近确认主树 `main@533f79b3b7aff9fb861e6f72204f9202f7637135`（会话夹具范围补充独审精确集成/I01后，snapshot16前）。唯一任务台账仍registry；本轮持续执行，远未完成P4～P15。
+最近确认主树 `main@cfc43c7f1bc63221d2738ad612b590ddd22f469b`（P04-02-S01实现/审计精确集成及I01后，snapshot17前）。唯一任务台账仍registry；本轮持续执行，远未完成P4～P15。
 
 - P00-01/02/04、P02-01～04、P03-01～06及08～12均已独立审计精确集成。G-GIT/G-MP/G-FCM/G-API=pass（MP/FCM为历史PoC限定，API仅契约）；CORE/DEPLOY/SHELF/SHELF-API/OPPO=pending。
 - P03-07同步/设备/全局配置/健康契约及最终综合证据均已独审精确集成。最终卡实施7ec2ae3、独审PASS34425b4、main组合981692f、I01 375a270；父五项/S03八项证据齐全。root已据最终独审及精确集成证据登记P03-07/S03/最终卡done与G-API契约pass，无需新用户授权。运行时/正式AC未验。
@@ -48,7 +48,7 @@ bootstrap原实现9cb95c4经A01 532ea26发现BS-A01-01（seed可冒充实际追�
 - 用户确认OPPO账号/应用Push权限尚未准备，P02-05/G-OPPO受阻，仅阻厂商实测/激活；真机运行留正式验收，正式签名成功/安装界面/端到端NOT_RUN保留。不能将Schema/合成状态或阶段放行冒充HTTP/SQLite/Room/WS/通知实际运行验收。
 - 锁Python可先核`/tmp/relaynest-p0305-f01-locked/bin/python`，缺失依hash锁恢复不升级。Android/mise版本沿原锁；干净Go构建前先Web npm ci/build生成gitignored embed资源，不靠旧dist。SQLite已占0001，下一迁移0002；共享API/依赖/迁移串行。
 - 主树registry.json含用户原有修改及调度更新，`.directory`为用户未跟踪文件，均不stage/覆盖/丢弃。本摘要由root创建，Git提交必须交集成agent显式路径处理，禁止git add .。
-- 各已审源树及分支保留，不prune/remove/clean/reset。session-store既有预备树干净无writer，原base20227231；snapshot16后仅fast-forward到最终main，branch codex/session-store，准备S01开工但本轮不实现。0002已占，下个候选0003未分配，开发派发时从最新main串行核定。
+- 各已审源树及分支保留，不prune/remove/clean/reset。session-store源树已释放，HEAD7e6a8d5cfd59d6069711fd3106ebc2ec718933bb，branch codex/session-store。main实际0001/0002/0003已占，下一候选0004尚未分配；S02不提前建树，等来源安全前置最终实现独审集成。
 - 本文件不是全部完成报告，不创建新聊天/定时任务/自动化，也不授权push、Release、真实部署或MP重建升级。P13～15虽已授权，仍等核心实际完成/G-SHELF实质门槛，不改RelayShelf后端/数据库。
 
 ## 当前P4派发点（恢复时以registry和实际agent为准）
@@ -56,6 +56,8 @@ bootstrap原实现9cb95c4经A01 532ea26发现BS-A01-01（seed可冒充实际追�
 - 主树snapshot13 `fd7ca5173c540796aa97e3efb9bf90a7adc94c32`，G-API契约pass已由root据最终独审/集成登记，P03-07及S03done。P04-01-PLAN01规划最终`73d4fa47c02a4478e3a81acf0f60f2740e63f252`、审计`34acc46f40d425f5bda8296a4bd8f11b1c43caeb`、集成`c69d8304277fb9f1ab9a9409e708acac5a0573a6`/I01 `18d3f3ad5c5e3ca64ed3f7bfa45546bb86ac5d9e`，已done。
 - P04-01原实现9a97d7e、A01 b7fce9d、F01最终9af6a70c96b106b4a8f8d48e0913a80aa5bed68d、独立A02 PASS f4767d6cc640d3a5859ad0371860c8dcadcf8081已精确集成至main组合3ba2b496ae21737d15c8442a1fd56429513da1d4，I01 d3acec6779b6ce5377737575cdf51f550d41b719。无冲突，18路径blob同源/14源码依赖同受审修复；SIGINT termios问题A02关闭。锁Web ci/build、Go1.27.3/local三包非缓存race/vet、主树二进制真实PTY25取消与独立CLI竞争回归均PASS。root已据证据登记P04-01 done；本快照不改registry。非Linux实际运行/真机/会话正式AC等NOT_RUN保留。
 - 开发交接待审：固定管理员id=1、username原样区分大小写不trim；Argon2id64MiB/3/1；generation int64从1至MaxInt64耗尽原子拒绝reset；摘要与代次同事务；提供ReadAdministrator/InitAdministrator/ResetPassword。0002本实现占用但待精确集成，下一编号0003仅集成后确认。Go1.27.3/SQLite锁保持，必要x/crypto0.58.0、x/term0.47.0、传递x/sys0.49.0为本实现依赖，须审计核对。真实CLI/SQLite与未测会话/WS/手机等分开。
-- P04-02-PLAN01文档规划71682be3f1f91ea0a05b2a6237a6d68d218bd6e6、独立A01 PASS 100f9314d7137d298d049c139318b290ceed95e9已精确集成；main组合b5519a6b339303ed11fbabbf06cbfdf5990c6a4d，I01 d6a30a7eca7149101ea7ac59fc3a6ad523812788。五文档blob/链接/原五验收通过，server/API未动，无父子依赖环。建议S01依P04-01+PLAN01、S02依S01，父保留P04-01并汇合两子卡；沿父G-GIT，root登记。旧session-plan树保留释放；P04-01修复已独审精确集成；从最终main准备S01树，仍不分配迁移或实施。S01真实接口沿P04-01-I01，不能猜函数名。
+- P04-02-PLAN01文档规划71682be3f1f91ea0a05b2a6237a6d68d218bd6e6、独立A01 PASS 100f9314d7137d298d049c139318b290ceed95e9已精确集成；main组合b5519a6b339303ed11fbabbf06cbfdf5990c6a4d，I01 d6a30a7eca7149101ea7ac59fc3a6ad523812788。五文档blob/链接/原五验收通过，server/API未动，无父子依赖环。建议S01依P04-01+PLAN01、S02依S01，父保留P04-01并汇合两子卡；沿父G-GIT，root登记。旧session-plan规划树保留；S01已完成最终独审精确集成，S02仍等独立来源安全前置，不编造尚不存在的接线接口。
 - 干净Go检查先Web npm ci/build生成gitignored embed dist；工具沿mise锁，测试用临时DB，不连接生产。root唯一写registry，含用户原dirty内容不stage；`.directory`不动。本快照由集成角色仅显式路径提交。持续推进P4～P15，不把该恢复点称全部完成。
 - S01迁移夹具范围补充已独审精确集成：实施d9c791bad99bf508beafd0a5785f0d5f74b0920f、A01 PASS4ee17de23341e5a8bda8ed63876f628788555090；main组合1620289997cba0b451441a0390777995d0e50448、I01 533f79b3b7aff9fb861e6f72204f9202f7637135。仅S01卡/实施/审计三文档同源，原验收/链接通过，源码/API未动。新增storage_test.go真实迁移夹具维护权限，旧升级/回滚/锁/checksum强度不减；不授权storage实现或额外依赖。
+- P04-02-S01实现1da5e72aed508e01fb0d172b79fba0052af61a52、A01预算checkpoint349ee276e22336466b2d4a317bac88dc3e47151e、A02最终PASS7e6a8d5cfd59d6069711fd3106ebc2ec718933bb已无冲突精确集成；main组合9269876a5b57f18cc43d8100e88dc0f4a0b3b4ca、I01 cfc43c7f1bc63221d2738ad612b590ddd22f469b。A01仍BLOCKED历史checkpoint，A02组合独立证据完成PASS；root据证据登记S01 done，不代表P04-02/S02完成。
+- 本轮组合：Web锁Node22.23.2/npm10.9.8 ci/build通过；Go1.27.3/local三包非缓存race(auth7.229/storage2.178/cmd2.397秒)及vet/diff通过。7路径blob同源、5实现路径同1da，API6/依赖/CLI/0001/0002不变，唯新增0003。S02须把密码校验观察代次传Create；Inspect后其它校验成功仍须Authenticate重新查库续期，expectedClient依实际凭据通道决定。真实HTTP/客户端/正式AC等NOT_RUN。
