@@ -2,6 +2,13 @@
 
 更新：2026-10-23。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot27：认证启动集成与父卡本地验收收口
+
+- main 集成前 `153f6679dcdcaf169574ab9915e794ef5cfb8cbc`；启动实现 `6cec43b707b88908712561718988599bc5404988` 精确挑拣为 `96f380df88912007ee2862914f249d607f0bd3a4`，独审 A01 PASS `8ead8349afad11e1278dcb0506cf90f3a512466b` 精确挑拣为组合 `2f425e0d2c3edcf0f18a279f56b8993b6dab0a58`。五个交付 blob 同源，无冲突/业务改写，API/依赖/迁移均未变。
+- [启动 I01](P04-02-S02-S02-I01.md) 独立提交 `e831cf9d9810206f96b21ea16f2dabe0b3df3afe`：已核原 S02 七项、P04-02 五项及全部前置独审/集成；目标组合无缓存三包 race、vet、gofmt/diff、specvalidator、115 schemas/1229 cases/39 operations 全 PASS。技术证据足以支持调度登记本卡/S02/P04-02 本地 done，集成角色未改 registry。
+- ready 保持 health.New(nil)/503；真实 NAS/手机、MP/WS/推送与正式 AC 仍 NOT_RUN。P04-03 完整安全组合和 P04-04 登录防护仍待执行。后续只准备 security-closure、login-protection 两隔离树，使用本 snapshot 提交后的精确最新 main 作为 ref；实际路径/base/分支/干净状态以本轮工具回执和交接为准，不实施、不分配 0005。
+- main 用户 registry 原 dirty、.directory 未跟踪不 stage/覆盖；旧 auth-http/auth-startup 树不改。设备规划实现 a4f8330、独审 PASS 0674207 留待下一独立 integrator 串行文档集成，不在本次纳入。无 push/部署/新聊天/子 agent。
+
 ## snapshot26：登录防护准备研究集成与认证启动交接
 
 - P04-04-PREP01 研究实现 `e0299e41897885f905200ca505729ef8bd31bf98` 已在 main；独审 A01 PASS `57dfe9075e404722fbca5a85d69af5aab9065aff` 仅精确挑拣为 `5769bf2d558ae8239c50648b74c883aa12cd607b`，main 集成前 `a8cde39d73af3c47a0f271a0b2fbf0b51b1f5e23`。研究/A01 blob 均同源，文档 diff、链接与 SHA 检查通过，无源码/API/SQL/依赖变动，不跑业务测试；[I01](P04-04-PREP01-I01.md) 独立提交 `cd8f904d5f0aa0918071dbaec040617456e14359`。
