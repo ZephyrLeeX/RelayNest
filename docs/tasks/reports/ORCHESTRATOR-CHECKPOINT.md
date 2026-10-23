@@ -2,6 +2,14 @@
 
 更新：2026-10-23。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot25：认证 HTTP 首卡集成与启动卡隔离树恢复点
+
+- P04-02-S02-S01：原实现 `117da40467ff76aa59d02b0c73b996b79c519fb8`、A01 CHANGES_REQUIRED `0c2de0d162a597808188251aebf7e7cd8b56870f`、F01 规划 `86080588cb6113eb774fc2ae946f9363c25511a7`、修复 `e57095f5ec71802cbc321de849d97b572447567c`、最终 A02 PASS `246adb19cfcf082cbcaba4364c2a1479219a3272`，均仅按序无冲突精确挑拣，保留 A01 历史。main 从 `fb770a4bec75d75c66ac72d06c472eb7714edf2a` 到固定组合 `4e74575fc1ed4c3c597ec8eee7feb3b830cd9a15`；[I01](P04-02-S02-S01-I01.md) 独立提交 `f8a2304a407c589261995f866ac04c83c12b24e4`。三源码及六份报告/卡共九 blob 与 A02 来源完全一致，无业务修正，无需重审。
+- 固定组合显式 Go 1.27.3、GOTOOLCHAIN=local：auth/httpapi race、vet、三 Go 文件 gofmt、diff 全通过；复用既有真实 Web embed。本次未重复 Web 构建，未执行 cmd 接线/启动关闭、全面契约、真实代理/NAS/手机、WS/推送；原 S02 与父卡仍未完成。Bot 存储及正式 `0004_bots.sql` 已在基线中，不重占迁移号。
+- app 已创建 `/home/lijx/.codex/worktrees/auth-startup/RelayNest`，分支 `codex/auth-startup`。本快照提交后先将新树快进到该精确最新 main，再按字节仅复制旧 auth-http 树 `server/cmd/relaynest/main.go` 为下一卡唯一 dirty；最终基线 SHA 和核对结果在交接登记。继承 SHA-256 应为 `413893b9846ca4e44a586272b2ddf12e1d2518e6d33a35733ef40ac1ef086bf0`，不提交 main 源码、不复制旧未跟踪 checkpoint。P04-02-S02-S02 需补真实启动关闭、cmd/router 回归、全面契约及原父卡验收矩阵，继承 dirty 不等于通过审计。
+- 旧 `/home/lijx/.codex/worktrees/auth-http/RelayNest` 与 `codex/auth-http` 原样保留；上述 main.go dirty 和未跟踪 `docs/tasks/reports/P04-02-S02-implementation.md`（SHA-256 `dfd20dfe7203776717bdb854a108b1f6c0622c68ad6553703c94e71cfafe7cb9`）接管前后相同，未 stage/reset/clean。并发 PREP01 独审仅在旧树另提交自己的报告，不纳入本次五提交链。
+- main 用户 `registry.json` dirty 与 `.directory` 未跟踪均不 stage/覆盖；registry 仍由 root 登记。新树核对完成后交接并释放 main index；无推送、部署、新聊天或子 agent。
+
 ## snapshot24：Bot 存储实际集成恢复点
 
 - P04-06-S01 来源 `/home/lijx/.codex/worktrees/bot-store/RelayNest`、`codex/bot-store`，base `5e5ae142f4988aff9c89eaedfbf3d109838306a2`；实现 `56fa387e91378a85f0fbaf6a34d51c228a57f196`、独审 PASS `32161b51abe1ea408d19a53823267e528e67c263` 已仅按序无冲突精确挑拣。main 从 `e0299e41897885f905200ca505729ef8bd31bf98` 经 `bdeaffe` 到组合 `1fa1d6c10b964613513844656931f5d210e399db`，I01 `efc602d14bf47edb4c45fbe692c955af19267fad`，见 [I01](P04-06-S01-I01.md)。七实现路径及审计报告共八个 blob 同源，无业务修改，无需重审。
