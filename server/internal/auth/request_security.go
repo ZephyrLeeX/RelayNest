@@ -25,6 +25,9 @@ type AdminRequest struct {
 	Session Session
 	Source  httpapi.RequestSource
 	secrets SessionSecrets
+	issuer  *RequestSecurity
+	store   *SessionStore
+	issued  Session
 }
 
 // ClearCookie 供成功自撤会话后清除 Web Cookie，沿用已解析的外部 Secure 信息。
@@ -47,7 +50,21 @@ func NewRequestSecurity(sessions *SessionStore, origin *httpapi.OriginPolicy) *R
 // RenewRead 在普通管理读取成功后重新核对会话并续期；调用方先处理错误再输出响应。
 // 它单独提交，不可代替业务写事务内的 actor/target 复核和续期。
 func (s *RequestSecurity) RenewRead(ctx context.Context, actor AdminRequest) (Session, error) {
-	session, _, err := s.sessions.Authenticate(ctx, actor.secrets.Token, actor.Session.ClientType)
+	// 先验证私有签发域及完整快照，不能让公开可变元数据选择身份或续期目标。
+	if s == nil || s.sessions == nil || actor.issuer != s || actor.store != s.sessions || actor.issued.ID == "" || actor.Session != actor.issued {
+		return Session{}, ErrInvalidSession
+	}
+	current, _, err := s.sessions.Inspect(ctx, actor.secrets.Token, actor.issued.ClientType)
+	if err != nil {
+		return Session{}, err
+	}
+	// Inspect 不续期；只有原身份匹配后才能调用会写库的 Authenticate。
+	// idle 期限可由其他成功读取推进，其余身份及绝对期限必须保持一致。
+	current.IdleExpiresAt = actor.issued.IdleExpiresAt
+	if current != actor.issued {
+		return Session{}, ErrInvalidSession
+	}
+	session, _, err := s.sessions.Authenticate(ctx, actor.secrets.Token, actor.issued.ClientType)
 	return session, err
 }
 
@@ -87,7 +104,7 @@ func (s *RequestSecurity) Authorize(w http.ResponseWriter, r *http.Request, mode
 			return AdminRequest{}, false
 		}
 	}
-	return AdminRequest{Session: actor, Source: source, secrets: secrets}, true
+	return AdminRequest{Session: actor, Source: source, secrets: secrets, issuer: s, store: s.sessions, issued: actor}, true
 }
 
 // WriteSessionError 统一映射请求检查及业务提交前会话复核的错误；不清 Cookie。
