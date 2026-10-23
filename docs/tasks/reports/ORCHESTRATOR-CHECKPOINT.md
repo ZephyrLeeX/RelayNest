@@ -2,6 +2,15 @@
 
 更新：2026-10-23。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot33：Web 认证 F01/A02 与公共安全组合集成
+
+- 恢复优先本 snapshot；基线 `571a4d1cf870602783426f9644fb8149cf759e61` → 六提交集成 `9ada1b5ecc4a0776a47ce996b22a2ad8d4035c00` → I01 `22a3e47`。I01 证据见 [P07-01-I01](P07-01-I01.md)，本 snapshot 另行独立提交。
+- Web 来源 `/home/lijx/.codex/worktrees/web-auth/RelayNest`，原基线 `3f39182`；严格按 impl `a780f4c`、ENV01 `c51ff3d`、A01 CHANGES_REQUIRED `be9ec95`、F01 PLAN `b652e20`、fix `20ba9f2`、A02 PASS `41b93d2` 顺序集成；main 对应 `4ce575f/a4f4b48/243137f/bac4d74/246380c/9ada1b5`。无冲突/源码修订；四主要源码、两测试及七份卡/报告 blob 与来源 A02 完全相同。默认 native fetch receiver 绑定修复，第五项单测加入；保留首次失败和 ENV 历史。
+- 在已含公共 security 的准确 main 组合，Node 22.23.2/npm 10.9.8 `npm ci`、build（含 tsc）和 5 client tests 均 PASS；Go1.27.3/local 在 Web 重建后重新构建生产二进制，webui/httpapi/cmd 三包测试 PASS。未改 API/SQL/依赖/锁文件/server 源码，未无据重跑已通过的 guard race/全阶段矩阵。
+- 原始完整 browser 脚本无 preload/断言修改，真实本地 HTTPS/SQLite/Chromium 登录、密码清理、reload/session、Cookie Secure+HttpOnly+SameSite、storage、Origin、CSRF403/退出204 组合 PASS；手工 Cookie jar 的撤销401属于真实后端请求；错误/过期/429/转义仍明确协议夹具。ENV02 持久 cache `/home/lijx/.cache/relaynest-test-env/p0701-env02-1nvphuox` 存在且被本轮复用，固定工具/私有库/字体；先读 cache.env、仅对子进程应用，无系统安装升级。34 精确包已由 A02 独审，本轮不声称重新下载。
+- 可供总调度将 P07-01、F01、F01-PLAN01、ENV01、ENV02 与 I01 在授权本地范围记 done；registry 状态仍由总调度登记。正式 NAS/OpenWrt/手机、正式证书链、OS 休眠/真实后台、正式 AC 仍 NOT_RUN；不得据此宣布 P07/P11/P12/P15 全阶段通过。
+- 设备存储 S02 在 device-session-store 树独立开发，未纳本次；Bot ready 仍不成立、ready503，迁移0005未分配。后续 Web 管理依赖后端实体未 ready，不新建下一源码树。原 registry dirty/.directory untracked 未暂存；本轮 index 释放后交还总调度；无 push/deploy/新聊天/子 agent。
+
 ## snapshot32：公共管理员请求安全 S01/F01 精确集成
 
 - 来源固定五提交依次为 impl `27c8df4f9d5a282e05d35146e28d65233a79311f`、A01 CHANGES_REQUIRED `a33a9834f9a5000e813ced99b25fe3a80479cb82`、F01 规划 `3e7221d53f92cfc5a8d783c226928d0004fda49f`、修复 `f7e28a29f03f7c3f24e55a32a5a0c84041d8f428`、A02 PASS `44aecdada6df1353ef66c2b55b12d025537dc8d4`。从 main `81c19608b974b9d8eef6ad5c248bccbcd9cc8765` 无冲突精确 cherry-pick，组合 `95ff10e4d58f300dcc4ea1e5dd0a607a7879f160`，九文件 blob 同受审来源；保留 A01 历史，无业务改写/API/SQL/依赖变更。
