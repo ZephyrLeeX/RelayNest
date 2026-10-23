@@ -2,6 +2,14 @@
 
 更新：2026-10-23。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot24：Bot 存储实际集成恢复点
+
+- P04-06-S01 来源 `/home/lijx/.codex/worktrees/bot-store/RelayNest`、`codex/bot-store`，base `5e5ae142f4988aff9c89eaedfbf3d109838306a2`；实现 `56fa387e91378a85f0fbaf6a34d51c228a57f196`、独审 PASS `32161b51abe1ea408d19a53823267e528e67c263` 已仅按序无冲突精确挑拣。main 从 `e0299e41897885f905200ca505729ef8bd31bf98` 经 `bdeaffe` 到组合 `1fa1d6c10b964613513844656931f5d210e399db`，I01 `efc602d14bf47edb4c45fbe692c955af19267fad`，见 [I01](P04-06-S01-I01.md)。七实现路径及审计报告共八个 blob 同源，无业务修改，无需重审。
+- bots/storage/changes 非缓存测试与 race，完整 Go test/vet/build、gofmt/diff 均通过；现有 Web embed 可用，无需 npm 构建，未改依赖或提交产物。API、storage 实现、原 0001～0003 未变；storage_test 动态真实迁移夹具保留失败回滚/锁/checksum 等断言并增加真实 Bot 升级。正式 `0004_bots.sql` 现唯一归 Bot 且已占用，后续迁移另行串行分配。
+- 消费者使用真实 `bots.New`、Create/Get/List/Patch、Authenticate 与 AuthorizeTx；创建才返回三键明文，查询只公开元数据，List 尚非 HTTP 分页。错误 ErrInvalid/ErrNotFound/ErrConflict/ErrUnauthorized/ErrForbidden，底层错误保留，由 HTTP 脱敏映射。Create/Patch 须先完成管理员授权。P05/P06 必须在实际业务 Store.Write 中调用 AuthorizeTx 并传播错误，以数据库当前绑定/代次/启用/能力和认证快照交集核准提交；Webhook 仅 Send，Bot 身份不能管理。沿用公共 changes.Append，同事务成功后才承诺序号；不得用请求开始快照代替，不跨网络持有事务。
+- S01 仅此边界闭环，HTTP/NAS/手机/正式 AC 仍 NOT_RUN。S02 仍需 P04-02 与完整 P04-03，不准备 Bot HTTP 树；P04-04 的只读 PREP01 未审计，不算父完成。认证 F01 最终 `e570` 尚在独审，待证据后另行集成；认证树与后续卡未动。
+- 当前仅保留调度既有 dirty `docs/tasks/registry.json` 与 untracked `.directory`，均未 stage/覆盖；registry 唯一由 root 更新。I01 与本 snapshot 独立提交，最终核验后释放 main index 供认证集成。未 push/部署/创建聊天。旧 snapshot 为历史，恢复优先本 snapshot24，P4～P15 远未全部完成。
+
 ## snapshot23：全局变更事务共同基础实际集成恢复点
 
 - P05-01-S01 来源树 `/home/lijx/.codex/worktrees/changes-foundation/RelayNest`、`codex/changes-foundation`，base `85305dfd3e4b4e15e78a208b5d75e8fd331deea0`。实现 `9041072b5a86610d4e08440732f06b9492918011`、独审 PASS `3314661e6343e36acfa702538f9d7fe35ab7e64f` 已按序无冲突精确集成；main 从 `5e85e9f8b1e1567c4bd7a96cc8ae58dcf738aeab` 经 `6de2970ab1c18e97463b789cd39c2c68e96356d2` 到组合 `b245192604c09445ed21156b1832fcd9e9a1c785`，I01 `c8e782d264226e9204e61494e311ede640ca3bc1`。四文件 blob 同源，API/依赖/SQL/storage 未变；非缓存 changes/storage 测试、changes race、相关 vet、gofmt/diff 均通过。详见 [I01](P05-01-S01-I01.md)。
