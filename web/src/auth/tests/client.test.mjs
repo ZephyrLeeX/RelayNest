@@ -77,4 +77,28 @@ test('网络异常不向文案泄露内部错误', () => {
   assert.equal(errorMessage(new Error('secret')), '网络连接失败，请检查连接后重试。');
 });
 
+test('默认 transport 保留原生 fetch 所需的全局接收者', async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  // 模拟浏览器原生 fetch 的接收者检查；箭头 transport 无法暴露此问题。
+  globalThis.fetch = async function (url, options) {
+    assert.equal(this, globalThis);
+    calls.push({ url, ...options });
+    return url.endsWith('logout') ? new Response(null, { status: 204 }) : Response.json(dto());
+  };
+  try {
+    const client = new AuthClient();
+    await client.login('admin', 'temporary-password', 'browser');
+    await client.restore();
+    await client.logout();
+    assert.deepEqual(calls.map(({ url }) => url), [
+      '/api/v1/auth/login', '/api/v1/auth/session', '/api/v1/auth/logout',
+    ]);
+    assert.ok(calls.every(({ credentials }) => credentials === 'same-origin'));
+    assert.equal(calls[2].headers['X-CSRF-Token'], 'test-csrf');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test.after(async () => { await rm(dir, { recursive: true, force: true }); });

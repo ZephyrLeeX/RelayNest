@@ -12,7 +12,7 @@ export interface WebSession {
 /** Cookie 完全交由浏览器；CSRF 只从 Web DTO 获取并存于内存。 */
 export class AuthClient {
   private csrf = '';
-  constructor(private readonly transport: typeof fetch = fetch) {}
+  constructor(private readonly transport: typeof fetch = fetch.bind(globalThis)) {}
 
   clear(): void { this.csrf = ''; }
 
