@@ -2,7 +2,6 @@ package auth
 
 import (
 	"crypto/rand"
-	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"io"
@@ -10,7 +9,6 @@ import (
 	"mime"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"relaynest/server/internal/httpapi"
@@ -90,14 +88,6 @@ func authError(w http.ResponseWriter, status int, code string) {
 	_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]any{"code": code, "message": http.StatusText(status), "request_id": rand.Text(), "retryable": status == 503}})
 }
 
-func (h *Handler) sessionError(w http.ResponseWriter, err error) {
-	if errors.Is(err, ErrInvalidSession) || errors.Is(err, ErrNotInitialized) {
-		authError(w, 401, "AUTHENTICATION_FAILED")
-		return
-	}
-	authError(w, 503, "SERVICE_UNAVAILABLE")
-}
-
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	started := time.Now()
 	defer func() { h.logger.InfoContext(r.Context(), "login", "duration", time.Since(started)) }()
@@ -160,7 +150,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	defer func() { finish(failed) }()
 	admin, err := ReadAdministrator(r.Context(), h.store)
 	if err != nil {
-		h.sessionError(w, err)
+		WriteSessionError(w, err)
 		return
 	}
 	// 保留密码校验读取的代次，重置抢先提交时 Create 必须失败。
@@ -180,7 +170,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	s, secrets, err := h.sessions.Create(r.Context(), admin.AuthGeneration, input)
 	if err != nil {
-		h.sessionError(w, err)
+		WriteSessionError(w, err)
 		return
 	}
 	if in.ClientType == "web" {
@@ -189,74 +179,31 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	respondSession(w, s, secrets, true)
 }
 
-// 认证通道决定客户端类型；拒绝重复凭据和混合通道，不能先猜测数据库内类型。
-func credential(r *http.Request) (string, string, bool) {
-	headers := r.Header.Values("Authorization")
-	cookies := r.CookiesNamed(sessionCookie)
-	if len(headers) > 1 || len(cookies) > 1 || (len(headers) > 0 && len(cookies) > 0) {
-		return "", "", false
-	}
-	if len(headers) == 1 {
-		parts := strings.Split(headers[0], " ")
-		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") || parts[1] == "" {
-			return "", "", false
-		}
-		return parts[1], "android", true
-	}
-	if len(cookies) == 1 && cookies[0].Value != "" {
-		return cookies[0].Value, "web", true
-	}
-	return "", "", false
-}
-
 func (h *Handler) current(w http.ResponseWriter, r *http.Request, logout bool) {
-	w.Header().Set("Cache-Control", "no-store")
-	token, client, ok := credential(r)
+	mode := RequestRead
+	if logout {
+		mode = RequestWrite
+	}
+	security := NewRequestSecurity(h.sessions, h.origin)
+	actor, ok := security.Authorize(w, r, mode)
 	if !ok {
-		authError(w, 401, "AUTHENTICATION_FAILED")
 		return
-	}
-	var source httpapi.RequestSource
-	var err error
-	if logout && client == "web" {
-		source, err = h.origin.ValidateWrite(r)
-	} else {
-		source, err = h.origin.Resolve(r)
-	}
-	if err != nil {
-		authError(w, 403, "FORBIDDEN")
-		return
-	}
-	// Inspect 不续期；CSRF 失败不能延长会话。Authenticate 再原子检查重置/撤销/到期。
-	_, secrets, err := h.sessions.Inspect(r.Context(), token, client)
-	if err != nil {
-		h.sessionError(w, err)
-		return
-	}
-	if logout && client == "web" {
-		values := r.Header.Values("X-CSRF-Token")
-		if len(values) != 1 || subtle.ConstantTimeCompare([]byte(values[0]), []byte(secrets.CSRFToken)) != 1 {
-			authError(w, 403, "FORBIDDEN")
-			return
-		}
 	}
 	if logout {
-		if err = h.sessions.Revoke(r.Context(), token, client); err != nil {
-			h.sessionError(w, err)
+		if err := h.sessions.Revoke(r.Context(), actor.secrets.Token, actor.Session.ClientType); err != nil {
+			WriteSessionError(w, err)
 			return
 		}
-		if client == "web" {
-			writeCookie(w, "", source.Secure, true)
-		}
+		actor.ClearCookie(w)
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	s, secrets, err := h.sessions.Authenticate(r.Context(), token, client)
+	s, err := security.RenewRead(r.Context(), actor)
 	if err != nil {
-		h.sessionError(w, err)
+		WriteSessionError(w, err)
 		return
 	}
-	respondSession(w, s, secrets, false)
+	respondSession(w, s, actor.secrets, false)
 }
 
 func (h *Handler) GetSession(w http.ResponseWriter, r *http.Request) { h.current(w, r, false) }
