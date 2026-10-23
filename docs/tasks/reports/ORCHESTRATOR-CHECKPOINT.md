@@ -2,6 +2,13 @@
 
 更新：2026-10-23。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot29：P04-03 安全组合证据集成
+
+- main 前 `c2081f23cfdb248e1bf702faef12e0a5746782c2`；实施报告 `ab43c24b784bd968a6bf4927625c3182432c4276` → `6cd691ba00e90fa19bdae3479ac5e1466d70c66e`；独审 PASS `38b14f8163dc5076cf8f9546d461fea6ac3e9caa` → 最终组合 `04831d870582a928ce7f8f5d7e4827ae6e9134e4`，依序精确 cherry-pick 无冲突。两报告 blob 与源一致，受审源码 `96f6fff8340957104fb627606640adc2bc572eae` 至本组合只有 docs 差异，无源码/API/SQL/依赖变化。
+- [P04-03 I01](P04-03-I01.md) 独立提交 `a4df025ae42e29ec45a825a025ade77aef41d96a`。已核父五项验收、前置祖先链、独审真实 main/SQLite/TCP overlay 的14个失败写与 Cookie/CSRF/注销闭环，以及关键三包 race 留存 PASS；纯文档且源码相同，未重跑全仓矩阵。完整 P04-02、本卡本地证据收口；状态唯一由总调度更新 registry。
+- P04-04 源码 `c5be4ac` 在另一 login-protection 树独审、尚未集成，其 auth 安全边界必须复验，不能继承本 PASS。释放 main index 后供其下一精确集成；再从最新 main 派 P04-05-S01 公共 security 提取，避免 auth/http.go 重叠漂移。设备三卡仅规划 done；S01 技术前置因本卡集成满足，尚未创建源码树、不分配 0005。Bot S01 已 done，0004 已占。
+- 公共管理员 security 接口仍未导出；未来业务、真实 NAS/浏览器/手机、WS/provider/推送/正式 AC 仍 NOT_RUN，ready 503。本 snapshot 独立提交；registry 原 dirty 与 `.directory` 原 untracked 均保留未暂存；未 push/部署/新聊天/子 agent。恢复优先 snapshot29，历史 snapshot 不代表 P4～P15 全部完成。
+
 ## snapshot28：设备会话实施规划集成
 
 - main 前 `96f6fff8340957104fb627606640adc2bc572eae`；规划 `a4f833005644a8ec0b2ff444ce05919e185a11fe` → `00fad8e2ac977d130a0034ea160ab4cda6c58a2a`，独审 PASS `0674207bd0cfea4c5ac5a51f343e5788f3418c00` → 组合 `c4ed7b3d6a15d724e49ddb5a04171894f9921e2e`；无冲突。六文档 blob 同源、19 链接、父卡原前置/五验收逐字保留、建议 DAG 无环、diff 均 PASS，无代码/API/SQL/依赖变更，纯文档未跑业务矩阵。
