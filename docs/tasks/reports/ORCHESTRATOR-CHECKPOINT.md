@@ -2,12 +2,13 @@
 
 更新：2026-10-23。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
-## snapshot20：Bot 拆分规划集成恢复点
+## snapshot21：全局变更事务共同基础规划集成恢复点
 
-- P04-06-PLAN01：实施 `1dc49229cbcffd83da8bf0c142d4201c9db43d77`，独审 PASS `3ac208f153b0984a3ab55ec688dd26d5a8949c50`；main 按序无冲突集成 `511590b` → 组合 `a6c47166d671c81731cc9e789b8ea5f4882ef716`；I01 `2f146ff42e9445010b26b42c9c9b76900ba42a8e`。五文档 blob 同源、原工作/五验收/前置保留、19链接/当前registry叠加建议闭包24节点无环、diff通过；源码/API/SQL未动，未跑Go/Web业务测试。root据证据登记规划done和子卡，不由本快照改registry。
-- S01「Bot 存储、凭据与独立授权」等 P03-07、本规划和 P05-01-S01 实际独审集成；S02「Bot 管理 HTTP 与父验收收口」等 S01、P04-02、完整 P04-03、本规划。父卡保留 P04-02 并加 S01/S02、原验收最终组合收口。来源helper不能代完整安全，规划PASS不能代公共基础实际实现；A/I依subject_id/review/精确SHA与PASS触发。
-- 下一轮仅独立集成 P05-01-PLAN01 实施 `3ced9e53d581451dc6ee81e74ba7965a505056a7`、独审 `856566263cb026ecbeeca055f9aabaddb03b43d0`；核未来共同基础DAG再由root派发源码，不建Bot/changes源码树、不预占0004。G-API契约pass、P04-01/会话S01/来源S01done；P04-02-S02在途，真实NAS/手机/正式AC仍NOT_RUN。
-- root只写含用户原dirty的registry，未stage；`.directory`保持用户未跟踪。主index由本集成角色串行使用并在结束时释放；本提交只含checkpoint，源树保持不动。
+- P05-01-PLAN01：实施 `3ced9e53d581451dc6ee81e74ba7965a505056a7`、独审 PASS `856566263cb026ecbeeca055f9aabaddb03b43d0`；main 从 `928e031fe259d418c55272ebc19fd7b6b9a28e53` 按序精确集成 `d828a924bfdfa0cfbe96890548d6eb9a30e25c77` → 组合 `2b6e5aeb236c6a86cff6522366872e94319f85b9`；I01 `0f72e3e2e6fb4995288aa20674b5b2d1eb07db50`。无冲突/修正，四文档 blob 同源，父卡原文逐行保留，21相对链接存在、相关26节点依赖闭包无环、diff通过；无源码/API/SQL变更，未跑Go/Web业务测试。
+- 规划通过后由root登记done；实际 P05-01-S01 等规划、P03-07、P03-08独审集成done及G-GIT/G-API。父P05-01保留P04-07/P03-08，等待共同基础实际复用与原全部验收收口；Bot S01 必须等待真实基础实现独审集成和接口交接。A/I依subject_id/review/精确SHA与PASS触发，不依subject done。
+- root已将Bot规划done及S01/S02登记；认证HTTP预算退出，未提交，后续调度续作。G-API契约pass、P04-01/会话S01/来源S01done；真实NAS/手机/正式AC仍NOT_RUN。
+- snapshot21提交后从精确最新main用app准备 `changes-foundation` 隔离树，仅供P05-01-S01后续派发，路径/分支/base交root登记；准备不等于实现。0004仍未分配，此卡禁止迁移。主index串行占用在工作树交接后释放。
+- root是registry唯一写者；本集成角色未改/stage/提交dirty registry，`.directory`保持用户未跟踪；未push/部署/创建聊天。本快照只提交checkpoint。
 
 ## 授权与用户决定
 
@@ -20,7 +21,7 @@
 
 ## 当前恢复点（2026-10-23）
 
-最近确认主树 `main@2f146ff42e9445010b26b42c9c9b76900ba42a8e`（Bot 拆分规划独审精确集成/I01 后，snapshot20 前）。唯一任务台账仍registry；本轮持续执行，远未完成P4～P15。
+最近确认主树 `main@0f72e3e2e6fb4995288aa20674b5b2d1eb07db50`（全局变更基础规划独审精确集成/I01 后，snapshot21 前）。唯一任务台账仍registry；本轮持续执行，远未完成P4～P15。
 
 - P00-01/02/04、P02-01～04、P03-01～06及08～12均已独立审计精确集成。G-GIT/G-MP/G-FCM/G-API=pass（MP/FCM为历史PoC限定，API仅契约）；CORE/DEPLOY/SHELF/SHELF-API/OPPO=pending。
 - P03-07同步/设备/全局配置/健康契约及最终综合证据均已独审精确集成。最终卡实施7ec2ae3、独审PASS34425b4、main组合981692f、I01 375a270；父五项/S03八项证据齐全。root已据最终独审及精确集成证据登记P03-07/S03/最终卡done与G-API契约pass，无需新用户授权。运行时/正式AC未验。
