@@ -2,6 +2,13 @@
 
 更新：2026-10-23。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot28：设备会话实施规划集成
+
+- main 前 `96f6fff8340957104fb627606640adc2bc572eae`；规划 `a4f833005644a8ec0b2ff444ce05919e185a11fe` → `00fad8e2ac977d130a0034ea160ab4cda6c58a2a`，独审 PASS `0674207bd0cfea4c5ac5a51f343e5788f3418c00` → 组合 `c4ed7b3d6a15d724e49ddb5a04171894f9921e2e`；无冲突。六文档 blob 同源、19 链接、父卡原前置/五验收逐字保留、建议 DAG 无环、diff 均 PASS，无代码/API/SQL/依赖变更，纯文档未跑业务矩阵。
+- [规划 I01](P04-05-PLAN01-I01.md) 独立提交 `f086290feceedb7724acd6c22d3534e12aac4dad`。S01“公共管理员请求安全入口”依完整 P04-02/完整 P04-03/PLAN 实际 A/I；S02“安装元数据、会话列表与精确撤销存储”再依 S01；S03“设备 HTTP、真实路由接线与组合验收”再依 S01/S02。父卡保留 P04-02 并增 S03；Bot P04-06-S02 建议保留依赖并增设备 S01 实际 A/I，接口以最终代码 SHA 交接。
+- PLAN 的旧基线未接线描述保留历史，当前完整 P04-02 本地已收口。P04-03 由 security-closure 树只读验证，P04-04 由 login-protection 树实施；S01 仍等完整 P04-03 实际 A/I，不建源码树、不预占 0005、不提前置 ready/done。真实 WS/provider/手机和正式 AC 仍 NOT_RUN。
+- 集成不改 registry，用户原 dirty 和 .directory 未纳入提交；本 snapshot 独立提交后释放 main index 给总调度。未 push/部署/新聊天/子 agent。
+
 ## snapshot27：认证启动集成与父卡本地验收收口
 
 - main 集成前 `153f6679dcdcaf169574ab9915e794ef5cfb8cbc`；启动实现 `6cec43b707b88908712561718988599bc5404988` 精确挑拣为 `96f380df88912007ee2862914f249d607f0bd3a4`，独审 A01 PASS `8ead8349afad11e1278dcb0506cf90f3a512466b` 精确挑拣为组合 `2f425e0d2c3edcf0f18a279f56b8993b6dab0a58`。五个交付 blob 同源，无冲突/业务改写，API/依赖/迁移均未变。
