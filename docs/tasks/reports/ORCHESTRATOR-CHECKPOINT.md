@@ -2,6 +2,15 @@
 
 更新：2026-10-23。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot32：公共管理员请求安全 S01/F01 精确集成
+
+- 来源固定五提交依次为 impl `27c8df4f9d5a282e05d35146e28d65233a79311f`、A01 CHANGES_REQUIRED `a33a9834f9a5000e813ced99b25fe3a80479cb82`、F01 规划 `3e7221d53f92cfc5a8d783c226928d0004fda49f`、修复 `f7e28a29f03f7c3f24e55a32a5a0c84041d8f428`、A02 PASS `44aecdada6df1353ef66c2b55b12d025537dc8d4`。从 main `81c19608b974b9d8eef6ad5c248bccbcd9cc8765` 无冲突精确 cherry-pick，组合 `95ff10e4d58f300dcc4ea1e5dd0a607a7879f160`，九文件 blob 同受审来源；保留 A01 历史，无业务改写/API/SQL/依赖变更。
+- [S01 I01](P04-05-S01-I01.md) 独立提交 `95ca132bd4444fc3c8aa85f9de6573ef76cf4426`。Go1.27.3 local auth/httpapi/cmd 非缓存普通/race、vet、gofmt 与 diff PASS，双库 foreign actor/签发域反例最终回归通过，既有 HTTP、strict JSON、P04-04/CLI 保留。root 可登记 S01/F01/修复规划完成，本 agent 不改 registry。
+- 实际 NewRequestSecurity.Authorize 只 Inspect；私有 issuer/store/issued 绑定 actor。普通成功读显式 RenewRead 并处理错误；ClearCookie 用于成功自撤 Web，WriteSessionError 映射401/503。两次独立存储事务不保证业务写授权，禁止持 Inspect 身份无条件写库。
+- 下一步以本 snapshot 最终 main 精确 ref 创建 device-session-store 干净 codex 工作树，仅准备 P04-05-S02，不实现、不占迁移0005。S02 必须实现 existingTx 内 actor 复核/成功续期/精确 Session.id target 撤销与 commit 后 hook（logout 同路）；Bot P04-06-S02 仍须等待该实际能力独审集成，S01 PASS 不等于 Bot ready。
+- 旧 admin-request-security 路径仅保留 marker，不触碰；新受审来源为 admin-security-reaudit。Web F01 `20ba9f2` 浏览器证据及独立树 A02 不纳本集成。正式 AC、真实 NAS/手机/WS/provider、设备/Bot HTTP 事务组合仍 NOT_RUN，ready503。
+- registry 原 dirty 与 .directory 原 untracked 保留未暂存；本 snapshot 独立提交。无 push/部署/新聊天/子 agent，恢复优先 snapshot32。
+
 ## snapshot31：Bot 管理写事务接入补充规划集成
 
 - main 前 `3f39182da4cd67522a015a2ec675a3ad43878944`；实施 `78cb562535c23727b47066ccdcb7129943d3e359` → `7ddddf657accc1c53d69e6f2f668604306eedddd`，独审 PASS `a16202c91f70bbf8d0adfb1aae23f288e8bdd6da` → 组合 `eb89e7f8fd75e8c6e1e3bbf45aa970a331598435`。依序精确 cherry-pick 无冲突，三文档 blob 同源，9 链接、原六验收/前置保留、拟议 DAG 与 diff PASS；无源码/API/SQL/依赖清单改动，纯文档未跑业务矩阵。
