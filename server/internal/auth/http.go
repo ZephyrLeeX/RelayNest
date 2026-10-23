@@ -36,6 +36,23 @@ type loginRequest struct {
 	DeviceID   json.RawMessage `json:"device_id,omitempty"`
 }
 
+func (in *loginRequest) UnmarshalJSON(data []byte) error {
+	// 结构体解码接受大小写别名；先按原始键核对冻结 DTO，再沿用字段类型和重复精确键的解码行为。
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	for name := range fields {
+		switch name {
+		case "username", "password", "client_type", "device_name", "device_id":
+		default:
+			return errors.New("unknown login field")
+		}
+	}
+	type plainLoginRequest loginRequest
+	return json.Unmarshal(data, (*plainLoginRequest)(in))
+}
+
 type sessionDTO struct {
 	ID            string `json:"id"`
 	Administrator struct {

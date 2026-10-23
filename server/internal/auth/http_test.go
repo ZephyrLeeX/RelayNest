@@ -390,7 +390,7 @@ func (f *httpFixture) reject(method, path, body string, h http.Header, status in
 	before := f.snapshot()
 	f.clock.Add(int64(time.Minute))
 	resp, out := f.request(method, path, body, h)
-	if resp.StatusCode != status || out["error"].(map[string]any)["code"] != code || len(resp.Cookies()) != 0 || f.snapshot() != before {
+	if resp.StatusCode != status || out["error"].(map[string]any)["code"] != code || len(resp.Header.Values("Set-Cookie")) != 0 || f.snapshot() != before {
 		f.t.Fatalf("rejection side effect/status: %d %v", resp.StatusCode, out)
 	}
 }
@@ -643,5 +643,76 @@ func TestHTTPInputRejectionsHaveNoEffects(t *testing.T) {
 		{`{"password":"` + strings.Repeat("x", 256<<10) + `"}`, 413, "PAYLOAD_TOO_LARGE"},
 	} {
 		f.reject("POST", "/api/v1/auth/login", tc.body, headers, tc.status, tc.code)
+	}
+}
+
+func TestHTTPLoginExactFieldNames(t *testing.T) {
+	f := newHTTPFixture(t, true)
+	f.login("web")
+	f.login("android")
+	headers := http.Header{"Origin": {f.server.URL}}
+	android := strings.TrimSuffix(strings.Replace(webLogin, `"web"`, `"android"`, 1), "}") + `,"device_id":"11111111-1111-4111-8111-111111111111"}`
+	for _, body := range []string{webLogin, android} {
+		for _, field := range []string{"username", "password", "client_type", "device_name", "device_id"} {
+			if !strings.Contains(body, `"`+field+`"`) {
+				continue
+			}
+			for _, alias := range []string{strings.ToUpper(field[:1]) + field[1:], strings.ToUpper(field)} {
+				f.reject("POST", "/api/v1/auth/login", strings.Replace(body, `"`+field+`"`, `"`+alias+`"`, 1), headers, 400, "INVALID_REQUEST")
+				f.reject("POST", "/api/v1/auth/login", strings.TrimSuffix(body, "}")+`,"`+alias+`":"extra"}`, headers, 400, "INVALID_REQUEST")
+			}
+		}
+	}
+}
+
+func TestHTTPLoginDTOContract(t *testing.T) {
+	f := newHTTPFixture(t, true)
+	f.login("web")
+	f.login("android")
+	headers := http.Header{"Origin": {f.server.URL}}
+	for _, body := range []string{`[]`, `"text"`, `42`, `true`, `{`, webLogin + ` []`, webLogin + ` null`, webLogin + ` true`, webLogin + ` garbage`, strings.TrimSuffix(webLogin, "}") + `,"unknown":null}`, strings.TrimSuffix(webLogin, "}") + `,"username":"Admin","Username":"Admin"}`, `{"username":12,"username":"Admin"}`} {
+		f.reject("POST", "/api/v1/auth/login", body, headers, 400, "INVALID_REQUEST")
+	}
+	f.reject("POST", "/api/v1/auth/login", `null`, headers, 422, "VALIDATION_FAILED")
+	for _, client := range []string{"web", "android"} {
+		body := strings.Replace(webLogin, `"web"`, `"`+client+`"`, 1)
+		for _, value := range []string{`12`, `true`, `[]`, `{}`} {
+			f.reject("POST", "/api/v1/auth/login", strings.TrimSuffix(body, "}")+`,"device_id":`+value+`}`, headers, 400, "INVALID_REQUEST")
+		}
+		for _, value := range []string{`null`, `""`, `"invalid"`} {
+			f.reject("POST", "/api/v1/auth/login", strings.TrimSuffix(body, "}")+`,"device_id":`+value+`}`, headers, 422, "VALIDATION_FAILED")
+		}
+	}
+	f.reject("POST", "/api/v1/auth/login", strings.TrimSuffix(webLogin, "}")+`,"device_id":"11111111-1111-4111-8111-111111111111"}`, headers, 422, "VALIDATION_FAILED")
+	for _, field := range []string{"username", "password", "client_type", "device_name"} {
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal([]byte(webLogin), &fields); err != nil {
+			t.Fatal(err)
+		}
+		for _, value := range []string{`12`, `true`, `[]`, `{}`} {
+			fields[field] = json.RawMessage(value)
+			body, err := json.Marshal(fields)
+			if err != nil {
+				t.Fatal(err)
+			}
+			f.reject("POST", "/api/v1/auth/login", string(body), headers, 400, "INVALID_REQUEST")
+		}
+		for _, value := range []string{`""`, `null`, ""} {
+			if value == "" {
+				delete(fields, field)
+			} else {
+				fields[field] = json.RawMessage(value)
+			}
+			body, err := json.Marshal(fields)
+			if err != nil {
+				t.Fatal(err)
+			}
+			f.reject("POST", "/api/v1/auth/login", string(body), headers, 422, "VALIDATION_FAILED")
+		}
+	}
+	// 冻结契约未禁止重复精确键，保留 encoding/json 的后值覆盖语义。
+	resp, out := f.request("POST", "/api/v1/auth/login", strings.TrimSuffix(webLogin, "}")+`,"username":"Admin"}`, headers)
+	if resp.StatusCode != 200 || len(resp.Header.Values("Set-Cookie")) != 1 || out["session"] == nil {
+		t.Fatalf("duplicate exact key login: %d %v", resp.StatusCode, out)
 	}
 }
