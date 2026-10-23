@@ -32,6 +32,23 @@ func HashPassword(password []byte) (string, error) {
 // VerifyPassword 仅接受本版本固定参数的 PHC 摘要，避免恶意参数造成资源放大。
 // 后续需要调整算法参数时，应显式扩充受支持版本。
 func VerifyPassword(password []byte, encoded string) bool {
+	verificationSlots <- struct{}{}
+	defer func() { <-verificationSlots }()
+	return verifyPassword(password, encoded)
+}
+
+// tryVerifyPassword 复用摘要层两槽限制，登录繁忙时立即返回，避免无界等待与重复持锁。
+func tryVerifyPassword(password []byte, encoded string) (bool, bool) {
+	select {
+	case verificationSlots <- struct{}{}:
+		defer func() { <-verificationSlots }()
+		return verifyPassword(password, encoded), true
+	default:
+		return false, false
+	}
+}
+
+func verifyPassword(password []byte, encoded string) bool {
 	if len(password) == 0 || !strings.HasPrefix(encoded, hashPrefix) {
 		return false
 	}
@@ -47,8 +64,6 @@ func VerifyPassword(password []byte, encoded string) bool {
 	if err != nil || len(expected) != 32 {
 		return false
 	}
-	verificationSlots <- struct{}{}
-	defer func() { <-verificationSlots }()
 	actual := argon2.IDKey(password, salt, 3, 64*1024, 1, 32)
 	return subtle.ConstantTimeCompare(actual, expected) == 1
 }

@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"mime"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,13 +21,15 @@ const sessionCookie = "relaynest_session"
 
 // Handler 只适配三条认证入口；生命周期及来源策略由已审模块提供。
 type Handler struct {
-	store    *storage.Store
-	sessions *SessionStore
-	origin   *httpapi.OriginPolicy
+	store      *storage.Store
+	sessions   *SessionStore
+	origin     *httpapi.OriginPolicy
+	protection *loginProtection
+	logger     *slog.Logger
 }
 
 func NewHandler(store *storage.Store, sessions *SessionStore, origin *httpapi.OriginPolicy) *Handler {
-	return &Handler{store: store, sessions: sessions, origin: origin}
+	return &Handler{store: store, sessions: sessions, origin: origin, protection: newLoginProtection(), logger: slog.New(httpapi.NewSafeLogHandler(slog.Default().Handler()))}
 }
 
 type loginRequest struct {
@@ -95,6 +99,8 @@ func (h *Handler) sessionError(w http.ResponseWriter, err error) {
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
+	started := time.Now()
+	defer func() { h.logger.InfoContext(r.Context(), "login", "duration", time.Since(started)) }()
 	w.Header().Set("Cache-Control", "no-store")
 	media, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil || media != "application/json" {
@@ -145,14 +151,26 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		authError(w, 403, "FORBIDDEN")
 		return
 	}
+	finish, retry := h.protection.begin(source.ClientIP, time.Now())
+	if finish == nil {
+		loginLimited(w, retry)
+		return
+	}
+	failed := false
+	defer func() { finish(failed) }()
 	admin, err := ReadAdministrator(r.Context(), h.store)
 	if err != nil {
 		h.sessionError(w, err)
 		return
 	}
 	// 保留密码校验读取的代次，重置抢先提交时 Create 必须失败。
-	valid := VerifyPassword([]byte(in.Password), admin.PasswordHash)
+	valid, available := tryVerifyPassword([]byte(in.Password), admin.PasswordHash)
+	if !available {
+		loginLimited(w, time.Second)
+		return
+	}
 	if !valid || in.Username != admin.Username {
+		failed = true
 		authError(w, 401, "AUTHENTICATION_FAILED")
 		return
 	}
@@ -251,4 +269,10 @@ func writeCookie(w http.ResponseWriter, token string, secure, remove bool) {
 		c.MaxAge = -1
 	}
 	http.SetCookie(w, c)
+}
+
+func loginLimited(w http.ResponseWriter, retry time.Duration) {
+	seconds := max(1, int((retry+time.Second-1)/time.Second))
+	w.Header().Set("Retry-After", strconv.Itoa(seconds))
+	authError(w, http.StatusTooManyRequests, "RATE_LIMITED")
 }
