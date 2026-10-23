@@ -2,6 +2,15 @@
 
 更新：2026-10-23。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot34：设备会话限定续作规划集成与草稿保护
+
+- 恢复优先本 snapshot。main 从 `ed18b03c4555f6d6f9ab208e208b4b419d5f75d1` 精确依次集成规划 `d57452fb6dd33a5c17d7f68b92f0c513599ed7d9`、独审 PASS `13b7bd69f21ed9437e72ab249aba1b5bd08f1327`，对应 main `25a1ecc` / 组合 `7d77105c254b22260497f2d600c695c889bc9a7d`；[I01](P04-05-S02-PLAN01-I01.md) 独立提交 `832f4b48275c486cf1d0688c321087a60448998b`。四文档 blob 同源、原前置和全部验收逐行保留、链接/diff/DAG（拟议续卡边）PASS；无源码/API/SQL/依赖变化，未跑业务矩阵。
+- root 据证据登记 PLAN01 done 和 P04-05-S02-S01；父 S02 仍未完成。续卡必须包含原草稿的自包含源码实现、真实 SQLite/普通测试/race/vet，再经另人固定 SHA 独审及精确集成。existing Tx 可信同 Store.Write 限制不是安全批准，后续独审不满足则阻断；迁移0005未分配。
+- 原树 `/home/lijx/.codex/worktrees/device-session-store/RelayNest`、分支 `codex/device-session-store`、源码基线 `571a4d1cf870602783426f9644fb8149cf759e61` 保留三项 raw dirty：session.go SHA256 `eef6148f6cd0d6bb72949e7e150851bd81478573b48d77296a9a42eaa2231ab4`；device_sessions.go `884cf761e428121245a541e7cdca4c104ddd2ad529f7a1f8bdc8bf3d53204b15`；原 checkpoint `53fdb287635edd538b35ef65eb7e0703744ba26e242ba1de2391292500f3294f`。三项未 stage/reset/clean/提交；原作者已停写。
+- 准备步骤：本 snapshot 独立提交后，以该最终 main SHA 由 app 创建 `device-session-finish` 干净 codex 工作树，再按字节复制这三个 raw 文件、核同 hash；精确路径/base/branch由工具交接补充，不猜路径。已证 main session.go blob `90fcbd05100cf50339fd7fb9b1f27a20683fe658` 等于原基线，main 不存在另外两个文件。接管 worker 仅可修改卡内四 Go 文件和 child 实施报告，checkpoint 只读、不 stage；原树全部草稿继续保留。若最终基线冲突停止，不自行修复。
+- 同一最终 main ref 由 app 准备 `android-auth-plan` 干净树，仅供 P08-04 只读规划/研究审计，不实施、不预占0005、不读改 Android 源码。Android PREP 研究报告已由 `ed18b03` 集成但仍待独审，P04-05 父未 done，P08-04 不直接 ready。正式 WS/provider/NAS/手机/AC 仍 NOT_RUN。
+- 主树 registry 原 dirty / .directory 原 untracked 保留未暂存，registry 只由 root 更新；本轮 index 在独立提交后释放。无 push/deploy、新聊天或子 agent。
+
 ## snapshot33：Web 认证 F01/A02 与公共安全组合集成
 
 - 恢复优先本 snapshot；基线 `571a4d1cf870602783426f9644fb8149cf759e61` → 六提交集成 `9ada1b5ecc4a0776a47ce996b22a2ad8d4035c00` → I01 `22a3e47`。I01 证据见 [P07-01-I01](P07-01-I01.md)，本 snapshot 另行独立提交。
