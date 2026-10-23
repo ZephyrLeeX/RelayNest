@@ -13,7 +13,7 @@
 
 ## 当前恢复点（2026-10-23）
 
-最近确认主树 `main@cfc43c7f1bc63221d2738ad612b590ddd22f469b`（P04-02-S01实现/审计精确集成及I01后，snapshot17前）。唯一任务台账仍registry；本轮持续执行，远未完成P4～P15。
+最近确认主树 `main@375ab7870abea1b38747d49a2e582b77c6a1c199`（来源前置规划独审精确集成/I01后，snapshot18前）。唯一任务台账仍registry；本轮持续执行，远未完成P4～P15。
 
 - P00-01/02/04、P02-01～04、P03-01～06及08～12均已独立审计精确集成。G-GIT/G-MP/G-FCM/G-API=pass（MP/FCM为历史PoC限定，API仅契约）；CORE/DEPLOY/SHELF/SHELF-API/OPPO=pending。
 - P03-07同步/设备/全局配置/健康契约及最终综合证据均已独审精确集成。最终卡实施7ec2ae3、独审PASS34425b4、main组合981692f、I01 375a270；父五项/S03八项证据齐全。root已据最终独审及精确集成证据登记P03-07/S03/最终卡done与G-API契约pass，无需新用户授权。运行时/正式AC未验。
@@ -48,7 +48,7 @@ bootstrap原实现9cb95c4经A01 532ea26发现BS-A01-01（seed可冒充实际追�
 - 用户确认OPPO账号/应用Push权限尚未准备，P02-05/G-OPPO受阻，仅阻厂商实测/激活；真机运行留正式验收，正式签名成功/安装界面/端到端NOT_RUN保留。不能将Schema/合成状态或阶段放行冒充HTTP/SQLite/Room/WS/通知实际运行验收。
 - 锁Python可先核`/tmp/relaynest-p0305-f01-locked/bin/python`，缺失依hash锁恢复不升级。Android/mise版本沿原锁；干净Go构建前先Web npm ci/build生成gitignored embed资源，不靠旧dist。SQLite已占0001，下一迁移0002；共享API/依赖/迁移串行。
 - 主树registry.json含用户原有修改及调度更新，`.directory`为用户未跟踪文件，均不stage/覆盖/丢弃。本摘要由root创建，Git提交必须交集成agent显式路径处理，禁止git add .。
-- 各已审源树及分支保留，不prune/remove/clean/reset。session-store源树已释放，HEAD7e6a8d5cfd59d6069711fd3106ebc2ec718933bb，branch codex/session-store。main实际0001/0002/0003已占，下一候选0004尚未分配；S02不提前建树，等来源安全前置最终实现独审集成。
+- 各已审源树及分支保留，不prune/remove/clean/reset。session-store及origin-plan源树已释放；snapshot18后从最终main准备request-source新树，仅实现无会话依赖的P04-03-S01来源基础。真实0001/0002/0003已占，下一0004尚未分配；不准备认证S02实施树，待来源helper最终审计集成。
 - 本文件不是全部完成报告，不创建新聊天/定时任务/自动化，也不授权push、Release、真实部署或MP重建升级。P13～15虽已授权，仍等核心实际完成/G-SHELF实质门槛，不改RelayShelf后端/数据库。
 
 ## 当前P4派发点（恢复时以registry和实际agent为准）
@@ -59,5 +59,7 @@ bootstrap原实现9cb95c4经A01 532ea26发现BS-A01-01（seed可冒充实际追�
 - P04-02-PLAN01文档规划71682be3f1f91ea0a05b2a6237a6d68d218bd6e6、独立A01 PASS 100f9314d7137d298d049c139318b290ceed95e9已精确集成；main组合b5519a6b339303ed11fbabbf06cbfdf5990c6a4d，I01 d6a30a7eca7149101ea7ac59fc3a6ad523812788。五文档blob/链接/原五验收通过，server/API未动，无父子依赖环。建议S01依P04-01+PLAN01、S02依S01，父保留P04-01并汇合两子卡；沿父G-GIT，root登记。旧session-plan规划树保留；S01已完成最终独审精确集成，S02仍等独立来源安全前置，不编造尚不存在的接线接口。
 - 干净Go检查先Web npm ci/build生成gitignored embed dist；工具沿mise锁，测试用临时DB，不连接生产。root唯一写registry，含用户原dirty内容不stage；`.directory`不动。本快照由集成角色仅显式路径提交。持续推进P4～P15，不把该恢复点称全部完成。
 - S01迁移夹具范围补充已独审精确集成：实施d9c791bad99bf508beafd0a5785f0d5f74b0920f、A01 PASS4ee17de23341e5a8bda8ed63876f628788555090；main组合1620289997cba0b451441a0390777995d0e50448、I01 533f79b3b7aff9fb861e6f72204f9202f7637135。仅S01卡/实施/审计三文档同源，原验收/链接通过，源码/API未动。新增storage_test.go真实迁移夹具维护权限，旧升级/回滚/锁/checksum强度不减；不授权storage实现或额外依赖。
-- P04-02-S01实现1da5e72aed508e01fb0d172b79fba0052af61a52、A01预算checkpoint349ee276e22336466b2d4a317bac88dc3e47151e、A02最终PASS7e6a8d5cfd59d6069711fd3106ebc2ec718933bb已无冲突精确集成；main组合9269876a5b57f18cc43d8100e88dc0f4a0b3b4ca、I01 cfc43c7f1bc63221d2738ad612b590ddd22f469b。A01仍BLOCKED历史checkpoint，A02组合独立证据完成PASS；root据证据登记S01 done，不代表P04-02/S02完成。
+- P04-02-S01实现1da5e72aed508e01fb0d172b79fba0052af61a52、A01预算checkpoint349ee276e22336466b2d4a317bac88dc3e47151e、A02最终PASS7e6a8d5cfd59d6069711fd3106ebc2ec718933bb已无冲突精确集成；main组合9269876a5b57f18cc43d8100e88dc0f4a0b3b4ca、I01 cfc43c7f1bc63221d2738ad612b590ddd22f469b。A01仍BLOCKED历史checkpoint，A02组合独立证据完成PASS；root已据证据登记S01 done，不代表P04-02/S02完成。
 - 本轮组合：Web锁Node22.23.2/npm10.9.8 ci/build通过；Go1.27.3/local三包非缓存race(auth7.229/storage2.178/cmd2.397秒)及vet/diff通过。7路径blob同源、5实现路径同1da，API6/依赖/CLI/0001/0002不变，唯新增0003。S02须把密码校验观察代次传Create；Inspect后其它校验成功仍须Authenticate重新查库续期，expectedClient依实际凭据通道决定。真实HTTP/客户端/正式AC等NOT_RUN。
+- P04-03-PLAN01规划8edac1a5b381fef79149a197ca11affefd129909、独立A01 PASSca448aae8cc92f30de115d5a2026ee888afcf454已精确集成；main组合8b8c503b9794d89e050b78420a1e18e7d69000de、I01 375ab7870abea1b38747d49a2e582b77c6a1c199。五文档blob/链接/原验收保留/依赖无环通过，源码API未动。
+- 新来源P04-03-S01“显式来源配置与可信代理解析基础”依P03-07+PLAN01，gates沿G-GIT/G-API；认证S02保留会话S01并增来源S01，P04-03父保留P04-02并增来源S01。仅origin.go/origin_test.go或等价origin专用包及实施报告，不碰router/main/auth/存储/依赖/迁移。单HTTPSOrigin/显式peerCIDR/单层覆盖forwardheaders严格拒绝不回退，非可信peer按真实TLS/Host；不新增信任政策或NAS真实配置。新树只准备，不在本轮实施。
