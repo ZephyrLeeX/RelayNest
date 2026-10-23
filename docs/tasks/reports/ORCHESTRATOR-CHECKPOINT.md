@@ -2,6 +2,14 @@
 
 更新：2026-10-23。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot31：Bot 管理写事务接入补充规划集成
+
+- main 前 `3f39182da4cd67522a015a2ec675a3ad43878944`；实施 `78cb562535c23727b47066ccdcb7129943d3e359` → `7ddddf657accc1c53d69e6f2f668604306eedddd`，独审 PASS `a16202c91f70bbf8d0adfb1aae23f288e8bdd6da` → 组合 `eb89e7f8fd75e8c6e1e3bbf45aa970a331598435`。依序精确 cherry-pick 无冲突，三文档 blob 同源，9 链接、原六验收/前置保留、拟议 DAG 与 diff PASS；无源码/API/SQL/依赖清单改动，纯文档未跑业务矩阵。
+- [补充规划 I01](P04-06-S02-PLAN01-I01.md) 独立提交 `5db1f4def2dbb56a24bc5a36afec2c7f55c53f81`。调度保留 Bot S02 全部原依赖及公共 S01，增加公共 `P04-05-S02`、`P04-06-S02-PLAN01`；本 PLAN 的 PASS 仅关闭规划。公共 S01 `27c8df4` / A01 `a33a983` 为 CHANGES_REQUIRED、F01 另树进行中；公共 S02 最终 Tx 能力尚未实现并独审集成，Bot 源码继续阻断。
+- Bot Create/Patch 无 actor 且自开事务的接入仅限 bots 最小适配，消费真实已审公共接口；保留 Bot 独立授权、CAS/changes 原子性，不预设函数、不复制 auth SQL、不占 0005。不创建源码树，不分配迁移。
+- Web 源码 `a780` 在 web-auth 树，ENV `c51` 环境已恢复但浏览器错误登录提示超时仍 FAIL，源码独审进行中；不能把环境恢复或计划 PASS 当实现通过。正式 AC、真实 NAS/手机、未来 WS/通知等仍 NOT_RUN，ready 503。
+- registry 原 dirty、`.directory` 原 untracked 原样保留且未暂存；本 snapshot 独立提交，无 push/部署/新聊天/子 agent。恢复优先 snapshot31，历史 snapshot 不代表全部阶段完成。
+
 ## snapshot30：P04-04 登录防护精确集成
 
 - main 集成前 `593b67a61b2e34a6309f513d3ffe7d75135e85f4`。实现 `c5be4acaf1442de7e9eabf298dd71bc217d5e708` → `57cfbb62f6def179b2b244c4bc0f47763d26a07f`；独审 PASS `8b3ff1cfa0325d9e4ec36a57e3ecb22d03404f76` → 组合 `9b65b73b2a499add367c613ae3e318138b111a3f`，依序精确 cherry-pick 无冲突。七路径及 A01 报告均与来源同 blob，API/SQL/依赖未改。
