@@ -2,6 +2,13 @@
 
 更新：2026-10-23。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot26：登录防护准备研究集成与认证启动交接
+
+- P04-04-PREP01 研究实现 `e0299e41897885f905200ca505729ef8bd31bf98` 已在 main；独审 A01 PASS `57dfe9075e404722fbca5a85d69af5aab9065aff` 仅精确挑拣为 `5769bf2d558ae8239c50648b74c883aa12cd607b`，main 集成前 `a8cde39d73af3c47a0f271a0b2fbf0b51b1f5e23`。研究/A01 blob 均同源，文档 diff、链接与 SHA 检查通过，无源码/API/SQL/依赖变动，不跑业务测试；[I01](P04-04-PREP01-I01.md) 独立提交 `cd8f904d5f0aa0918071dbaec040617456e14359`。
+- 此 PASS 只覆盖研究文档，不表示登录防护实现，不放行 P04-04；前置 P04-02 仍未完成。P04-02-S02-S01 已 done，F01 修复及最终 A02 PASS 已精确集成，保留 A01 历史；详情见 [认证 HTTP I01](P04-02-S02-S01-I01.md)。Bot S01 已 done，正式 `0004_bots.sql` 归 Bot 且已占用，不得重占。
+- `/home/lijx/.codex/worktrees/auth-startup/RelayNest`、`codex/auth-startup` 基线已为 `a8cde39d73af3c47a0f271a0b2fbf0b51b1f5e23`；继承 main.go dirty SHA-256 `413893b9846ca4e44a586272b2ddf12e1d2518e6d33a35733ef40ac1ef086bf0`，由 `auth_startup_dev` 唯一写。启动关闭/全面契约与父卡验收仍待该任务，不据继承源码宣称通过。
+- 旧 auth-http 树及两份原 dirty 保持原样：main.go SHA-256 同上；未跟踪 P04-02-S02-implementation.md 为 `dfd20dfe7203776717bdb854a108b1f6c0622c68ad6553703c94e71cfafe7cb9`。未纳入其他来源提交，未改卡/registry；main registry 用户 dirty 与 `.directory` 未 stage/覆盖。完成本快照及 root 授权的后续规划树准备后释放 main index；不实施登录防护，不推送/部署。
+
 ## snapshot25：认证 HTTP 首卡集成与启动卡隔离树恢复点
 
 - P04-02-S02-S01：原实现 `117da40467ff76aa59d02b0c73b996b79c519fb8`、A01 CHANGES_REQUIRED `0c2de0d162a597808188251aebf7e7cd8b56870f`、F01 规划 `86080588cb6113eb774fc2ae946f9363c25511a7`、修复 `e57095f5ec71802cbc321de849d97b572447567c`、最终 A02 PASS `246adb19cfcf082cbcaba4364c2a1479219a3272`，均仅按序无冲突精确挑拣，保留 A01 历史。main 从 `fb770a4bec75d75c66ac72d06c472eb7714edf2a` 到固定组合 `4e74575fc1ed4c3c597ec8eee7feb3b830cd9a15`；[I01](P04-02-S02-S01-I01.md) 独立提交 `f8a2304a407c589261995f866ac04c83c12b24e4`。三源码及六份报告/卡共九 blob 与 A02 来源完全一致，无业务修正，无需重审。
