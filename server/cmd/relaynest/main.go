@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -13,8 +14,10 @@ import (
 	"syscall"
 	"time"
 
+	"relaynest/server/internal/auth"
 	"relaynest/server/internal/health"
 	"relaynest/server/internal/httpapi"
+	"relaynest/server/internal/storage"
 )
 
 func main() {
@@ -25,26 +28,60 @@ func main() {
 		}
 		return
 	}
-	addr := flag.String("listen", "127.0.0.1:8080", "HTTP监听地址")
-	flag.Parse()
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-	ln, err := net.Listen("tcp", *addr)
+	err := runServer(ctx, os.Args[1:])
+	stop()
 	if err != nil {
-		logger.Error("启动失败", "code", "listen_failed")
-		os.Exit(1)
-	}
-	if err := serve(ctx, ln, health.New(nil)); err != nil {
-		logger.Error("服务退出失败", "code", "http_failed")
+		logger.Error("启动或服务退出失败", "code", err.Error())
 		os.Exit(1)
 	}
 	logger.Info("服务已停止", "code", "shutdown_complete")
 }
 
-func serve(ctx context.Context, ln net.Listener, h *health.Handler) error {
+// 在返回 main 前释放资源，避免 os.Exit 跳过 defer。
+func runServer(ctx context.Context, args []string) (result error) {
+	flags := flag.NewFlagSet("relaynest", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	addr := flags.String("listen", "127.0.0.1:8080", "HTTP监听地址")
+	db := flags.String("db", "", "数据库文件路径（必填）")
+	externalOrigin := flags.String("external-origin", "", "外部 HTTPS Origin（必填）")
+	var proxies proxyFlags
+	flags.Var(&proxies, "trusted-proxy", "可信代理 IP/CIDR（可重复，默认不信任任何代理）")
+	if err := flags.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			flags.SetOutput(os.Stderr)
+			flags.PrintDefaults()
+			return nil
+		}
+		return errors.New("configuration_failed")
+	}
+	if flags.NArg() != 0 {
+		return errors.New("configuration_failed")
+	}
+	store, authentication, err := authenticationDependencies(ctx, *db, *externalOrigin, proxies)
+	if err != nil {
+		return errors.New("configuration_or_storage_failed")
+	}
+	defer func() {
+		if err := store.Close(); err != nil {
+			result = errors.Join(result, errors.New("storage_close_failed"))
+		}
+	}()
+	ln, err := net.Listen("tcp", *addr)
+	if err != nil {
+		return errors.New("listen_failed")
+	}
+	defer ln.Close()
+	if err := serve(ctx, ln, health.New(nil), authentication); err != nil {
+		return errors.New("http_failed")
+	}
+	return nil
+}
+
+func serve(ctx context.Context, ln net.Listener, h *health.Handler, authentication ...httpapi.AuthHandlers) error {
 	srv := &http.Server{
-		Handler:           httpapi.New(h),
+		Handler:           httpapi.New(h, authentication...),
 		ReadHeaderTimeout: 5 * time.Second,
 		IdleTimeout:       60 * time.Second,
 		MaxHeaderBytes:    16 << 10,
@@ -71,4 +108,22 @@ func serve(ctx context.Context, ln net.Listener, h *health.Handler) error {
 		return nil
 	}
 	return err
+}
+
+// 未显式声明的代理一律不可信，不由监听地址或环回地址推导。
+type proxyFlags []string
+
+func (p *proxyFlags) String() string         { return "" }
+func (p *proxyFlags) Set(value string) error { *p = append(*p, value); return nil }
+
+func authenticationDependencies(ctx context.Context, path, externalOrigin string, proxies []string) (*storage.Store, *auth.Handler, error) {
+	policy, err := httpapi.NewOriginPolicy(externalOrigin, proxies)
+	if err != nil {
+		return nil, nil, err
+	}
+	store, err := storage.Open(ctx, storage.Config{Path: path})
+	if err != nil {
+		return nil, nil, err
+	}
+	return store, auth.NewHandler(store, auth.NewSessionStore(store), policy), nil
 }
