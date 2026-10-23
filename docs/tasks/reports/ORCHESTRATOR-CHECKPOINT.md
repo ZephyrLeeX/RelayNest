@@ -2,6 +2,13 @@
 
 更新：2026-10-23。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot20：Bot 拆分规划集成恢复点
+
+- P04-06-PLAN01：实施 `1dc49229cbcffd83da8bf0c142d4201c9db43d77`，独审 PASS `3ac208f153b0984a3ab55ec688dd26d5a8949c50`；main 按序无冲突集成 `511590b` → 组合 `a6c47166d671c81731cc9e789b8ea5f4882ef716`；I01 `2f146ff42e9445010b26b42c9c9b76900ba42a8e`。五文档 blob 同源、原工作/五验收/前置保留、19链接/当前registry叠加建议闭包24节点无环、diff通过；源码/API/SQL未动，未跑Go/Web业务测试。root据证据登记规划done和子卡，不由本快照改registry。
+- S01「Bot 存储、凭据与独立授权」等 P03-07、本规划和 P05-01-S01 实际独审集成；S02「Bot 管理 HTTP 与父验收收口」等 S01、P04-02、完整 P04-03、本规划。父卡保留 P04-02 并加 S01/S02、原验收最终组合收口。来源helper不能代完整安全，规划PASS不能代公共基础实际实现；A/I依subject_id/review/精确SHA与PASS触发。
+- 下一轮仅独立集成 P05-01-PLAN01 实施 `3ced9e53d581451dc6ee81e74ba7965a505056a7`、独审 `856566263cb026ecbeeca055f9aabaddb03b43d0`；核未来共同基础DAG再由root派发源码，不建Bot/changes源码树、不预占0004。G-API契约pass、P04-01/会话S01/来源S01done；P04-02-S02在途，真实NAS/手机/正式AC仍NOT_RUN。
+- root只写含用户原dirty的registry，未stage；`.directory`保持用户未跟踪。主index由本集成角色串行使用并在结束时释放；本提交只含checkpoint，源树保持不动。
+
 ## 授权与用户决定
 
 - 持续推进P3～P15及必要P0/P2收口。P13～15仍待核心实际完成及G-SHELF实质门槛，P12-06准备报告本身不足。
@@ -13,7 +20,7 @@
 
 ## 当前恢复点（2026-10-23）
 
-最近确认主树 `main@0fa0d8d520140e978b57f942ed133271411b959d`（来源helper独审精确集成/I01后，snapshot19前）。唯一任务台账仍registry；本轮持续执行，远未完成P4～P15。
+最近确认主树 `main@2f146ff42e9445010b26b42c9c9b76900ba42a8e`（Bot 拆分规划独审精确集成/I01 后，snapshot20 前）。唯一任务台账仍registry；本轮持续执行，远未完成P4～P15。
 
 - P00-01/02/04、P02-01～04、P03-01～06及08～12均已独立审计精确集成。G-GIT/G-MP/G-FCM/G-API=pass（MP/FCM为历史PoC限定，API仅契约）；CORE/DEPLOY/SHELF/SHELF-API/OPPO=pending。
 - P03-07同步/设备/全局配置/健康契约及最终综合证据均已独审精确集成。最终卡实施7ec2ae3、独审PASS34425b4、main组合981692f、I01 375a270；父五项/S03八项证据齐全。root已据最终独审及精确集成证据登记P03-07/S03/最终卡done与G-API契约pass，无需新用户授权。运行时/正式AC未验。
@@ -48,7 +55,7 @@ bootstrap原实现9cb95c4经A01 532ea26发现BS-A01-01（seed可冒充实际追�
 - 用户确认OPPO账号/应用Push权限尚未准备，P02-05/G-OPPO受阻，仅阻厂商实测/激活；真机运行留正式验收，正式签名成功/安装界面/端到端NOT_RUN保留。不能将Schema/合成状态或阶段放行冒充HTTP/SQLite/Room/WS/通知实际运行验收。
 - 锁Python可先核`/tmp/relaynest-p0305-f01-locked/bin/python`，缺失依hash锁恢复不升级。Android/mise版本沿原锁；干净Go构建前先Web npm ci/build生成gitignored embed资源，不靠旧dist。SQLite已占0001，下一迁移0002；共享API/依赖/迁移串行。
 - 主树registry.json含用户原有修改及调度更新，`.directory`为用户未跟踪文件，均不stage/覆盖/丢弃。本摘要由root创建，Git提交必须交集成agent显式路径处理，禁止git add .。
-- 各已审源树及分支保留，不prune/remove/clean/reset。request-source已释放；snapshot19后从最终main准备auth-http干净树供P04-02-S02，root据来源helper审计/I01确认done后派发。真实0001/0002/0003已占，下一0004未分配。Bot规划待另轮文档集成，changefeed仍规划，不建其源码树。
+- 各已审源树及分支保留，不prune/remove/clean/reset。request-source已释放，来源 S01 已由root据独审/I01登记done；auth_http_dev 正在隔离 auth-http 树（base b60f9ae）实施 P04-02-S02，尚未done。真实0001/0002/0003已占，下一0004未分配。Bot规划已精确文档集成；changefeed规划独审PASS待下一独立集成轮，不建两者源码树。
 - 本文件不是全部完成报告，不创建新聊天/定时任务/自动化，也不授权push、Release、真实部署或MP重建升级。P13～15虽已授权，仍等核心实际完成/G-SHELF实质门槛，不改RelayShelf后端/数据库。
 
 ## 当前P4派发点（恢复时以registry和实际agent为准）
