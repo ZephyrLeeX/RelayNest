@@ -2,6 +2,13 @@
 
 更新：2026-10-23。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot30：P04-04 登录防护精确集成
+
+- main 集成前 `593b67a61b2e34a6309f513d3ffe7d75135e85f4`。实现 `c5be4acaf1442de7e9eabf298dd71bc217d5e708` → `57cfbb62f6def179b2b244c4bc0f47763d26a07f`；独审 PASS `8b3ff1cfa0325d9e4ec36a57e3ecb22d03404f76` → 组合 `9b65b73b2a499add367c613ae3e318138b111a3f`，依序精确 cherry-pick 无冲突。七路径及 A01 报告均与来源同 blob，API/SQL/依赖未改。
+- [P04-04 I01](P04-04-I01.md) 独立提交 `932d4dddbdee3216ed1b13b7f708f8481c205509`。本组合 auth/httpapi/cmd 无缓存 race PASS（24.409s/1.129s/7.866s），全 server vet、六 Go 文件 gofmt、diff 检查 PASS。新 P04-04 A01 与本组合重新覆盖共享摘要两槽、429/失败预算/日志接线及 strictJSON、Origin/CSRF、Cookie/Bearer、reset、失败不续期；不自动继承旧 P04-03 认证 PASS。旧生产十四失败写 overlay 未重跑，不冒充新矩阵证据。锁定 API Python 缺失，完整 API 矩阵仍 NOT_RUN。
+- 完整 P04-02/P04-03 已本地收口；P04-05 PLAN 来源 `a4f8330`、A01 `0674207`、main `c4ed7b3` 已集成。S01 应在本 snapshot 提交后用精确最新 main 创建 `admin-request-security` 隔离树，仅准备不实现，再由总调度派发；必须包含本次 P04-04 最终 auth，不能旧基线并行漂移。不分配迁移 0005。
+- registry 原 dirty 与 `.directory` 原 untracked 均保留未暂存，状态由总调度更新。公共管理员 security 尚未导出；正式 AC、真实 NAS/浏览器/手机和未来业务仍 NOT_RUN，ready 503。未 push、部署、新聊天或子 agent；恢复优先 snapshot30，历史 snapshot 不代表 P4～P15 全部完成。
+
 ## snapshot29：P04-03 安全组合证据集成
 
 - main 前 `c2081f23cfdb248e1bf702faef12e0a5746782c2`；实施报告 `ab43c24b784bd968a6bf4927625c3182432c4276` → `6cd691ba00e90fa19bdae3479ac5e1466d70c66e`；独审 PASS `38b14f8163dc5076cf8f9546d461fea6ac3e9caa` → 最终组合 `04831d870582a928ce7f8f5d7e4827ae6e9134e4`，依序精确 cherry-pick 无冲突。两报告 blob 与源一致，受审源码 `96f6fff8340957104fb627606640adc2bc572eae` 至本组合只有 docs 差异，无源码/API/SQL/依赖变化。
