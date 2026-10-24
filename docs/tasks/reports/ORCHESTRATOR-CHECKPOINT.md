@@ -2,6 +2,14 @@
 
 更新：2026-10-24。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot46：Bot 生命周期基础事务与真实 HTTP 有限规划集成
+
+- 恢复优先本 snapshot。main 前 `8138b794e8023dd2eff4a1e03ec1e0a8c07f022c`；按序规划 `d42093f8dafe3fed5959fdb3241af07a48bcde6e`→`e61a3ca4c3738fe994643f63b708fce3b4948ab4`、独审 PASS `b1cd09a29a81d4be7e6487bbf8a5c5f23b25132e`→组合 `751e87894585297a0257271d94451e4a759be60a`。[I01](P04-07-PLAN01-I01.md) 独立提交 `bb412871ba3c362508ee1da88b2e08ef56b81d62`；本 snapshot 另提交，其提交为本轮最终 main，准确 SHA 提交后交接。
+- 六文档 blob 同源、父全文前缀/原验收保留、25 相对链接及最新台账叠加建议58节点 DAG、scope/diff检查 PASS。旧检查固定设备 owner 断言已过时，刷新至当前 `device_admin_http_audit` 后重跑全部通过，I01如实记录。无冲突/改写、无需重审；纯文档不跑 Go/Web 或业务矩阵，无源码/API/SQL/迁移号变更，不冒称 runtime 通过。
+- root 登记后 S01 直接实施→独审/集成→S02，父 P04-07 仅收口基础事务；S03 真实 reset/DELETE 等 P06-07 + 设备 P04-05-S03 最终 A/I + HTTP 耗尽错误映射契约确认。P07-02/P06-07 原依赖不改，完整 Web gate 仅建议，完整删除/租约/队列/手机/NAS 验收保留。C01 正式契约另树开发，不能猜签名/header；shared migration 0005 未分配。
+- 来源 `/home/lijx/Projects/RelayNest-recovery-20261024/bot-lifecycle`、`codex/bot-lifecycle-recovery-20261024` 保留干净独审 HEAD。此前 app 两次 managed 创建返回成功后目录立即消失、restore/attach失败，调度已核准原生Git稳定树回退；本 snapshot 后以最终 main 精确 ref 准备 `/home/lijx/Projects/RelayNest-recovery-20261024/bot-lifecycle-store`、`codex/bot-lifecycle-store-20261024`。已核目标 path/ref 无占用，实际 path/branch/base 以最终回执交接；只准备不研究/实施，不覆盖/重置/清理旧树。
+- root dirty registry 与用户 `.directory` 不 stage/覆盖；C01 与设备独立审计树未操作。仅两精确文档提交、I01、本 snapshot 入库；新树核验后释放 main index。无 push/部署/新聊天/额外 agent，旧 snapshots 原样保留。
+
 ## snapshot45：已批准实例身份八卡规划独审精确集成
 
 - 恢复优先本 snapshot。main 前 `79c4601deb71d5865e3539ddc7da7f138737ee15`；按序规划 `ca8cd805b0dc7f13aba8fed2a4ece5319eff92d6`→`14cff188221148e12162d6b59866871ca8fe8f1e`、独审 PASS `b98a023733dc2c26ef54f9db1b07a50447d43953`→组合 `f0e9dd348c6415d4e4036bd18f5c0ecbe21a6cb7`。[I01](P08-04-D01-CONTRACT-PLAN01-I01.md) 独立提交 `e8656609898bc0d74bb8e53aa9f671d8bc852ada`；本 snapshot 另提交，最终 main 为本提交，准确 SHA 提交后交接。
