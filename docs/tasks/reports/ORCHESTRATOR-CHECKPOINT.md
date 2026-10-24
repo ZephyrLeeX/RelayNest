@@ -2,6 +2,13 @@
 
 更新：2026-10-24。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot38：Android Hub 地址与认证 HTTP 边界集成
+
+- 恢复优先本 snapshot。main 前 `67d60d65629c18690ca45a6a90bfd1eeb55f47cb`，按序仅集成实现 `24f0ba44833fa7feba674bf58bfac1ee64dcbcb5` 为 `252f4b904291f9d1aad0fd1d2dcf90c06fb1a98d`、独审 PASS `604e43160cbb63b65f3ce619df121114a6b2f146` 为组合 `e7e55c3c1c7441483bdeff6ba66672a61d72e549`。11 blobs 同源，无冲突或改写；恰八新增依赖锁坐标，旧版本保留，无 API/服务端/UI 扩张。[S01 I01](P08-04-S01-I01.md) 独立提交 `319f262cc920af1aef276f9f475ad9e5d294e126`，本 snapshot 另行提交，最终 main SHA 由交接记录。
+- 精确 main 组合使用既有 mise/Java21/Android SDK，离线强制重跑单测、lintDebug、assembleDebug：51任务全 executed、10测试 failures/errors/skipped 全0、Debug构建 PASS。lint 实际0errors/6warnings，比独审5条多原有 Compose2.2.10 的 NewerVersionAvailable 提示；已记录环境差异，未升级/压制或修改审定代码。不跑无关 Go；真实后端 E2E、手机/Keystore、远程撤销、成功release签名仍 NOT_RUN。S01可由root登记，S02/S03继续独立实施/审计/集成；D01、完整P04-05、S04和父P08-04全部门槛保留。
+- 本 snapshot 独立提交后，以最终 main 精确 SHA 经 app 准备 `android-auth-storage`、`codex/android-auth-storage` 干净隔离树，仅供 S02 后续派发，实际路径/branch/base以工具回执交接。已检查 attached worktrees，旧 Android 树属规划/研究/网络用途，旧 network 树保留 `604e431` 不reset/clean；设备树独立 A02 不触碰。只准备，不研究或实施 S02。
+- registry 仅 root 维护；主树既有 dirty registry 与用户 `.directory` 未 stage/覆盖。仅指定 S01 两提交、I01 与本 snapshot 入库。新树核验后释放 main index；无 push/部署、新聊天或额外子 agent。旧 snapshots 保留。
+
 ## snapshot37：设备会话同 Store 受控事务修复规划集成
 
 - 恢复优先本 snapshot。main 前 `cdc04311a718afedaf68090d421abfe38f5bfd67`，按序仅集成代码独审 CHANGES_REQUIRED 报告 `b4feb1a278cd6e982214ec257c96dfbfea92ede6`、F01规划 `89558a971b7f4c8bd0a2d0f17e85668e91e02f04`、规划独审 PASS `2d80e85e7a9850d33e26716931cfe95b7f7e348e`，对应 `f803499` / `552fe25` / 组合 `8d3f923c94052a7e72d7dc4256b1e425c32a1973`；[I01](P04-05-S02-S01-F01-PLAN01-I01.md) 独立提交 `4a6b8b0096eee4214ff28499ff3a8d39767690ea`。无冲突或改写，七文档 blob 同源、23相对链接、原验收/依赖保留与 diff 检查 PASS；无源码/API/SQL/依赖变化，未重跑 Go 矩阵。本 snapshot 另行独立提交，最终 main SHA 由交接记录。
