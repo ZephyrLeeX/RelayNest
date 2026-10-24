@@ -2,6 +2,14 @@
 
 更新：2026-10-24。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot39：设备会话受控事务最终集成与父 S02 本地收口
+
+- 恢复优先本 snapshot。main 前 `89e0e24b77c0aa239f9105f2dec6a5a52c309f9c`，精确按序实现 `45ce3c9`→`698d5a1`、F01 `c0735c7`→`e8565d7`、最终 A02 PASS `da2a7b6`→组合 `31127d824064e53bb10d83ee69dcd138806b3049`。未重复已有 A01/修复规划/规划独审/I01。四 auth 文件 blob 同受审 c073，三报告同准确原提交；无冲突/源码改写。[本次 I01](P04-05-S02-S01-I01.md) 独立提交 `f698152fcd04d23c37c32399221c3b2d50a9db00`；本 snapshot 另行提交，最终 main SHA 以交接为准。
+- 本轮 Node22.23.2/npm10.9.8 ci/build 先生成 ignored embed；Go1.27.3/local 对 auth/storage/migrations/httpapi/cmd 五包非缓存普通、race、vet及生产build全部 PASS；gofmt/diff/blob/祖先核对通过。A02完整六矩阵与本组合检查支持 root 登记 S02-S01/F01及父 S02本地存储 done，A01-F01 已关闭；不是父P04-05/S03或正式AC完成。真实手机、WS/provider E2E仍 NOT_RUN，P09实际持久化失效及发送/回调前复核义务保留。
+- 下游唯一管理员写入口 `WithAuthorizedWrite(ctx,actor,func(*sql.Tx)error)` 自持源 Store.Write，入口鉴权→业务+changes→尾检续期→提交，公开裸Tx AuthorizeTx/RenewTx已删除。Bot Create/Patch直接用所给Tx，不外开Write/嵌套，返回nil后公布结果；GET沿RenewRead。列表内部limit0默认50/上限100，HTTP显式0仍按minimum1；精确Session.id撤销及commit后hook，logout同路，专用自撤末尾检查保留。完整签名/错误见I01。
+- 已查 app attached worktrees，无合适当前Bot HTTP树；本 snapshot 提交后 app以最终main准备 `bot-admin-http`、分支 `codex/bot-admin-http` 干净隔离树，路径/base以工具回执交接。仅准备不实施，未来devicesS03的router/main写入须与BotS02串行；Android安全存储树由另一agent工作，不触碰。
+- 主树dirty registry与`.directory`原样未stage/覆盖；registry仅root更新。源device-session-finish保留da2a与唯一旧untracked checkpoint，不reset/clean/提交。main仅指定三个精确提交、I01、本snapshot；无push/部署/新聊天/额外子agent；准备新树核验后释放main index。旧snapshots保留。
+
 ## snapshot38：Android Hub 地址与认证 HTTP 边界集成
 
 - 恢复优先本 snapshot。main 前 `67d60d65629c18690ca45a6a90bfd1eeb55f47cb`，按序仅集成实现 `24f0ba44833fa7feba674bf58bfac1ee64dcbcb5` 为 `252f4b904291f9d1aad0fd1d2dcf90c06fb1a98d`、独审 PASS `604e43160cbb63b65f3ce619df121114a6b2f146` 为组合 `e7e55c3c1c7441483bdeff6ba66672a61d72e549`。11 blobs 同源，无冲突或改写；恰八新增依赖锁坐标，旧版本保留，无 API/服务端/UI 扩张。[S01 I01](P08-04-S01-I01.md) 独立提交 `319f262cc920af1aef276f9f475ad9e5d294e126`，本 snapshot 另行提交，最终 main SHA 由交接记录。
