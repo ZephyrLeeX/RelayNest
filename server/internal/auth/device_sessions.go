@@ -19,9 +19,37 @@ type DeviceSessionPage struct {
 	HasMore    bool
 }
 
-// AuthorizeTx 在已有写事务复核身份，不续期或提交。tx 必须由同一 storage.Store.Write
-// 提供；裸 sql.Tx 无来源查询，可信 Go 调用方负责同库接线并传播错误以回滚。
-func (s *SessionStore) AuthorizeTx(ctx context.Context, tx *sql.Tx, actor AdminRequest) (Session, error) {
+// WithAuthorizedWrite 固定在自身 Store 的唯一写事务内鉴权、执行业务并复核续期。
+// fn 是受信业务代码，须同步使用 tx、关闭 Rows，不得自行提交、回滚或保留事务。
+// 业务和 changes 必须使用所给 tx；仅返回 nil 后才能发布结果或明文凭据。
+// 此入口不隔离恶意业务 SQL；设备自撤必须使用 RevokeDeviceSession 的专用路径。
+func (s *SessionStore) WithAuthorizedWrite(ctx context.Context, actor AdminRequest, fn func(*sql.Tx) error) error {
+	if s == nil || s.store == nil || fn == nil {
+		return ErrInvalidSession
+	}
+	var businessErr error
+	err := s.store.Write(ctx, func(tx *sql.Tx) error {
+		if _, err := s.authorizeTx(ctx, tx, actor); err != nil {
+			return err
+		}
+		if businessErr = fn(tx); businessErr != nil {
+			return businessErr
+		}
+		_, err := s.renewTx(ctx, tx, actor)
+		return err
+	})
+	// 保留业务/CAS 错误身份；鉴权、事务创建和提交错误沿既有会话错误语义返回。
+	if businessErr != nil {
+		return businessErr
+	}
+	if err != nil {
+		return sessionError(err)
+	}
+	return nil
+}
+
+// authorizeTx 仅供 auth 内部使用；事务必须由当前 SessionStore 自身创建。
+func (s *SessionStore) authorizeTx(ctx context.Context, tx *sql.Tx, actor AdminRequest) (Session, error) {
 	return s.authorizeStateTx(ctx, tx, actor, 0)
 }
 
@@ -41,9 +69,9 @@ func (s *SessionStore) authorizeStateTx(ctx context.Context, tx *sql.Tx, actor A
 	return current, nil
 }
 
-// RenewTx 在业务和 changes 写入后、同一事务提交前复核并续期；错误必须传播回滚。
-func (s *SessionStore) RenewTx(ctx context.Context, tx *sql.Tx, actor AdminRequest) (Session, error) {
-	if _, err := s.AuthorizeTx(ctx, tx, actor); err != nil {
+// renewTx 仅供内部受控事务在业务和 changes 写入后复核并续期。
+func (s *SessionStore) renewTx(ctx context.Context, tx *sql.Tx, actor AdminRequest) (Session, error) {
+	if _, err := s.authorizeTx(ctx, tx, actor); err != nil {
 		return Session{}, err
 	}
 	current, err := s.accessTx(ctx, tx, actor.secrets.Token, actor.issued.ClientType, false, true)
@@ -90,7 +118,7 @@ func (s *SessionStore) ListDeviceSessions(ctx context.Context, actor AdminReques
 		after = string(raw)[3:]
 	}
 	err := s.store.Write(ctx, func(tx *sql.Tx) error {
-		if _, err := s.AuthorizeTx(ctx, tx, actor); err != nil {
+		if _, err := s.authorizeTx(ctx, tx, actor); err != nil {
 			return err
 		}
 		now := s.now().UTC().UnixNano()
@@ -123,7 +151,7 @@ func (s *SessionStore) ListDeviceSessions(ctx context.Context, actor AdminReques
 			next := base64.RawURLEncoding.EncodeToString([]byte("v1:" + page.Items[limit-1].ID))
 			page.NextCursor = &next
 		}
-		_, err = s.RenewTx(ctx, tx, actor)
+		_, err = s.renewTx(ctx, tx, actor)
 		return err
 	})
 	if err != nil {
@@ -135,7 +163,7 @@ func (s *SessionStore) ListDeviceSessions(ctx context.Context, actor AdminReques
 // RevokeDeviceSession 精确撤销 Session.id，绝不使用安装 ID 回退选择。失败不通知。
 func (s *SessionStore) RevokeDeviceSession(ctx context.Context, actor AdminRequest, id string) error {
 	err := s.store.Write(ctx, func(tx *sql.Tx) error {
-		if _, err := s.AuthorizeTx(ctx, tx, actor); err != nil {
+		if _, err := s.authorizeTx(ctx, tx, actor); err != nil {
 			return err
 		}
 		now := s.now().UTC().UnixNano()
@@ -153,7 +181,7 @@ func (s *SessionStore) RevokeDeviceSession(ctx context.Context, actor AdminReque
 		// 自撤也在末尾复核期限、代次和身份，但只接受本次写入的 revoked=1。
 		// 其他目标复核并续期；任一失败将目标写入一起回滚。
 		if id != actor.issued.ID {
-			_, err = s.RenewTx(ctx, tx, actor)
+			_, err = s.renewTx(ctx, tx, actor)
 		} else {
 			_, err = s.authorizeStateTx(ctx, tx, actor, 1)
 		}

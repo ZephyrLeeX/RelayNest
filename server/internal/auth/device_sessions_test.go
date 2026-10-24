@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"relaynest/server/internal/bots"
+	"relaynest/server/internal/changes"
 	"relaynest/server/internal/httpapi"
 )
 
@@ -226,7 +227,7 @@ func TestDeviceSessionPagination(t *testing.T) {
 	}
 }
 
-func TestDeviceSessionExistingTxBinding(t *testing.T) {
+func TestDeviceSessionAuthorizedWriteBinding(t *testing.T) {
 	s, _ := sessionFixture(t)
 	_, secret := createSession(t, s, "android")
 	actor := deviceActor(t, s, secret, "android")
@@ -244,14 +245,15 @@ func TestDeviceSessionExistingTxBinding(t *testing.T) {
 	wrongIssuer.issuer = foreign.issuer
 	noIssuer := actor
 	noIssuer.issuer = nil
-	cases := []AdminRequest{{Session: actor.Session}, tampered, wrongSecret, wrongIssuer, noIssuer, foreign}
+	cases := []AdminRequest{{}, {Session: actor.Session}, tampered, wrongSecret, wrongIssuer, noIssuer, foreign}
 	old := persistedIdle(t, s, actor.Session.ID)
 	for i, bad := range cases {
-		for _, op := range []func(context.Context, *sql.Tx, AdminRequest) (Session, error){s.AuthorizeTx, s.RenewTx} {
-			err := s.store.Write(sessionContext, func(tx *sql.Tx) error { _, err := op(sessionContext, tx, bad); return err })
-			if !errors.Is(err, ErrInvalidSession) {
-				t.Fatalf("binding case %d: %v", i, err)
-			}
+		err := s.WithAuthorizedWrite(sessionContext, bad, func(*sql.Tx) error {
+			t.Fatal("invalid actor reached callback")
+			return nil
+		})
+		if !errors.Is(err, ErrInvalidSession) {
+			t.Fatalf("binding case %d: %v", i, err)
 		}
 		if err := s.RevokeDeviceSession(sessionContext, bad, actor.Session.ID); !errors.Is(err, ErrInvalidSession) {
 			t.Fatal("bad actor revoked", err)
@@ -260,16 +262,24 @@ func TestDeviceSessionExistingTxBinding(t *testing.T) {
 			t.Fatal("bad actor listed", err)
 		}
 	}
-	if _, err := s.AuthorizeTx(sessionContext, nil, actor); !errors.Is(err, ErrInvalidSession) {
-		t.Fatal("nil tx")
+	if err := s.WithAuthorizedWrite(sessionContext, actor, nil); !errors.Is(err, ErrInvalidSession) {
+		t.Fatal("nil callback", err)
+	}
+	for _, invalid := range []*SessionStore{nil, {}} {
+		if err := invalid.WithAuthorizedWrite(sessionContext, actor, func(*sql.Tx) error {
+			t.Fatal("invalid store reached callback")
+			return nil
+		}); !errors.Is(err, ErrInvalidSession) {
+			t.Fatal("invalid store", err)
+		}
 	}
 	if persistedIdle(t, s, actor.Session.ID) != old || deviceRevoked(t, s, actor.Session.ID) != 0 {
 		t.Fatal("binding failure changed state")
 	}
 }
 
-func TestDeviceSessionExistingTxAtomicity(t *testing.T) {
-	for _, mode := range []string{"success", "business-error", "changes-error", "callback-error", "after-renew-error", "commit-error", "revoked", "generation", "expired", "absolute-cap"} {
+func TestDeviceSessionAuthorizedWriteAtomicity(t *testing.T) {
+	for _, mode := range []string{"success", "business-error", "changes-error", "callback-error", "renew-error", "commit-error", "revoked", "generation", "expired", "absolute-expired", "cancelled", "absolute-cap", "advanced-idle"} {
 		t.Run(mode, func(t *testing.T) {
 			s, now := sessionFixture(t)
 			meta, secret := createSession(t, s, "web")
@@ -281,12 +291,17 @@ func TestDeviceSessionExistingTxAtomicity(t *testing.T) {
 			}
 			actor := deviceActor(t, s, secret, "web")
 			old := persistedIdle(t, s, meta.ID)
+			if mode == "advanced-idle" {
+				deviceSQL(t, s, "UPDATE sessions SET idle_expires_at=? WHERE id=?", now.Add(48*time.Hour).UnixNano(), meta.ID)
+			}
+			if mode == "renew-error" {
+				deviceSQL(t, s, `CREATE TRIGGER fail_renew BEFORE UPDATE OF idle_expires_at ON sessions BEGIN SELECT RAISE(ABORT,'fixture renewal failure'); END`)
+			}
 			deviceSQL(t, s, `CREATE TABLE tx_business(value INTEGER NOT NULL CHECK(value>0)); CREATE TABLE tx_parent(id INTEGER PRIMARY KEY); CREATE TABLE tx_child(id INTEGER REFERENCES tx_parent(id) DEFERRABLE INITIALLY DEFERRED)`)
 			marker := errors.New("business callback failure")
-			err := s.store.Write(sessionContext, func(tx *sql.Tx) error {
-				if _, err := s.AuthorizeTx(sessionContext, tx, actor); err != nil {
-					return err
-				}
+			ctx, cancel := context.WithCancel(sessionContext)
+			defer cancel()
+			err := s.WithAuthorizedWrite(ctx, actor, func(tx *sql.Tx) error {
 				value := 1
 				if mode == "business-error" {
 					value = 0
@@ -314,24 +329,31 @@ func TestDeviceSessionExistingTxAtomicity(t *testing.T) {
 					}
 				case "expired":
 					*now = meta.IdleExpiresAt
+				case "absolute-expired":
+					*now = meta.AbsoluteExpiresAt
+				case "cancelled":
+					cancel()
 				case "commit-error":
 					if _, err := tx.Exec("INSERT INTO tx_child VALUES(7)"); err != nil {
 						return err
 					}
 				}
-				if _, err := s.RenewTx(sessionContext, tx, actor); err != nil {
-					return err
-				}
-				if mode == "after-renew-error" {
-					return marker
-				}
 				return nil
 			})
-			success := mode == "success" || mode == "absolute-cap"
+			success := mode == "success" || mode == "absolute-cap" || mode == "advanced-idle"
 			if success && err != nil || !success && err == nil {
 				t.Fatalf("unexpected transaction result %v", err)
 			}
-			if mode == "revoked" || mode == "generation" || mode == "expired" {
+			if mode == "callback-error" && err != marker {
+				t.Fatal("business error identity lost", err)
+			}
+			if (mode == "business-error" || mode == "changes-error") && errors.Is(err, ErrStorage) {
+				t.Fatal("business SQL error was mapped to auth storage error", err)
+			}
+			if (mode == "renew-error" || mode == "commit-error" || mode == "cancelled") && !errors.Is(err, ErrStorage) {
+				t.Fatal("auth/commit error mapping", err)
+			}
+			if mode == "revoked" || mode == "generation" || mode == "expired" || mode == "absolute-expired" {
 				if !errors.Is(err, ErrInvalidSession) {
 					t.Fatal("identity failure", err)
 				}
@@ -346,6 +368,9 @@ func TestDeviceSessionExistingTxAtomicity(t *testing.T) {
 			idle := persistedIdle(t, s, meta.ID)
 			if success {
 				expected := now.Add(24 * time.Hour).UnixNano()
+				if mode == "advanced-idle" {
+					expected = now.Add(48 * time.Hour).UnixNano()
+				}
 				if expected > meta.AbsoluteExpiresAt.UnixNano() {
 					expected = meta.AbsoluteExpiresAt.UnixNano()
 				}
@@ -363,6 +388,166 @@ func TestDeviceSessionExistingTxAtomicity(t *testing.T) {
 }
 
 func deviceHash(token string) []byte { h := sha256.Sum256([]byte(token)); return h[:] }
+
+// 两个文件 SQLite 拥有相同会话行；只有源库重置代次，证明不能用克隆外库复核。
+func TestDeviceSessionAuthorizedWriteOwnsSourceStore(t *testing.T) {
+	for _, reset := range []bool{false, true} {
+		t.Run(fmt.Sprintf("reset=%t", reset), func(t *testing.T) {
+			s, now := sessionFixture(t)
+			meta, secret := createSession(t, s, "web")
+			actor := deviceActor(t, s, secret, "web")
+			other, _ := sessionFixture(t)
+			deviceSQL(t, other, `INSERT INTO sessions(id,token_hash,auth_generation,client_type,device_id,device_name,idle_expires_at,absolute_expires_at,revoked) VALUES(?,?,1,?,?,?,?,?,0)`,
+				meta.ID, deviceHash(secret.Token), meta.ClientType, meta.DeviceID, meta.DeviceName, meta.IdleExpiresAt.UnixNano(), meta.AbsoluteExpiresAt.UnixNano())
+			// 外库克隆确实可由自己的真实 guard 签发，而非无效的反例夹具。
+			deviceActor(t, other, secret, "web")
+			for _, store := range []*SessionStore{s, other} {
+				deviceSQL(t, store, "CREATE TABLE tx_business(value INTEGER NOT NULL)")
+			}
+			if reset {
+				deviceSQL(t, s, "UPDATE administrator SET auth_generation=2")
+			}
+			*now = now.Add(time.Hour)
+			called := 0
+			err := s.WithAuthorizedWrite(sessionContext, actor, func(tx *sql.Tx) error {
+				called++
+				if _, err := tx.Exec("INSERT INTO tx_business VALUES(1)"); err != nil {
+					return err
+				}
+				_, err := changes.Append(sessionContext, tx, changes.Metadata{Type: changes.BotUpsert, EntityID: "fixture", Revision: 1, CreatedAt: *now})
+				return err
+			})
+			if reset && !errors.Is(err, ErrInvalidSession) || !reset && err != nil {
+				t.Fatal("source authorization", err)
+			}
+			if err := other.WithAuthorizedWrite(sessionContext, actor, func(*sql.Tx) error {
+				t.Fatal("source actor accepted by cloned store")
+				return nil
+			}); !errors.Is(err, ErrInvalidSession) {
+				t.Fatal("foreign actor binding", err)
+			}
+			want := int64(1)
+			if reset {
+				want = 0
+			}
+			if int64(called) != want || deviceInt(t, s, "SELECT count(*) FROM tx_business") != want || deviceInt(t, s, "SELECT count(*) FROM changes") != want {
+				t.Fatal("source business/changes mismatch")
+			}
+			wantIdle := meta.IdleExpiresAt.UnixNano()
+			if !reset {
+				wantIdle = now.Add(24 * time.Hour).UnixNano()
+			}
+			if persistedIdle(t, s, meta.ID) != wantIdle || persistedIdle(t, other, meta.ID) != meta.IdleExpiresAt.UnixNano() || deviceInt(t, other, "SELECT count(*) FROM tx_business") != 0 || deviceInt(t, other, "SELECT count(*) FROM changes") != 0 {
+				t.Fatal("source/foreign persistence or renewal mismatch")
+			}
+		})
+	}
+}
+
+func TestDeviceSessionAuthorizedWriteQueuedInvalidation(t *testing.T) {
+	for _, mode := range []string{"revoked", "generation", "expired"} {
+		t.Run(mode, func(t *testing.T) {
+			s, now := sessionFixture(t)
+			meta, secret := createSession(t, s, "web")
+			actor := deviceActor(t, s, secret, "web")
+			old := persistedIdle(t, s, meta.ID)
+			deviceSQL(t, s, "CREATE TABLE tx_business(value INTEGER)")
+			entered, release := make(chan struct{}), make(chan struct{})
+			writerDone := make(chan error, 1)
+			go func() {
+				writerDone <- s.store.Write(sessionContext, func(tx *sql.Tx) error {
+					var err error
+					switch mode {
+					case "revoked":
+						_, err = tx.Exec("UPDATE sessions SET revoked=1 WHERE id=?", meta.ID)
+					case "generation":
+						_, err = tx.Exec("UPDATE administrator SET auth_generation=2")
+					case "expired":
+						*now = meta.IdleExpiresAt
+					}
+					close(entered)
+					<-release
+					return err
+				})
+			}()
+			<-entered
+			started, done := make(chan struct{}), make(chan error, 1)
+			var called atomic.Bool
+			go func() {
+				close(started)
+				done <- s.WithAuthorizedWrite(sessionContext, actor, func(tx *sql.Tx) error {
+					called.Store(true)
+					if _, err := tx.Exec("INSERT INTO tx_business VALUES(1)"); err != nil {
+						return err
+					}
+					_, err := changes.Append(sessionContext, tx, changes.Metadata{Type: changes.BotUpsert, EntityID: "fixture", Revision: 1, CreatedAt: *now})
+					return err
+				})
+			}()
+			<-started
+			close(release)
+			if err := <-writerDone; err != nil {
+				t.Fatal(err)
+			}
+			if err := <-done; !errors.Is(err, ErrInvalidSession) {
+				t.Fatal("queued invalidation", err)
+			}
+			if called.Load() || deviceInt(t, s, "SELECT count(*) FROM tx_business") != 0 || deviceInt(t, s, "SELECT count(*) FROM changes") != 0 || persistedIdle(t, s, meta.ID) != old {
+				t.Fatal("invalid entry wrote business/changes or renewed")
+			}
+		})
+	}
+}
+
+func TestDeviceSessionAuthorizedWriteSerializesReset(t *testing.T) {
+	s, now := sessionFixture(t)
+	meta, secret := createSession(t, s, "web")
+	actor := deviceActor(t, s, secret, "web")
+	*now = now.Add(time.Hour)
+	deviceSQL(t, s, "CREATE TABLE tx_business(value INTEGER)")
+	entered, release := make(chan struct{}), make(chan struct{})
+	done := make(chan error, 1)
+	go func() {
+		done <- s.WithAuthorizedWrite(sessionContext, actor, func(tx *sql.Tx) error {
+			if _, err := tx.Exec("INSERT INTO tx_business VALUES(1)"); err != nil {
+				return err
+			}
+			if _, err := changes.Append(sessionContext, tx, changes.Metadata{Type: changes.BotUpsert, EntityID: "fixture", Revision: 1, CreatedAt: *now}); err != nil {
+				return err
+			}
+			// 已完成入口鉴权且持有唯一写连接，reset 只能在业务提交后执行。
+			close(entered)
+			<-release
+			return nil
+		})
+	}()
+	<-entered
+	resetStarted, resetDone := make(chan struct{}), make(chan error, 1)
+	go func() {
+		close(resetStarted)
+		resetDone <- s.store.Write(sessionContext, func(tx *sql.Tx) error {
+			_, err := tx.Exec("UPDATE administrator SET auth_generation=2")
+			return err
+		})
+	}()
+	<-resetStarted
+	close(release)
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	if err := <-resetDone; err != nil {
+		t.Fatal(err)
+	}
+	if deviceInt(t, s, "SELECT count(*) FROM tx_business") != 1 || deviceInt(t, s, "SELECT count(*) FROM changes") != 1 || persistedIdle(t, s, meta.ID) != now.Add(24*time.Hour).UnixNano() || deviceInt(t, s, "SELECT auth_generation FROM administrator") != 2 {
+		t.Fatal("serialized business/reset persistence mismatch")
+	}
+	if err := s.WithAuthorizedWrite(sessionContext, actor, func(*sql.Tx) error {
+		t.Fatal("reset actor reached business")
+		return nil
+	}); !errors.Is(err, ErrInvalidSession) {
+		t.Fatal("reset did not invalidate actor", err)
+	}
+}
 
 func TestDeviceSessionRevocationCommitBoundaries(t *testing.T) {
 	for _, mode := range []string{"actor-entry-expired", "actor-tail-expired", "self-tail-expired", "self-final-expired", "target-update-expired", "target-tail-expired", "actor-revoked", "actor-generation", "self-generation", "target-revoked", "target-generation", "unknown", "update-error", "commit-error"} {
