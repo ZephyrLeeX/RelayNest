@@ -56,7 +56,7 @@ func botBusinessError(w http.ResponseWriter, access BotAccess, err error) {
 }
 
 // 解码大小受限、拒绝额外字段与尾随文档；必填及 null 由具体模型验证。
-func botDecode(w http.ResponseWriter, r *http.Request, v any) bool {
+func botDecode(w http.ResponseWriter, r *http.Request, v any, allowed ...string) bool {
 	media, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil || media != "application/json" {
 		botError(w, 400, "INVALID_REQUEST")
@@ -77,6 +77,11 @@ func botDecode(w http.ResponseWriter, r *http.Request, v any) bool {
 		botError(w, 400, "INVALID_REQUEST")
 		return false
 	}
+	// encoding/json 接受大小写别名；先按解码后的原始键逐层落实精确 schema。
+	if !botExactKeys(raw, allowed...) {
+		botError(w, 400, "INVALID_REQUEST")
+		return false
+	}
 	for _, value := range fields {
 		if strings.TrimSpace(string(value)) == "null" {
 			botError(w, 422, "VALIDATION_FAILED")
@@ -90,6 +95,43 @@ func botDecode(w http.ResponseWriter, r *http.Request, v any) bool {
 		return false
 	}
 	return true
+}
+
+func botExactKeys(raw json.RawMessage, allowed ...string) bool {
+	// null 仍交原有模型验证；逐个属性检查避免重复对象的早先键被 map 覆盖。
+	// 不拒绝重复键，合法重复字段继续沿用 encoding/json 的解码语义。
+	if strings.TrimSpace(string(raw)) == "null" {
+		return true
+	}
+	d := json.NewDecoder(strings.NewReader(string(raw)))
+	if token, err := d.Token(); err != nil || token != json.Delim('{') {
+		return false
+	}
+	for d.More() {
+		key, err := d.Token()
+		if err != nil {
+			return false
+		}
+		found := false
+		for _, name := range allowed {
+			if key == name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+		var value json.RawMessage
+		if d.Decode(&value) != nil {
+			return false
+		}
+		if key == "capabilities" && !botExactKeys(value, "send", "receive") {
+			return false
+		}
+	}
+	token, err := d.Token()
+	return err == nil && token == json.Delim('}')
 }
 
 type botCapabilitiesInput struct {
@@ -114,7 +156,7 @@ func (h *BotHandler) CreateBot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var in botInput
-	if !botDecode(w, r, &in) {
+	if !botDecode(w, r, &in, "name", "enabled", "capabilities") {
 		return
 	}
 	if in.Name == nil || *in.Name == "" || in.Enabled == nil || !in.Capabilities.valid() {
@@ -141,7 +183,7 @@ func (h *BotHandler) PatchBot(w http.ResponseWriter, r *http.Request) {
 		botInput
 		ExpectedVersion *int64 `json:"expected_version"`
 	}
-	if !botDecode(w, r, &in) {
+	if !botDecode(w, r, &in, "expected_version", "name", "enabled", "capabilities") {
 		return
 	}
 	if in.ExpectedVersion == nil || *in.ExpectedVersion < 1 || (in.Name != nil && *in.Name == "") || (in.Capabilities != nil && !in.Capabilities.valid()) {

@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net"
@@ -878,6 +879,166 @@ func TestBotHTTPContractAndPagination(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestBotHTTPExactJSONKeys(t *testing.T) {
+	for _, kind := range []string{"android", "web"} {
+		for _, method := range []string{"POST", "PATCH"} {
+			var cases []struct {
+				key, alias string
+				replace    bool
+			}
+			keys := []string{"name", "enabled", "capabilities", "send", "receive"}
+			if method == "PATCH" {
+				keys = append(keys, "expected_version")
+			}
+			keys = append(keys, "unknown", "nested_unknown")
+			for _, key := range keys {
+				aliases := []string{strings.ToUpper(key[:1]) + key[1:], strings.ToUpper(key)}
+				if strings.Contains(key, "unknown") {
+					aliases = []string{key}
+				}
+				for _, alias := range aliases {
+					for _, replace := range []bool{false, true} {
+						if strings.Contains(key, "unknown") && replace {
+							continue
+						}
+						cases = append(cases, struct {
+							key, alias string
+							replace    bool
+						}{key, alias, replace})
+					}
+				}
+			}
+			for _, tc := range cases {
+				key, alias, replace := tc.key, tc.alias, tc.replace
+				t.Run(fmt.Sprintf("%s/%s/%s/replace=%t", kind, method, alias, replace), func(t *testing.T) {
+					f := botHTTP(t, nil)
+					token, actorID := f.android.Token, f.androidID
+					var headers map[string]string
+					if kind == "web" {
+						token, actorID = f.web.Token, f.webID
+						headers = map[string]string{"Origin": f.server.URL, "X-CSRF-Token": f.web.CSRFToken}
+					}
+					path := "/api/v1/admin/bots"
+					body := botCreateBody
+					var created bots.Created
+					if method == "PATCH" {
+						status, raw, h := f.request("POST", path, body, kind, token, headers)
+						assertBotResponse(t, status, 201, raw, h)
+						created = decodeBotCreated(t, raw)
+						path += "/" + created.Bot.ID
+						body = `{"expected_version":1,"name":"updated","enabled":false,"capabilities":{"send":false,"receive":true}}`
+					}
+					var fields map[string]any
+					if err := json.Unmarshal([]byte(body), &fields); err != nil {
+						t.Fatal(err)
+					}
+					target := fields
+					if key == "send" || key == "receive" || key == "nested_unknown" {
+						target = fields["capabilities"].(map[string]any)
+					}
+					if strings.Contains(key, "unknown") {
+						target[alias] = true
+					} else {
+						target[alias] = target[key]
+						if replace {
+							delete(target, key)
+						}
+					}
+					invalid, err := json.Marshal(fields)
+					if err != nil {
+						t.Fatal(err)
+					}
+					// 缩短 actor 空闲期限，确保错误路径若续期会被五表快照捕获。
+					f.sql("UPDATE sessions SET idle_expires_at=? WHERE id=?", time.Now().Add(time.Hour).UnixNano(), actorID)
+					before := f.snapshot()
+					status, raw, h := f.request(method, path, string(invalid), kind, token, headers)
+					assertBotResponse(t, status, 400, raw, h)
+					var envelope map[string]json.RawMessage
+					if err := json.Unmarshal([]byte(raw), &envelope); err != nil {
+						t.Fatal(err)
+					}
+					if len(envelope) != 1 || envelope["error"] == nil || !strings.Contains(raw, `"code":"INVALID_REQUEST"`) {
+						t.Fatal("incorrect error envelope")
+					}
+					for _, secret := range []string{f.android.Token, f.web.Token, f.web.CSRFToken, created.APIToken.Token, created.WebhookKey.Key} {
+						if secret != "" && strings.Contains(raw, secret) {
+							t.Fatal("error leaked credential")
+						}
+					}
+					if before != f.snapshot() {
+						t.Fatal("invalid key changed database or renewed session")
+					}
+					// 原始合法请求立即成功；PATCH 仍使用拒绝前的 expected_version=1。
+					status, raw, h = f.request(method, path, body, kind, token, headers)
+					want := 201
+					if method == "PATCH" {
+						want = 200
+						var updated bots.Bot
+						if err := json.Unmarshal([]byte(raw), &updated); err != nil {
+							t.Fatal(err)
+						}
+						if updated.Version != 2 || updated.Name != "updated" || updated.Enabled || updated.Capabilities.Send || !updated.Capabilities.Receive {
+							t.Fatal("legal patch did not apply exact fields")
+						}
+					} else {
+						c := decodeBotCreated(t, raw)
+						if c.Bot.Version != 1 || c.Bot.Name != "测试Bot" || !c.Bot.Enabled || !c.Bot.Capabilities.Send || !c.Bot.Capabilities.Receive || c.APIToken.Token == "" || c.WebhookKey.Key == "" {
+							t.Fatal("legal create did not apply exact fields")
+						}
+					}
+					assertBotResponse(t, status, want, raw, h)
+				})
+			}
+		}
+	}
+}
+
+func TestBotHTTPExactJSONKeyOccurrences(t *testing.T) {
+	for _, method := range []string{"POST", "PATCH"} {
+		t.Run(method, func(t *testing.T) {
+			f := botHTTP(t, nil)
+			path := "/api/v1/admin/bots"
+			prefix := ""
+			if method == "PATCH" {
+				status, raw, h := f.admin("POST", path, botCreateBody)
+				assertBotResponse(t, status, 201, raw, h)
+				path += "/" + decodeBotCreated(t, raw).Bot.ID
+				prefix = `"expected_version":1,`
+			}
+			for _, fields := range []string{
+				`"capabilities":{"Send":false},"name":"valid","enabled":true,"capabilities":{"send":true,"receive":true}`,
+				`"N\u0061me":"alias","name":"valid","enabled":true,"capabilities":{"send":true,"receive":true}`,
+				`"name":"valid","enabled":true,"capabilities":{"S\u0065nd":true,"send":true,"receive":true}`,
+			} {
+				f.sql("UPDATE sessions SET idle_expires_at=? WHERE id=?", time.Now().Add(time.Hour).UnixNano(), f.androidID)
+				before := f.snapshot()
+				status, raw, h := f.admin(method, path, "{"+prefix+fields+"}")
+				assertBotResponse(t, status, 400, raw, h)
+				if !strings.Contains(raw, `"code":"INVALID_REQUEST"`) || before != f.snapshot() {
+					t.Fatal("undeclared key occurrence was not rejected without side effects")
+				}
+			}
+			// 精确重复键和转义后的精确合法键仍按原解码语义成功，不新增重复键政策。
+			body := "{" + prefix + `"name":"first","na\u006de":"last","enabled":false,"enabled":true,"capabilities":{"send":false},"capabilities":{"receive":true,"send":true}}`
+			status, raw, h := f.admin(method, path, body)
+			want := 201
+			var result bots.Bot
+			if method == "POST" {
+				result = decodeBotCreated(t, raw).Bot
+			} else {
+				want = 200
+				if err := json.Unmarshal([]byte(raw), &result); err != nil {
+					t.Fatal(err)
+				}
+			}
+			assertBotResponse(t, status, want, raw, h)
+			if result.Name != "last" || !result.Enabled || !result.Capabilities.Send || !result.Capabilities.Receive {
+				t.Fatal("legal duplicate field semantics changed")
+			}
+		})
 	}
 }
 
