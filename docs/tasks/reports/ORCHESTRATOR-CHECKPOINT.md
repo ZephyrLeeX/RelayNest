@@ -1,6 +1,13 @@
 # 总调度恢复 checkpoint
 
-更新：2026-10-23。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
+更新：2026-10-24。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
+
+## snapshot35：Android 登录安全会话先行研究集成
+
+- 恢复优先本 snapshot。main 前 `e2ea912c5bdedf1d57f2cb8a9a58bbc75a65ae15`；研究 `ed18b03c4555f6d6f9ab208e208b4b419d5f75d1` 已在祖先链，仅精确挑拣独审 PASS `c5aa01bfdfd33e06380c3edff8353a2ac3edd597` 为组合 `978efe153b311f1289403023a7cc5294503f7c12`，无冲突；[I01](P08-04-PREP01-I01.md) 独立提交 `29bb0fc4b8cd7600902d1693d04d4da79d14fe11`。研究及审计 blob 同源，文档引用/链接、范围、diff 核查 PASS；无源码/API/SQL/依赖变化，未重跑业务矩阵。
+- 此 PASS 仅覆盖研究交付，P08-04 父卡仍保留完整 P04-05 前置与远程撤销、部署隔离等全部验收，不直接置 ready/done。后续可规划独立基础补充目标；重要安全/接口决定先由用户确认。真实手机、Keystore、release 成功签名及正式 AC 仍 NOT_RUN。
+- 本 snapshot 独立提交后，以最终 main 精确 SHA 由 app 准备 `android-auth-split` 干净 `codex/android-auth-split` 隔离树；只准备、不读源码或实施规划，实际路径/base/branch 由工具回执交接。旧 `android-auth-plan` 树保留审计提交 `c5aa01b`，不 reset/clean/修改；设备 `device-session-finish` 树正在独立续作，不触碰。
+- registry 仅由 root 维护，既有 dirty 与 `.directory` 未跟踪项均不 stage/覆盖。旧 snapshot 历史保留；完成新树核验后释放 main index。无 push/deploy、新聊天或子 agent。
 
 ## snapshot34：设备会话限定续作规划集成与草稿保护
 
