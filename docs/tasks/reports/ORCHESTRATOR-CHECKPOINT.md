@@ -2,6 +2,13 @@
 
 更新：2026-10-24。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot37：设备会话同 Store 受控事务修复规划集成
+
+- 恢复优先本 snapshot。main 前 `cdc04311a718afedaf68090d421abfe38f5bfd67`，按序仅集成代码独审 CHANGES_REQUIRED 报告 `b4feb1a278cd6e982214ec257c96dfbfea92ede6`、F01规划 `89558a971b7f4c8bd0a2d0f17e85668e91e02f04`、规划独审 PASS `2d80e85e7a9850d33e26716931cfe95b7f7e348e`，对应 `f803499` / `552fe25` / 组合 `8d3f923c94052a7e72d7dc4256b1e425c32a1973`；[I01](P04-05-S02-S01-F01-PLAN01-I01.md) 独立提交 `4a6b8b0096eee4214ff28499ff3a8d39767690ea`。无冲突或改写，七文档 blob 同源、23相对链接、原验收/依赖保留与 diff 检查 PASS；无源码/API/SQL/依赖变化，未重跑 Go 矩阵。本 snapshot 另行独立提交，最终 main SHA 由交接记录。
+- **未集成原代码 `45ce3c9c4ef97edad6142d32b9bd999edb8ff3c6`**；原 A01-F01 P1 仍开放。规划 PASS 不代表代码 PASS、S02收口或消费者可派发。root 登记后可派 F01：SessionStore 自持正确 Store.Write 的受控回调，私有化/删除公开裸 Tx 鉴权续期入口；保留六矩阵、自撤最终复核与提交后 hook。不同 agent 对最终组合 SHA 执行 A02 PASS、精确集成后才支持父收口及 S03/BotS02。BotS02 后续在既有范围内把原业务/CAS/凭据/changes 放入该受控入口，不另开/嵌套事务、不传裸 Tx；最终签名以已审代码为准。
+- 来源 `/home/lijx/.codex/worktrees/device-session-finish/RelayNest`、`codex/device-session-finish` 保留 HEAD `2d80e85e7a9850d33e26716931cfe95b7f7e348e`，tracked/index 无改动，唯一 untracked 旧 `docs/tasks/reports/P04-05-S02-checkpoint.md` SHA256 `53fdb287635edd538b35ef65eb7e0703744ba26e242ba1de2391292500f3294f`；不 reset/clean、不创建新树或挑拣其他源码，适合调度固定该 SHA 接续 F01。此来源含未通过代码，不能当作已审 main。
+- registry 仅 root 维护；主树既有 dirty registry 与 `.directory` 未 stage/覆盖。Android network agent 在独立树实施，本轮不触碰。完成最终状态核验后释放 main index，无 push/部署、新聊天或额外子 agent，旧 snapshot 保留。真实 WS/provider/手机/正式 AC 仍 NOT_RUN。
+
 ## snapshot36：Android Hub 认证有限拆卡规划集成
 
 - 恢复优先本 snapshot。main 从 `a64338605cdb2b2f70a2e9632cfe6ec7164e1b56` 按序精确集成规划 `e9e7024ef7b89d56443086ea51f323dc8e27b4d3`、独审 PASS `af6b423e36f0f814b7eb8260e1fe22dff7c268c9`，对应 `b909256` / 组合 `033f818a9470aca50936ae06a9704745d5fd5864`；[I01](P08-04-PLAN01-I01.md) 独立提交 `d3f2a76a6f8cfbee1bc98dcf47303fe7bd3cc98f`。无冲突/修订，七文档 blob 同源，原父全文/五验收、44链接及最新 dirty registry 叠加建议后345节点 DAG均 PASS；无源码/API/SQL/依赖/锁变化，未重跑业务矩阵。
