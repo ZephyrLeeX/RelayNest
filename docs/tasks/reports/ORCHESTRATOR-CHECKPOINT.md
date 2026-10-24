@@ -2,6 +2,15 @@
 
 更新：2026-10-24。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot48：已批准混合附件 Bot-first 提案精确集成
+
+- 恢复优先本 snapshot。main 前 `f316b3b3b7309ce9884357e0f7c8538f681fca97`；按序提案/checkpoint `fcab34768ceed749b38d0c4336889c53aab23268`→`62e642538f9336fcbfce66bb27fc1240f02c4e3f`、独审 PASS `5d0e64ba453f93f7c1d97ee07b370f539e6b6e4e`→组合 `076618cadc28a687fc5db3ae6a8200a2865153f0`。[I01](P08-04-D01-C01-MIXED01-I01.md) 独立提交 `a963aec49a588f6b8e4f9ba38bf37d596b3b2c64`；本 snapshot 另提交，其提交为本轮最终 main，精确 SHA 提交后交接。
+- 三报告 blob 与固定来源相同、4条来源 Markdown 相对链接及范围/diff 检查 PASS，无冲突或内容改写，无需重审。仅文档集成，未跑 Go/Web/Android/新契约机器或业务矩阵，未改源码/API/SQL/依赖/迁移号。草稿2190例与20声明变异不能证明 HTTP wire 分支或任何新 gate 通过。
+- 用户已批准仅 uploadAttachment/downloadAttachment 的 Bot-first：ID前只读 Bearer 识别 Bot API；匹配后停用/能力/资源/撤销/代次拒绝不 fallback Admin；依赖故障503；仅确定不匹配后先ID再Admin，接受无效凭据旧401→缺ID400/错ID409等错误优先级。当前 root registry answered 为准；来源报告旧 pending/needs_user 是历史，不撤销批准、不重复问。其他 G1 既定规则不变。
+- C01 仍未完成/最终独审冻结；须正式设计和机器声明同步获准混合顺序、补真实分支及公开probe declaration正反例，最终实施SHA另人A/I后才能冻结。B01需调度另定狭窄Bot身份发现适配路径/回归范围，不以提案PASS扩大模块。S01/M01不得消费草稿候选签名；S04/父卡及全部原门槛保留，phone/NAS/OPPO/Keystore/签名/真实环境仍NOT_RUN。
+- 来源 `/home/lijx/.codex/worktrees/instance-contract-freeze/RelayNest`、`codex/instance-contract-freeze`、HEAD `5d0e64ba453f93f7c1d97ee07b370f539e6b6e4e` 原样保留六dirty草稿，逐项SHA-256同[源checkpoint](P08-04-D01-C01-checkpoint.md)。其非managed快照六文件/draft.patch摘要及declaration_mutations.py存在性已核验；不恢复/清理/stage源草稿、不新建树，供后续C01恢复。
+- root dirty registry与用户 `.directory` 未stage/覆盖；仅两指定提交、I01和本snapshot入库。设备F01/Bot store独立审计恢复树未触碰；完成核验后释放main index，台账仅root维护。无push/部署/新聊天/额外agent；旧snapshots原样保留。
+
 ## snapshot47：设备撤销 401 修复规划精确集成
 
 - 恢复优先本 snapshot。main 前 `1c1988c88ead48e26cfb8cc16d0306a4ab501728`；依序原 S03 A01 `1e1550395d87d3eedbf05196e15b2e3328841c2d`→`657b126`、F01 规划 `e818ce44fde1c754887024ffc9acb5412fcfbbae`→`bc01533`、规划独审 PASS `775dde33d6800cf2cde26f6b1c1b8836307dce21`→组合 `c079cf64fb42c04dc11724df71b88c374c5ae7c6`。[I01](P04-05-S03-F01-PLAN01-I01.md) 独立提交 `412c20b1d2d57746039802c3fe957929521ec757`；本 snapshot 另提交，提交后交接最终 main SHA。
