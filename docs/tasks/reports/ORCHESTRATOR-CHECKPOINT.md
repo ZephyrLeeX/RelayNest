@@ -2,6 +2,14 @@
 
 更新：2026-10-24。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot47：设备撤销 401 修复规划精确集成
+
+- 恢复优先本 snapshot。main 前 `1c1988c88ead48e26cfb8cc16d0306a4ab501728`；依序原 S03 A01 `1e1550395d87d3eedbf05196e15b2e3328841c2d`→`657b126`、F01 规划 `e818ce44fde1c754887024ffc9acb5412fcfbbae`→`bc01533`、规划独审 PASS `775dde33d6800cf2cde26f6b1c1b8836307dce21`→组合 `c079cf64fb42c04dc11724df71b88c374c5ae7c6`。[I01](P04-05-S03-F01-PLAN01-I01.md) 独立提交 `412c20b1d2d57746039802c3fe957929521ec757`；本 snapshot 另提交，提交后交接最终 main SHA。
+- 四文档 blob 与来源固定 HEAD 相等，7 个 Markdown 相对链接、scope/diff 检查 PASS，无冲突或内容改写。main 尚缺原 S03 devices/http 源码/测试与实施报告，旧报告源码/implementation 引用暂仅来源链可追溯；不能声称全引用可达或业务已集成。未 cherry-pick `03b9510` / `013823a` / `de9f2ca`；待修复、最终 S03-A02 完整组合审计 PASS 后由 S03-I01 补齐。
+- 原 S03 仍 CHANGES_REQUIRED，F01 尚未实现或关闭；本 PASS 仅规划。DELETE 固定 401 REQUIRED 不改 API 豁免；五文件固定 auth 薄包装，devices DELETE 授权/事务错误两处选择，旧 GET/auth/Bot 行为与全部父子验收保留。修复须四包非缓存/race/vet及旧失败/新通过证据，最终 A02 从 `79c4601deb71d5865e3539ddc7da7f138737ee15` 审完整 S03+公共 auth 及消费者，旧 source PASS 不沿用。真实 WS/provider/Android 仍 NOT_RUN。
+- 来源 `/home/lijx/Projects/RelayNest-recovery-20261024/device-admin`、`codex/device-admin-recovery-20261024` 保持干净 HEAD `775dde33d6800cf2cde26f6b1c1b8836307dce21`，供调度固定修复基线接续；未 reset/clean 或创建新树。纯文档未跑 Go/Web 矩阵，不改源码/API/SQL/迁移。
+- root dirty registry 与用户 `.directory` 未 stage/覆盖；台账仅 root 登记。C01 另一 managed 树六处 dirty 与混合附件提案独审未触碰。仅三精确文档提交、I01、本 snapshot 入库；完成即释放 main index，供后续提案 I 接管，无 push/部署/新聊天/额外 agent。旧 snapshots 原样保留。
+
 ## snapshot46：Bot 生命周期基础事务与真实 HTTP 有限规划集成
 
 - 恢复优先本 snapshot。main 前 `8138b794e8023dd2eff4a1e03ec1e0a8c07f022c`；按序规划 `d42093f8dafe3fed5959fdb3241af07a48bcde6e`→`e61a3ca4c3738fe994643f63b708fce3b4948ab4`、独审 PASS `b1cd09a29a81d4be7e6487bbf8a5c5f23b25132e`→组合 `751e87894585297a0257271d94451e4a759be60a`。[I01](P04-07-PLAN01-I01.md) 独立提交 `bb412871ba3c362508ee1da88b2e08ef56b81d62`；本 snapshot 另提交，其提交为本轮最终 main，准确 SHA 提交后交接。
