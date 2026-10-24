@@ -2,6 +2,14 @@
 
 更新：2026-10-24。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot40：Android 安全存储精确集成收尾与两树准备
+
+- 恢复优先本 snapshot。main 前 `78bbaa5bbbe62c3149853974920047c39330c130`；仅精确实现 `12d4e735e9c5147e70c49b7ea25d00ac6f80ce90`→`e839c7089f045be74c44fd21184f6d8c3b01c6c6`、独审 PASS `386c954c79d4dd434cb83b4d5448e5d4c077a2f1`→组合 `0262f117d4e0bdc948e192e160c4e3881607a2b6`。六文件 blob 同源，无冲突或源码改写。[S02 I01](P08-04-S02-I01.md) 已独立提交 `06b0bf09f0f661bf4787e8af2349634efa84d24a`；本 snapshot 仅 checkpoint 独立提交，最终 main 为本提交，准确 SHA 由提交后交接记录，不预写。
+- 已完成准确 main 离线强制检查：51任务全 executed，27测试 failures/errors/skipped全0、assembleDebug通过；lint实际0errors/6warnings，较独审多既有Compose可更新提示，未升级/压制。恢复核对六blob、JUnit XML、lint产物和diff通过，不机械重跑矩阵。真机/Keystore真实执行、断电、卸载/迁移及成功release签名仍NOT_RUN；目录fsync与跨进程事务未承诺。S03 restore后须真实GET session确认并串行控制发布/检查票据，每次重试新begin，避免迟到响应复活。
+- 已查app attached worktrees，无现成S03/D01树；本 snapshot 提交后经app分别准备 `android-auth-ui` / `codex/android-auth-ui` 与 `deployment-identity-plan` / `codex/deployment-identity-plan`，均以最终main精确SHA为base，实际路径/分支/干净状态以工具回执交接。仅准备，不研究/实施；旧storage来源及报告保留，独立bot-admin-http继续恢复开发，均不触碰。
+- 用户已选D01方案A：先提出无凭据部署身份探测的具体方案，覆盖ID生命周期、失败及竞态并独审，再由用户确认契约；尚未授权改API或直接实施。endpoint绑定不等于部署身份；完整P04-05、D01、S04和父卡全部依赖/验收保留，S02集成不等于父卡完成。
+- registry仅root更新；主树既有dirty registry和用户`.directory`未stage/覆盖。两树核验后释放main index；无源码/API/依赖变化，无push/部署/新聊天/额外子agent；旧snapshots保留。
+
 ## snapshot39：设备会话受控事务最终集成与父 S02 本地收口
 
 - 恢复优先本 snapshot。main 前 `89e0e24b77c0aa239f9105f2dec6a5a52c309f9c`，精确按序实现 `45ce3c9`→`698d5a1`、F01 `c0735c7`→`e8565d7`、最终 A02 PASS `da2a7b6`→组合 `31127d824064e53bb10d83ee69dcd138806b3049`。未重复已有 A01/修复规划/规划独审/I01。四 auth 文件 blob 同受审 c073，三报告同准确原提交；无冲突/源码改写。[本次 I01](P04-05-S02-S01-I01.md) 独立提交 `f698152fcd04d23c37c32399221c3b2d50a9db00`；本 snapshot 另行提交，最终 main SHA 以交接为准。
