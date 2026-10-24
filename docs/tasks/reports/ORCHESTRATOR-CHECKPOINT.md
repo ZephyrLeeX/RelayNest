@@ -2,6 +2,15 @@
 
 更新：2026-10-24。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot45：已批准实例身份八卡规划独审精确集成
+
+- 恢复优先本 snapshot。main 前 `79c4601deb71d5865e3539ddc7da7f138737ee15`；按序规划 `ca8cd805b0dc7f13aba8fed2a4ece5319eff92d6`→`14cff188221148e12162d6b59866871ca8fe8f1e`、独审 PASS `b98a023733dc2c26ef54f9db1b07a50447d43953`→组合 `f0e9dd348c6415d4e4036bd18f5c0ecbe21a6cb7`。[I01](P08-04-D01-CONTRACT-PLAN01-I01.md) 独立提交 `e8656609898bc0d74bb8e53aa9f671d8bc852ada`；本 snapshot 另提交，最终 main 为本提交，准确 SHA 提交后交接。
+- 12 文档 blob 同来源；规划 71 相对链接、父/S04原全文前缀、八卡 DAG、scope/diff检查 PASS，无冲突/修订，无需重审。纯文档不跑业务矩阵；未改 API/源码/SQL/迁移号，旧 G-API 的39 operations/115 schemas/1229 cases仅旧范围，新契约尚未实施/冻结。
+- 用户 G1 残余窗口、生命周期、具体契约及兼容成本三项已批准，以 root 当前 registry answered 条目为准；旧报告与旧 snapshot 的 pending 不覆盖新决定。链为 C01→S01→M01→B01→N01→K01→R01→V01→S04→父；各卡另人独审 PASS/I后串行解锁，A/I用 subject_id。下一步登记后派 C01正式设计/契约冻结，无重复审批；本轮仅准备其干净树，不研究/实施。
+- 来源 `/home/lijx/.codex/worktrees/instance-contract-plan/RelayNest`、`codex/instance-contract-plan` 干净独审 HEAD 原样保留，不 reset/clean。snapshot后先查 app artifacts，择合适干净树或创建 `instance-contract-freeze`，以最终 main 为基线、分支 `codex/instance-contract-freeze`；实际路径/base以回执交接，不猜路径。
+- Bot 管理 HTTP 本地已 done；设备 P04-05-S03 与 P04-07-PLAN01 原工作树路径当前不可访问，均未完成、恢复中，专门恢复 agent 核查 artifacts/快照/refs；不冒充正常 running、不重建覆盖或释放原锁，本轮不碰其树。B01仍等设备共享入口释放；V01/S04完整P04-05/P03-03及父原验收保留，phone/NAS/OPPO/Keystore/签名发布仍NOT_RUN。
+- registry仅root维护，既有dirty及用户`.directory`未stage/覆盖；仅两精确文档提交、I01和本checkpoint入库。新树核验后释放main index，无push/部署/新聊天/额外agent；旧snapshots原样保留。
+
 ## snapshot44：Bot 管理 HTTP 与父卡本地收口精确集成
 
 - 恢复优先本 snapshot。main 前 `00d9f79a4a009bd93505eaa6c9bdbce4eefbd687`；仅按序原实现 `80a87509f0687afbb7f6a23c945b96363da480a8`→`fa2c690c56a72be6124ed0967abc226b2f00ae19`、F01 `30affdd6ecb7559da55bbf9aead80e10c3e4debd`→`8a7f3b8172a9e24973cb09e802c889de3c89301b`、A02 PASS `fdd735b9dd243d1631efcb6147546dc55d1d14b0`→组合 `2a39fec92342aceee82ba02e0377ca366de8dad8`。[S02 I01](P04-06-S02-I01.md) 独立提交 `cab32c3a1d33c6ae93ce8fbd9a38b8bb55f40985`；本 snapshot 另提交，最终 main 为本提交，准确 SHA 提交后交接。
