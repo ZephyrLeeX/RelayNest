@@ -107,7 +107,7 @@ func (h *Handler) ListDeviceSessions(w http.ResponseWriter, r *http.Request) {
 var sessionID = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`)
 
 func (h *Handler) RevokeDeviceSession(w http.ResponseWriter, r *http.Request) {
-	actor, ok := h.security.Authorize(w, r, auth.RequestWrite)
+	actor, ok := h.security.AuthorizeRequired(w, r, auth.RequestWrite)
 	if !ok {
 		return
 	}
@@ -129,7 +129,7 @@ func (h *Handler) RevokeDeviceSession(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, auth.ErrSessionNotFound) {
 			writeError(w, 404, "RESOURCE_NOT_FOUND")
 		} else {
-			auth.WriteSessionError(w, err)
+			auth.WriteSessionErrorRequired(w, err)
 		}
 		return
 	}
