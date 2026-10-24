@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"flag"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"relaynest/server/internal/auth"
+	"relaynest/server/internal/bots"
 	"relaynest/server/internal/health"
 	"relaynest/server/internal/httpapi"
 	"relaynest/server/internal/storage"
@@ -116,7 +118,7 @@ type proxyFlags []string
 func (p *proxyFlags) String() string         { return "" }
 func (p *proxyFlags) Set(value string) error { *p = append(*p, value); return nil }
 
-func authenticationDependencies(ctx context.Context, path, externalOrigin string, proxies []string) (*storage.Store, *auth.Handler, error) {
+func authenticationDependencies(ctx context.Context, path, externalOrigin string, proxies []string) (*storage.Store, *managementHandlers, error) {
 	policy, err := httpapi.NewOriginPolicy(externalOrigin, proxies)
 	if err != nil {
 		return nil, nil, err
@@ -125,5 +127,35 @@ func authenticationDependencies(ctx context.Context, path, externalOrigin string
 	if err != nil {
 		return nil, nil, err
 	}
-	return store, auth.NewHandler(store, auth.NewSessionStore(store), policy), nil
+	sessions := auth.NewSessionStore(store)
+	security := auth.NewRequestSecurity(sessions, policy)
+	return store, &managementHandlers{Handler: auth.NewHandler(store, sessions, policy), BotHandler: httpapi.NewBotHandler(bots.New(store), botAuthorization(sessions, security))}, nil
+}
+
+// botAuthorization 只将经公共入口签发的身份绑定至受控事务能力。
+func botAuthorization(sessions *auth.SessionStore, security *auth.RequestSecurity) httpapi.BotAuthorize {
+	return func(w http.ResponseWriter, r *http.Request, write bool) (httpapi.BotAccess, bool) {
+		mode := auth.RequestRead
+		if write {
+			mode = auth.RequestWrite
+		}
+		actor, ok := security.Authorize(w, r, mode)
+		if !ok {
+			return httpapi.BotAccess{}, false
+		}
+		// 闭包保留私有 actor；业务只能使用会话存储创建的 Tx，不能自行嵌套 Write。
+		return httpapi.BotAccess{
+			RenewRead: func(ctx context.Context) error { _, err := security.RenewRead(ctx, actor); return err },
+			Write: func(ctx context.Context, fn func(*sql.Tx) error) error {
+				return sessions.WithAuthorizedWrite(ctx, actor, fn)
+			},
+			SessionError: auth.WriteSessionError,
+		}, true
+	}
+}
+
+// 合并路由能力，认证与 Bot handler 使用同一会话仓储和来源政策。
+type managementHandlers struct {
+	*auth.Handler
+	*httpapi.BotHandler
 }

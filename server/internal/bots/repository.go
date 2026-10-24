@@ -40,9 +40,18 @@ func issue() (CredentialMetadata, string, []byte, error) {
 	return CredentialMetadata{id, 1}, token, digest[:], nil
 }
 
+// WriteFunc 同步运行受信业务回调，只在整个事务成功提交后返回 nil。
+type WriteFunc func(context.Context, func(*sql.Tx) error) error
+
 // Create 只有外层事务提交成功后才释放一次性凭据及全局序号。
 func (r *Repository) Create(ctx context.Context, req CreateRequest) (Created, changes.Sequence, error) {
-	if req.Name == "" {
+	return r.CreateWithWrite(ctx, req, r.store.Write)
+}
+
+// CreateWithWrite 将完整业务交给管理员会话拥有的事务；write 必须同步执行且仅提交一次。
+// 明文仅在整个授权、业务及续期事务提交成功后释放。
+func (r *Repository) CreateWithWrite(ctx context.Context, req CreateRequest, write WriteFunc) (Created, changes.Sequence, error) {
+	if write == nil || req.Name == "" {
 		return Created{}, 0, ErrInvalid
 	}
 	id, err := newBotID()
@@ -59,7 +68,7 @@ func (r *Repository) Create(ctx context.Context, req CreateRequest) (Created, ch
 	}
 	b := Bot{ID: id, Name: req.Name, Enabled: req.Enabled, Capabilities: req.Capabilities, Version: 1, Credentials: Credentials{api, wh}, Connection: Connection{State: "unknown"}}
 	var seq changes.Sequence
-	err = r.store.Write(ctx, func(tx *sql.Tx) error {
+	err = write(ctx, func(tx *sql.Tx) error {
 		if _, err := tx.ExecContext(ctx, "INSERT INTO bots(id,name,enabled,can_send,can_receive,version) VALUES(?,?,?,?,?,1)", id, b.Name, b.Enabled, b.Capabilities.Send, b.Capabilities.Receive); err != nil {
 			return err
 		}
@@ -142,12 +151,17 @@ func (r *Repository) List(ctx context.Context) ([]Bot, error) {
 
 // Patch 是管理员仓储能力，不能由 Bot Identity 授予；调用方须先通过独立管理员会话。
 func (r *Repository) Patch(ctx context.Context, id string, req PatchRequest) (Bot, changes.Sequence, error) {
-	if req.ExpectedVersion < 1 || (req.Name != nil && *req.Name == "") {
+	return r.PatchWithWrite(ctx, id, req, r.store.Write)
+}
+
+// PatchWithWrite 保持目标检查、CAS、changes 与管理员续期处于同一受控事务。
+func (r *Repository) PatchWithWrite(ctx context.Context, id string, req PatchRequest, write WriteFunc) (Bot, changes.Sequence, error) {
+	if write == nil || req.ExpectedVersion < 1 || (req.Name != nil && *req.Name == "") {
 		return Bot{}, 0, ErrInvalid
 	}
 	var b Bot
 	var seq changes.Sequence
-	err := r.store.Write(ctx, func(tx *sql.Tx) error {
+	err := write(ctx, func(tx *sql.Tx) error {
 		var err error
 		b, err = get(ctx, tx, id)
 		if err != nil {
@@ -198,4 +212,46 @@ func newBotID() (string, error) {
 	b[6] = (b[6] & 15) | 64
 	b[8] = (b[8] & 63) | 128
 	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16]), nil
+}
+
+// ListPage 在短读事务内按稳定 ID 顺序读取有界公开投影；不携带消息历史或秘密。
+func (r *Repository) ListPage(ctx context.Context, after string, limit int) ([]Bot, error) {
+	if limit < 1 || limit > 101 {
+		return nil, ErrInvalid
+	}
+	out := []Bot{}
+	err := r.store.Read(ctx, func(tx *sql.Tx) error {
+		rows, err := tx.QueryContext(ctx, "SELECT id FROM bots WHERE id>? ORDER BY id LIMIT ?", after, limit)
+		if err != nil {
+			return err
+		}
+		var ids []string
+		for rows.Next() {
+			var id string
+			if err := rows.Scan(&id); err != nil {
+				rows.Close()
+				return err
+			}
+			ids = append(ids, id)
+		}
+		err = rows.Err()
+		if e := rows.Close(); err == nil {
+			err = e
+		}
+		if err != nil {
+			return err
+		}
+		for _, id := range ids {
+			b, e := get(ctx, tx, id)
+			if e != nil {
+				return e
+			}
+			out = append(out, b)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
