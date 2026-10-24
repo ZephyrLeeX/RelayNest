@@ -100,3 +100,37 @@ func TestExactAuthenticationRoutes(t *testing.T) {
 		}
 	}
 }
+
+type deviceRouteProbe struct{ routeProbe }
+
+func (deviceRouteProbe) ListDeviceSessions(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-Route", "devices")
+	w.WriteHeader(204)
+}
+func (deviceRouteProbe) RevokeDeviceSession(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-Session-ID", r.PathValue("id"))
+	w.WriteHeader(204)
+}
+
+func TestExactDeviceRoutes(t *testing.T) {
+	h := New(health.New(nil), deviceRouteProbe{})
+	for _, tc := range []struct {
+		method, path string
+		want         int
+	}{
+		{"GET", "/api/v1/devices", 204}, {"HEAD", "/api/v1/devices", 204},
+		{"DELETE", "/api/v1/devices/target/session", 204},
+		{"POST", "/api/v1/devices", 405}, {"GET", "/api/v1/devices/target/session", 405},
+		{"GET", "/api/v1/devices/", 404}, {"DELETE", "/api/v1/devices/target/session/", 404},
+		{"DELETE", "/api/v1/devices/target/session/extra", 404},
+	} {
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest(tc.method, tc.path, nil))
+		if w.Code != tc.want {
+			t.Errorf("%s %s=%d want=%d", tc.method, tc.path, w.Code, tc.want)
+		}
+		if tc.method == "DELETE" && tc.want == 204 && w.Header().Get("X-Session-ID") != "target" {
+			t.Fatal("Session.id未传递")
+		}
+	}
+}

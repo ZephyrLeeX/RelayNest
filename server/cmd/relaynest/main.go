@@ -130,7 +130,11 @@ func authenticationDependencies(ctx context.Context, path, externalOrigin string
 	}
 	sessions := auth.NewSessionStore(store)
 	security := auth.NewRequestSecurity(sessions, policy)
-	return store, &managementHandlers{Handler: auth.NewHandler(store, sessions, policy), BotHandler: httpapi.NewBotHandler(bots.New(store), botAuthorization(sessions, security)), DeviceHandler: devices.NewHandler(sessions, security)}, nil
+	return store, &managementHandlers{
+		Handler:       auth.NewHandler(store, sessions, policy),
+		BotHandler:    httpapi.NewBotHandler(bots.New(store), botAuthorization(sessions, security)),
+		DeviceHandler: devices.NewHandler(sessions, security),
+	}, nil
 }
 
 // botAuthorization 只将经公共入口签发的身份绑定至受控事务能力。
@@ -162,5 +166,10 @@ type managementHandlers struct {
 	DeviceHandler *devices.Handler
 }
 
-func (h *managementHandlers) ListDeviceSessions(w http.ResponseWriter, r *http.Request) { h.DeviceHandler.ListDeviceSessions(w, r) }
-func (h *managementHandlers) RevokeDeviceSession(w http.ResponseWriter, r *http.Request) { h.DeviceHandler.RevokeDeviceSession(w, r) }
+// 在装配层适配路由能力，避免 httpapi 反向导入依赖它的 auth/devices。
+func (h *managementHandlers) ListDeviceSessions(w http.ResponseWriter, r *http.Request) {
+	h.DeviceHandler.ListDeviceSessions(w, r)
+}
+func (h *managementHandlers) RevokeDeviceSession(w http.ResponseWriter, r *http.Request) {
+	h.DeviceHandler.RevokeDeviceSession(w, r)
+}
