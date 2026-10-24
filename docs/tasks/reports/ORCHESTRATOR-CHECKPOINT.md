@@ -2,6 +2,15 @@
 
 更新：2026-10-24。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot44：Bot 管理 HTTP 与父卡本地收口精确集成
+
+- 恢复优先本 snapshot。main 前 `00d9f79a4a009bd93505eaa6c9bdbce4eefbd687`；仅按序原实现 `80a87509f0687afbb7f6a23c945b96363da480a8`→`fa2c690c56a72be6124ed0967abc226b2f00ae19`、F01 `30affdd6ecb7559da55bbf9aead80e10c3e4debd`→`8a7f3b8172a9e24973cb09e802c889de3c89301b`、A02 PASS `fdd735b9dd243d1631efcb6147546dc55d1d14b0`→组合 `2a39fec92342aceee82ba02e0377ca366de8dad8`。[S02 I01](P04-06-S02-I01.md) 独立提交 `cab32c3a1d33c6ae93ce8fbd9a38b8bb55f40985`；本 snapshot 另提交，最终 main 为本提交，准确 SHA 提交后交接。
+- 五个Go及三份报告blob同源、八项前置祖先核对PASS；无冲突/源码改写，无需重审。旧snapshot42两处缺失implementation引用现已补齐且全部相对链接通过。A02审完整最终组合、关闭A01-01；本次准确main Node22.23.2/npm10.9.8 ci/build生成ignored embed，Go1.27.3/local五包普通非缓存/race/vet、生产build、gofmt/diff均PASS。S02七矩阵与父五项逐项I01证据支持root本地收口S02/F01及父P04-06；不自动写台账。未来消息/Webhook/claim/ACK业务HTTP、手机/外部系统/正式AC/发布仍NOT_RUN。
+- 实际管理员写接口WithAuthorizedWrite自持Store.Write；Bot直接使用给定Tx完成业务/CAS/凭据/changes及actor尾检续期，提交成功才释放创建明文；GET读后RenewRead复核再输出。P05/P06继续消费S01 Authenticate/AuthorizeTx独立Bot身份、停用/能力收回/代次及凭据分离，新增能力须重认证。设备S03后续router/main须保留Bot接线；不加新身份/header契约。
+- 来源 `/home/lijx/.codex/worktrees/bot-admin-http/RelayNest`、`codex/bot-admin-http` 保留干净独审HEAD `fdd735b9dd243d1631efcb6147546dc55d1d14b0`。已查app attached worktrees，无可直接复用的设备HTTP/Bot生命周期规划树；本snapshot后以最终main分别准备 `device-admin-http`/`codex/device-admin-http`、`bot-lifecycle-plan`/`codex/bot-lifecycle-plan`，实际路径/base以工具回执交接。仅准备不实施；不再准备Web Bot管理实现树，P07-02仍依赖P04-07，须先核生命周期存储范围及Web reset/delete HTTP后置缺口，不能直接派父卡。
+- G1具体契约拆分规划由 `instance-contract-plan` 独立树承担，用户已具体批准规划但API尚未冻结；不碰其树，不把旧snapshot的pending描述当当前授权。后续按现契约实施，新身份服务绑定按其正式卡回归。完整P04-05、D01/S04及其他原门槛保留。
+- registry仅root维护，既有dirty与用户`.directory`未stage/覆盖；仅三精确提交、I01、本checkpoint入库。准备新树并核验后释放main index。无push/部署/新聊天/额外agent，旧snapshots原样保留。
+
 ## snapshot43：Android 登录状态与最小 Compose 精确集成
 
 - 恢复优先本 snapshot。main 前 `d0ba3acc7449d09177710cb38ba4d5714df12f63`；仅按序精确集成实现 `b59c19b779a666ac24811ecc8538d07339e7a4c5`→`b0633497e21b305c12bac9faf1e21bee35c8a13c`、独审 PASS `e0c5cab7e4a087ed964bdf622d95fcd060680477`→组合 `e1849386510d2a060b909af1bd19be5881eb0d61`。[S03 I01](P08-04-S03-I01.md) 独立提交 `ae8f6056c63e163179dac8f90093da1ba056b549`；本 snapshot 另提交，最终 main 为本提交，准确 SHA 提交后交接，不预写。
