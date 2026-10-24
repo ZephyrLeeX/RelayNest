@@ -17,6 +17,7 @@ import (
 
 	"relaynest/server/internal/auth"
 	"relaynest/server/internal/bots"
+	"relaynest/server/internal/devices"
 	"relaynest/server/internal/health"
 	"relaynest/server/internal/httpapi"
 	"relaynest/server/internal/storage"
@@ -129,7 +130,7 @@ func authenticationDependencies(ctx context.Context, path, externalOrigin string
 	}
 	sessions := auth.NewSessionStore(store)
 	security := auth.NewRequestSecurity(sessions, policy)
-	return store, &managementHandlers{Handler: auth.NewHandler(store, sessions, policy), BotHandler: httpapi.NewBotHandler(bots.New(store), botAuthorization(sessions, security))}, nil
+	return store, &managementHandlers{Handler: auth.NewHandler(store, sessions, policy), BotHandler: httpapi.NewBotHandler(bots.New(store), botAuthorization(sessions, security)), DeviceHandler: devices.NewHandler(sessions, security)}, nil
 }
 
 // botAuthorization 只将经公共入口签发的身份绑定至受控事务能力。
@@ -158,4 +159,8 @@ func botAuthorization(sessions *auth.SessionStore, security *auth.RequestSecurit
 type managementHandlers struct {
 	*auth.Handler
 	*httpapi.BotHandler
+	DeviceHandler *devices.Handler
 }
+
+func (h *managementHandlers) ListDeviceSessions(w http.ResponseWriter, r *http.Request) { h.DeviceHandler.ListDeviceSessions(w, r) }
+func (h *managementHandlers) RevokeDeviceSession(w http.ResponseWriter, r *http.Request) { h.DeviceHandler.RevokeDeviceSession(w, r) }
