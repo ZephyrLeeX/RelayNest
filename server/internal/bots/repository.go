@@ -15,9 +15,13 @@ import (
 	"relaynest/server/internal/storage"
 )
 
-type Repository struct{ store *storage.Store }
+type Repository struct {
+	store *storage.Store
+	// 默认沿用 issue；实例局部注入只供确定性随机故障测试，不修改全局随机源。
+	issueCredential func() (CredentialMetadata, string, []byte, error)
+}
 
-func New(store *storage.Store) *Repository { return &Repository{store: store} }
+func New(store *storage.Store) *Repository { return &Repository{store: store, issueCredential: issue} }
 
 func randomID() (string, error) {
 	var b [32]byte
@@ -156,6 +160,11 @@ func (r *Repository) Patch(ctx context.Context, id string, req PatchRequest) (Bo
 
 // PatchWithWrite 保持目标检查、CAS、changes 与管理员续期处于同一受控事务。
 func (r *Repository) PatchWithWrite(ctx context.Context, id string, req PatchRequest, write WriteFunc) (Bot, changes.Sequence, error) {
+	return r.PatchWithLifecycle(ctx, id, req, write, nil)
+}
+
+// PatchWithLifecycle 为后续队列适配提供同事务扩展，现有调用保持兼容。
+func (r *Repository) PatchWithLifecycle(ctx context.Context, id string, req PatchRequest, write WriteFunc, hook LifecycleFunc) (Bot, changes.Sequence, error) {
 	if write == nil || req.ExpectedVersion < 1 || (req.Name != nil && *req.Name == "") {
 		return Bot{}, 0, ErrInvalid
 	}
@@ -173,6 +182,7 @@ func (r *Repository) PatchWithWrite(ctx context.Context, id string, req PatchReq
 		if b.Version == math.MaxInt64 {
 			return ErrConflict
 		}
+		before := b
 		if req.Name != nil {
 			b.Name = *req.Name
 		}
@@ -194,6 +204,11 @@ func (r *Repository) PatchWithWrite(ctx context.Context, id string, req PatchReq
 			return ErrConflict
 		}
 		b.Version++
+		if hook != nil {
+			if err := hook(ctx, tx, LifecycleChange{Action: LifecyclePatch, Before: before, After: b}); err != nil {
+				return err
+			}
+		}
 		seq, err = changes.Append(ctx, tx, changes.Metadata{Type: changes.BotUpsert, EntityID: id, Revision: b.Version, BotID: &id, CreatedAt: time.Now()})
 		return err
 	})
