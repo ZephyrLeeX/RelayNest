@@ -1087,3 +1087,210 @@ func TestBotHTTPSuccessRenewsOnlyActor(t *testing.T) {
 		})
 	}
 }
+
+// 实际启动装配与真实登录验证同安装会话并存、精确撤销和重新登录代次。
+func TestDeviceHTTPProductionAssembly(t *testing.T) {
+	f := botHTTP(t, nil)
+	dbPath := filepath.Join(t.TempDir(), "devices.sqlite")
+	store, h, err := authenticationDependencies(context.Background(), dbPath, f.server.URL, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	if err := auth.InitAdministrator(context.Background(), store, "Admin", []byte("correct")); err != nil {
+		t.Fatal(err)
+	}
+	f.server.Config.Handler = httpapi.New(health.New(nil), h)
+	type identity struct{ id, token, csrf, client string }
+	login := func(client, install string) identity {
+		t.Helper()
+		body := map[string]string{"username": "Admin", "password": "correct", "client_type": client, "device_name": "设备"}
+		if install != "" {
+			body["device_id"] = install
+		}
+		data, _ := json.Marshal(body)
+		status, raw, header := f.request("POST", "/api/v1/auth/login", string(data), "", "", map[string]string{"Origin": f.server.URL})
+		assertBotResponse(t, status, 200, raw, header)
+		var p struct {
+			Session struct {
+				ID string `json:"id"`
+			} `json:"session"`
+			Token string `json:"access_token"`
+			CSRF  string `json:"csrf_token"`
+		}
+		if err := json.Unmarshal([]byte(raw), &p); err != nil {
+			t.Fatal(err)
+		}
+		token := p.Token
+		if client == "web" {
+			response := http.Response{Header: header}
+			token = response.Cookies()[0].Value
+		}
+		if p.Session.ID == "" || token == "" {
+			t.Fatal("登录缺少身份")
+		}
+		return identity{p.Session.ID, token, p.CSRF, client}
+	}
+	request := func(want int, method, path string, who identity) (string, http.Header) {
+		t.Helper()
+		headers := map[string]string{}
+		if who.client == "web" {
+			headers["Origin"] = f.server.URL
+			headers["X-CSRF-Token"] = who.csrf
+		}
+		status, raw, header := f.request(method, path, "", who.client, who.token, headers)
+		if want == http.StatusNoContent {
+			if status != want || raw != "" || header.Get("Cache-Control") != "no-store" {
+				t.Fatal("204 响应必须为空且禁止缓存")
+			}
+		} else {
+			assertBotResponse(t, status, want, raw, header)
+		}
+		return raw, header
+	}
+	const install = "00000000-0000-4000-8000-000000000001"
+	a := login("web", "")
+	s1 := login("android", install)
+	s2 := login("android", install)
+	b := login("android", "00000000-0000-4000-8000-000000000002")
+	status, botRaw, botHeader := f.request("POST", "/api/v1/admin/bots", botCreateBody, a.client, a.token, map[string]string{"Origin": f.server.URL, "X-CSRF-Token": a.csrf})
+	assertBotResponse(t, status, 201, botRaw, botHeader)
+	bot := decodeBotCreated(t, botRaw)
+	for _, credential := range []string{bot.APIToken.Token, bot.WebhookKey.Key} {
+		before := func() string {
+			var state string
+			if err := store.Read(context.Background(), func(tx *sql.Tx) error {
+				return tx.QueryRow("SELECT group_concat(id || ':' || revoked || ':' || idle_expires_at) FROM sessions ORDER BY id").Scan(&state)
+			}); err != nil {
+				t.Fatal(err)
+			}
+			return state
+		}
+		original := before()
+		request(401, "GET", "/api/v1/devices", identity{token: credential, client: "android"})
+		request(401, "DELETE", "/api/v1/devices/"+s1.id+"/session", identity{token: credential, client: "android"})
+		if before() != original {
+			t.Fatal("Bot凭据拒绝后改变管理员会话")
+		}
+	}
+	raw, _ := request(200, "GET", "/api/v1/devices", a)
+	var page struct {
+		Items []map[string]any `json:"items"`
+		Next  *string          `json:"next_cursor"`
+		More  bool             `json:"has_more"`
+	}
+	if err := json.Unmarshal([]byte(raw), &page); err != nil {
+		t.Fatal(err)
+	}
+	if len(page.Items) != 4 || page.More || page.Next != nil {
+		t.Fatal("列表丢失会话")
+	}
+	for _, item := range page.Items {
+		if len(item) != 7 {
+			t.Fatal("非冻结Session字段")
+		}
+		admin, ok := item["administrator"].(map[string]any)
+		if !ok || len(admin) != 1 || admin["username"] != "Admin" {
+			t.Fatal("管理员投影错误")
+		}
+	}
+	for _, secret := range []string{a.token, a.csrf, s1.token, s2.token, b.token, bot.APIToken.Token, bot.WebhookKey.Key} {
+		if secret != "" && strings.Contains(raw, secret) {
+			t.Fatal("泄露真实凭据")
+		}
+	}
+	if err := store.Read(context.Background(), func(tx *sql.Tx) error {
+		rows, err := tx.Query("SELECT hex(token_hash) FROM sessions")
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var hash string
+			if err := rows.Scan(&hash); err != nil {
+				return err
+			}
+			if strings.Contains(strings.ToLower(raw), strings.ToLower(hash)) {
+				t.Error("泄露持久化凭据摘要")
+			}
+		}
+		return rows.Err()
+	}); err != nil {
+		t.Fatal(err)
+	}
+	seen := map[string]bool{}
+	path := "/api/v1/devices?limit=1"
+	for i := 0; i < 4; i++ {
+		raw, _ = request(200, "GET", path, a)
+		if err := json.Unmarshal([]byte(raw), &page); err != nil {
+			t.Fatal(err)
+		}
+		if len(page.Items) != 1 {
+			t.Fatal("分页项数错误")
+		}
+		id := page.Items[0]["id"].(string)
+		if seen[id] {
+			t.Fatal("重复会话")
+		}
+		seen[id] = true
+		if !page.More {
+			if i != 3 || page.Next != nil {
+				t.Fatal("分页提前结束")
+			}
+			break
+		}
+		if page.Next == nil {
+			t.Fatal("缺cursor")
+		}
+		path = "/api/v1/devices?limit=1&cursor=" + *page.Next
+	}
+	for _, who := range []identity{a, s1, s2, b} {
+		if !seen[who.id] {
+			t.Fatal("分页缺会话")
+		}
+	}
+	raw, header := request(204, "DELETE", "/api/v1/devices/"+s1.id+"/session", a)
+	if raw != "" || header.Get("Set-Cookie") != "" {
+		t.Fatal("远程撤销响应错误")
+	}
+	request(401, "GET", "/api/v1/devices", s1)
+	for _, who := range []identity{a, s2, b} {
+		request(200, "GET", "/api/v1/devices", who)
+	}
+	replacement := login("android", install)
+	if replacement.id == s1.id || replacement.id == s2.id {
+		t.Fatal("新登录复用身份")
+	}
+	request(404, "DELETE", "/api/v1/devices/"+s1.id+"/session", a)
+	request(200, "GET", "/api/v1/devices", replacement)
+	_, header = request(204, "DELETE", "/api/v1/devices/"+s2.id+"/session", s2)
+	if header.Get("Set-Cookie") != "" {
+		t.Fatal("Android清Cookie")
+	}
+	request(401, "GET", "/api/v1/devices", s2)
+	_, header = request(204, "DELETE", "/api/v1/devices/"+a.id+"/session", a)
+	response := http.Response{Header: header}
+	cookies := response.Cookies()
+	if len(cookies) != 1 || cookies[0].Value != "" || cookies[0].MaxAge != -1 || !cookies[0].Secure || !cookies[0].HttpOnly || cookies[0].SameSite != http.SameSiteLaxMode {
+		t.Fatal("自撤Cookie属性错误")
+	}
+	request(401, "GET", "/api/v1/devices", a)
+	for _, who := range []identity{b, replacement} {
+		request(200, "GET", "/api/v1/devices", who)
+	}
+	// 关闭并从同一文件重新装配，旧撤销状态和独立有效会话必须持久保留。
+	if err := store.Close(); err != nil {
+		t.Fatal(err)
+	}
+	reopened, handlers, err := authenticationDependencies(context.Background(), dbPath, f.server.URL, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reopened.Close()
+	f.server.Config.Handler = httpapi.New(health.New(nil), handlers)
+	request(401, "GET", "/api/v1/devices", s1)
+	request(401, "GET", "/api/v1/devices", a)
+	for _, who := range []identity{b, replacement} {
+		request(200, "GET", "/api/v1/devices", who)
+	}
+}
