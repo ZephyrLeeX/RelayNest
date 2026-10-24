@@ -2,6 +2,14 @@
 
 更新：2026-10-24。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot43：Android 登录状态与最小 Compose 精确集成
+
+- 恢复优先本 snapshot。main 前 `d0ba3acc7449d09177710cb38ba4d5714df12f63`；仅按序精确集成实现 `b59c19b779a666ac24811ecc8538d07339e7a4c5`→`b0633497e21b305c12bac9faf1e21bee35c8a13c`、独审 PASS `e0c5cab7e4a087ed964bdf622d95fcd060680477`→组合 `e1849386510d2a060b909af1bd19be5881eb0d61`。[S03 I01](P08-04-S03-I01.md) 独立提交 `ae8f6056c63e163179dac8f90093da1ba056b549`；本 snapshot 另提交，最终 main 为本提交，准确 SHA 提交后交接，不预写。
+- 八路径 blob 全同源，无冲突/业务改写、不需重审；network/security、API、Manifest、catalog/锁及工具版本未变。准确 main 强制 offline 组合 testDebugUnitTest/lintDebug/assembleDebug PASS：21s、51任务全 executed，42测试 failures/errors/skipped全0，lint实际0errors/10warnings。比来源多既有 Compose NewerVersionAvailable，未升级/压制。仅命令级 in-process 编译规避已知 daemon discovery 等待，无仓库策略变更、SDK/依赖安装或ADB。
+- 真实 GET 接线不等于真实服务组合验收。真实 API/TLS、完整 P04-05 远程撤销、手机/平板 UI、Keystore/硬件、进程杀死/卸载/迁移/断电及成功release签名仍NOT_RUN。D01具体G1/G2、生命周期、契约/兼容三项用户确认仍pending；proposal reviewed不是approved；S04与父卡完整设备依赖和原全部验收保留，不实施新身份、S04或Room。
+- 来源 `/home/lijx/.codex/worktrees/android-auth-ui/RelayNest`、`codex/android-auth-ui` 保留独审HEAD，干净已释放；本轮不新树。Bot独立修复树未碰；snapshot42的两条原implementation报告引用暂缺，待其最终已审源码组合集成补齐，不称链接全PASS。
+- registry仅root更新，既有dirty及用户`.directory`未stage/覆盖。仅指定两提交、I01与本checkpoint入库；最终状态核验后释放main index。无push/部署/新聊天/额外agent，旧snapshots原样保留。
+
 ## snapshot42：Bot JSON 精确键修复规划独审集成
 
 - 恢复优先本 snapshot。main 前 `29991d445b1414c59d7ac8d9f8b5b34a551032e7`；依序仅精确集成失败 A01 `2ae091cb65de8c4c0b4c5abcebe289927b8867b1`→`b64ecbe`、F01规划 `f3dc0dae54cbab7db7e8d63bf76f55e254688fc1`→`d40ce27`、规划独审 PASS `39298292641cd3ac2a388b8ec3e1e20e1718783b`→组合 `42501a9e8bef53946a2c361421631eb2fbf0fc7d`。[I01](P04-06-S02-F01-PLAN01-I01.md) 独立提交 `5cd145bc7b854e160c59599d93c7fa3fc35202cd`；本 snapshot 另提交，最终 main 为本提交，准确 SHA 提交后交接，不预写。
