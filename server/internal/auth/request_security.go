@@ -71,6 +71,15 @@ func (s *RequestSecurity) RenewRead(ctx context.Context, actor AdminRequest) (Se
 // Authorize 验证管理员请求；失败已写统一错误，调用方必须立即返回。
 // 本入口仅 Inspect，不续期、不撤销、不发 Cookie；业务成功的续期由提交事务负责。
 func (s *RequestSecurity) Authorize(w http.ResponseWriter, r *http.Request, mode RequestMode) (AdminRequest, bool) {
+	return s.authorize(w, r, mode, "AUTHENTICATION_FAILED")
+}
+
+// AuthorizeRequired 沿用全部请求安全检查，仅按操作契约选择 REQUIRED 认证错误码。
+func (s *RequestSecurity) AuthorizeRequired(w http.ResponseWriter, r *http.Request, mode RequestMode) (AdminRequest, bool) {
+	return s.authorize(w, r, mode, "AUTHENTICATION_REQUIRED")
+}
+
+func (s *RequestSecurity) authorize(w http.ResponseWriter, r *http.Request, mode RequestMode, unauthorizedCode string) (AdminRequest, bool) {
 	w.Header().Set("Cache-Control", "no-store")
 	if mode != RequestRead && mode != RequestWrite {
 		authError(w, 503, "SERVICE_UNAVAILABLE")
@@ -78,7 +87,7 @@ func (s *RequestSecurity) Authorize(w http.ResponseWriter, r *http.Request, mode
 	}
 	token, client, ok := credential(r)
 	if !ok {
-		authError(w, 401, "AUTHENTICATION_FAILED")
+		authError(w, 401, unauthorizedCode)
 		return AdminRequest{}, false
 	}
 	var source httpapi.RequestSource
@@ -94,7 +103,7 @@ func (s *RequestSecurity) Authorize(w http.ResponseWriter, r *http.Request, mode
 	}
 	actor, secrets, err := s.sessions.Inspect(r.Context(), token, client)
 	if err != nil {
-		WriteSessionError(w, err)
+		writeSessionError(w, err, unauthorizedCode)
 		return AdminRequest{}, false
 	}
 	if mode == RequestWrite && client == "web" {
@@ -109,8 +118,17 @@ func (s *RequestSecurity) Authorize(w http.ResponseWriter, r *http.Request, mode
 
 // WriteSessionError 统一映射请求检查及业务提交前会话复核的错误；不清 Cookie。
 func WriteSessionError(w http.ResponseWriter, err error) {
+	writeSessionError(w, err, "AUTHENTICATION_FAILED")
+}
+
+// WriteSessionErrorRequired 与请求入口使用相同 REQUIRED 语义，不改变错误分类和 Cookie。
+func WriteSessionErrorRequired(w http.ResponseWriter, err error) {
+	writeSessionError(w, err, "AUTHENTICATION_REQUIRED")
+}
+
+func writeSessionError(w http.ResponseWriter, err error, unauthorizedCode string) {
 	if errors.Is(err, ErrInvalidSession) || errors.Is(err, ErrNotInitialized) {
-		authError(w, 401, "AUTHENTICATION_FAILED")
+		authError(w, 401, unauthorizedCode)
 		return
 	}
 	authError(w, 503, "SERVICE_UNAVAILABLE")

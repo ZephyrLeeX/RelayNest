@@ -1146,6 +1146,20 @@ func TestDeviceHTTPProductionAssembly(t *testing.T) {
 		} else {
 			assertBotResponse(t, status, want, raw, header)
 		}
+		if want == 401 {
+			code := "AUTHENTICATION_FAILED"
+			if method == "DELETE" && strings.HasPrefix(path, "/api/v1/devices/") {
+				code = "AUTHENTICATION_REQUIRED"
+			}
+			var body struct {
+				Error struct {
+					Code string `json:"code"`
+				} `json:"error"`
+			}
+			if json.Unmarshal([]byte(raw), &body) != nil || body.Error.Code != code || header.Get("Set-Cookie") != "" {
+				t.Fatalf("401机器码或Cookie错误: %s", raw)
+			}
+		}
 		return raw, header
 	}
 	const install = "00000000-0000-4000-8000-000000000001"
@@ -1153,6 +1167,13 @@ func TestDeviceHTTPProductionAssembly(t *testing.T) {
 	s1 := login("android", install)
 	s2 := login("android", install)
 	b := login("android", "00000000-0000-4000-8000-000000000002")
+	for _, who := range []identity{{}, {client: "android", token: "invalid"}} {
+		request(401, "DELETE", "/api/v1/devices/"+s1.id+"/session", who)
+		request(401, "GET", "/api/v1/devices", who)
+		request(401, "GET", "/api/v1/auth/session", who)
+		request(401, "POST", "/api/v1/auth/logout", who)
+		request(401, "GET", "/api/v1/admin/bots", who)
+	}
 	status, botRaw, botHeader := f.request("POST", "/api/v1/admin/bots", botCreateBody, a.client, a.token, map[string]string{"Origin": f.server.URL, "X-CSRF-Token": a.csrf})
 	assertBotResponse(t, status, 201, botRaw, botHeader)
 	bot := decodeBotCreated(t, botRaw)
@@ -1169,6 +1190,9 @@ func TestDeviceHTTPProductionAssembly(t *testing.T) {
 		original := before()
 		request(401, "GET", "/api/v1/devices", identity{token: credential, client: "android"})
 		request(401, "DELETE", "/api/v1/devices/"+s1.id+"/session", identity{token: credential, client: "android"})
+		for _, route := range []struct{ method, path string }{{"GET", "/api/v1/auth/session"}, {"POST", "/api/v1/auth/logout"}, {"GET", "/api/v1/admin/bots"}} {
+			request(401, route.method, route.path, identity{token: credential, client: "android"})
+		}
 		if before() != original {
 			t.Fatal("Bot凭据拒绝后改变管理员会话")
 		}

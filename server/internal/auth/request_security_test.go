@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -309,21 +310,38 @@ func TestRequestSecurityRejectionsNoEffects(t *testing.T) {
 	f.clock.Add(int64(time.Hour))
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			before := f.snapshot()
-			w := httptest.NewRecorder()
-			actor, ok := guard.Authorize(w, securityRequest(f, tt.h), tt.mode)
-			if ok || actor.Session.ID != "" || w.Code != tt.status || f.snapshot() != before || w.Header().Get("Set-Cookie") != "" || w.Header().Get("Cache-Control") != "no-store" {
-				t.Fatalf("rejection %d %v", w.Code, ok)
-			}
-			var body struct {
-				Error struct {
-					Code      string `json:"code"`
-					RequestID string `json:"request_id"`
-					Retryable bool   `json:"retryable"`
-				} `json:"error"`
-			}
-			if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil || body.Error.RequestID == "" || body.Error.Retryable != (tt.status == 503) {
-				t.Fatal("error envelope", w.Body.String())
+			for _, required := range []bool{false, true} {
+				authorize := guard.Authorize
+				if required {
+					authorize = guard.AuthorizeRequired
+				}
+				before := f.snapshot()
+				w := httptest.NewRecorder()
+				actor, ok := authorize(w, securityRequest(f, tt.h), tt.mode)
+				if ok || actor.Session.ID != "" || w.Code != tt.status || f.snapshot() != before || w.Header().Get("Set-Cookie") != "" || w.Header().Get("Cache-Control") != "no-store" {
+					t.Fatalf("rejection %d %v", w.Code, ok)
+				}
+				var body struct {
+					Error struct {
+						Code      string `json:"code"`
+						RequestID string `json:"request_id"`
+						Retryable bool   `json:"retryable"`
+					} `json:"error"`
+				}
+				if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil || body.Error.RequestID == "" || body.Error.Retryable != (tt.status == 503) {
+					t.Fatal("error envelope", w.Body.String())
+				}
+				code := "AUTHENTICATION_FAILED"
+				if required {
+					code = "AUTHENTICATION_REQUIRED"
+				}
+				if tt.status == 403 {
+					code = "FORBIDDEN"
+				}
+				if tt.status == 503 {
+					code = "SERVICE_UNAVAILABLE"
+				}
+				assertSecurityErrorCode(t, w, tt.status, code)
 			}
 		})
 	}
@@ -399,5 +417,65 @@ func TestRequestSecurityRealBotCredentialsDenied(t *testing.T) {
 				t.Fatal("Bot credential accepted or changed session")
 			}
 		}
+	}
+}
+
+func TestRequestSecurityErrorSelection(t *testing.T) {
+	f := newHTTPFixture(t, true)
+	guard := securityFixture(t, f)
+	token, _ := f.login("android")
+	created, _, err := bots.New(f.db).Create(context.Background(), bots.CreateRequest{Name: "transport", Enabled: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, required := range []bool{false, true} {
+		code := "AUTHENTICATION_FAILED"
+		if required {
+			code = "AUTHENTICATION_REQUIRED"
+		}
+		authorize, write := guard.Authorize, WriteSessionError
+		if required {
+			authorize, write = guard.AuthorizeRequired, WriteSessionErrorRequired
+		}
+		for _, headers := range []http.Header{{}, {"Authorization": {"Bearer invalid"}}, {"Authorization": {"Bearer " + created.APIToken.Token}}, {"Authorization": {"Bearer " + created.WebhookKey.Key}}} {
+			before := f.snapshot()
+			w := httptest.NewRecorder()
+			if _, ok := authorize(w, securityRequest(f, headers), RequestWrite); ok {
+				t.Fatal("错误凭据获准")
+			}
+			assertSecurityErrorCode(t, w, 401, code)
+			if before != f.snapshot() {
+				t.Fatal("拒绝请求写入")
+			}
+		}
+		w := httptest.NewRecorder()
+		if _, ok := authorize(w, securityRequest(f, http.Header{"Authorization": {"Bearer " + token}}), RequestWrite); !ok {
+			t.Fatal("有效管理员被拒绝")
+		}
+		for _, tc := range []struct {
+			err    error
+			status int
+			code   string
+		}{
+			{ErrInvalidSession, 401, code}, {ErrNotInitialized, 401, code},
+			{fmt.Errorf("wrapped: %w", ErrInvalidSession), 401, code},
+			{errors.New("database failure"), 503, "SERVICE_UNAVAILABLE"},
+		} {
+			w := httptest.NewRecorder()
+			write(w, tc.err)
+			assertSecurityErrorCode(t, w, tc.status, tc.code)
+		}
+	}
+}
+
+func assertSecurityErrorCode(t *testing.T, w *httptest.ResponseRecorder, status int, code string) {
+	t.Helper()
+	var body struct {
+		Error struct {
+			Code string `json:"code"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil || w.Code != status || body.Error.Code != code || w.Header().Get("Cache-Control") != "no-store" || w.Header().Get("Set-Cookie") != "" {
+		t.Fatalf("响应不匹配: %d %s", w.Code, w.Body.String())
 	}
 }

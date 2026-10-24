@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"testing"
 
 	"relaynest/server/internal/auth"
+	"relaynest/server/internal/bots"
 	"relaynest/server/internal/devices"
 	"relaynest/server/internal/health"
 	"relaynest/server/internal/httpapi"
@@ -160,7 +162,7 @@ func TestDeviceHTTPRejectedRequestsDoNotMutate(t *testing.T) {
 		code                                    string
 	}{
 		{"missing", "GET", "/api/v1/devices", "", "", "", nil, 401, "AUTHENTICATION_FAILED"},
-		{"bearer-random", "DELETE", target, "", "android", "not-a-session", nil, 401, "AUTHENTICATION_FAILED"},
+		{"bearer-random", "DELETE", target, "", "android", "not-a-session", nil, 401, "AUTHENTICATION_REQUIRED"},
 		{"origin", "DELETE", target, "", "web", f.web.Token, map[string]string{"Origin": "https://evil.example", "X-CSRF-Token": f.web.CSRFToken}, 403, "FORBIDDEN"},
 		{"csrf", "DELETE", target, "", "web", f.web.Token, map[string]string{"Origin": "https://example.com"}, 403, "FORBIDDEN"},
 		{"body", "DELETE", target, "{}", "web", f.web.Token, valid, 400, "INVALID_REQUEST"},
@@ -310,4 +312,112 @@ func TestDeviceHTTPRemoteWebDoesNotClearCookie(t *testing.T) {
 	}
 	w = f.request("GET", "/api/v1/devices", "", "web", f.web.Token, nil)
 	assertResponse(t, w, 200, "")
+}
+
+// 请求体只在授权之后读取，以真实数据库变更覆盖事务入口复核。
+type invalidatingBody struct{ invalidate func() }
+
+func (b invalidatingBody) Read([]byte) (int, error) { b.invalidate(); return 0, io.EOF }
+func (b invalidatingBody) Close() error             { return nil }
+
+func TestDeviceHTTPRequiredCredentials(t *testing.T) {
+	f := setup(t)
+	created, _, err := bots.New(f.store).Create(context.Background(), bots.CreateRequest{Name: "transport", Enabled: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cookie := "relaynest_session=" + f.web.Token
+	for _, tc := range []struct {
+		name    string
+		headers http.Header
+	}{
+		{"missing", http.Header{}},
+		{"empty", http.Header{"Authorization": {""}}},
+		{"malformed", http.Header{"Authorization": {"Basic bad"}}},
+		{"random", http.Header{"Authorization": {"Bearer random"}}},
+		{"cookie", http.Header{"Cookie": {"relaynest_session=invalid"}, "Origin": {"https://example.com"}}},
+		{"duplicate-bearer", http.Header{"Authorization": {"Bearer " + f.android.Token, "Bearer " + f.android.Token}}},
+		{"duplicate-cookie", http.Header{"Cookie": {cookie + "; " + cookie}}},
+		{"mixed", http.Header{"Cookie": {cookie}, "Authorization": {"Bearer " + f.android.Token}}},
+		{"bot-token", http.Header{"Authorization": {"Bearer " + created.APIToken.Token}}},
+		{"webhook-key", http.Header{"Authorization": {"Bearer " + created.WebhookKey.Key}}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			before := f.snapshot(t)
+			for _, method := range []string{"DELETE", "GET"} {
+				path, code := "/api/v1/devices", "AUTHENTICATION_FAILED"
+				if method == "DELETE" {
+					path += "/" + f.androidID + "/session"
+					code = "AUTHENTICATION_REQUIRED"
+				}
+				r := httptest.NewRequest(method, "https://example.com"+path, nil)
+				r.Header = tc.headers.Clone()
+				w := httptest.NewRecorder()
+				f.mux.ServeHTTP(w, r)
+				assertResponse(t, w, 401, code)
+			}
+			if before != f.snapshot(t) || len(f.hooks) != 0 {
+				t.Fatal("拒绝请求改变会话或通知")
+			}
+		})
+	}
+}
+
+func TestDeviceHTTPRequiredLifecycleAndTransactionRecheck(t *testing.T) {
+	for _, delayed := range []bool{false, true} {
+		for _, state := range []string{"revoked", "idle", "absolute", "generation", "database"} {
+			t.Run(fmt.Sprintf("delayed=%v/%s", delayed, state), func(t *testing.T) {
+				f := setup(t)
+				var baseline string
+				invalidate := func() {
+					if state == "database" {
+						if err := f.store.Close(); err != nil {
+							t.Fatal(err)
+						}
+						return
+					}
+					err := f.store.Write(context.Background(), func(tx *sql.Tx) error {
+						var err error
+						switch state {
+						case "revoked":
+							_, err = tx.Exec("UPDATE sessions SET revoked=1 WHERE id=?", f.webID)
+						case "idle":
+							_, err = tx.Exec("UPDATE sessions SET idle_expires_at=0 WHERE id=?", f.webID)
+						case "absolute":
+							_, err = tx.Exec("UPDATE sessions SET idle_expires_at=0,absolute_expires_at=0 WHERE id=?", f.webID)
+						case "generation":
+							_, err = tx.Exec("UPDATE administrator SET auth_generation=auth_generation+1")
+						}
+						return err
+					})
+					if err != nil {
+						t.Fatal(err)
+					}
+					baseline = f.snapshot(t)
+				}
+				r := httptest.NewRequest("DELETE", "https://example.com/api/v1/devices/"+f.androidID+"/session", nil)
+				r.AddCookie(&http.Cookie{Name: "relaynest_session", Value: f.web.Token})
+				r.Header.Set("Origin", "https://example.com")
+				r.Header.Set("X-CSRF-Token", f.web.CSRFToken)
+				if delayed {
+					r.Body = invalidatingBody{invalidate}
+				} else {
+					invalidate()
+				}
+				w := httptest.NewRecorder()
+				f.mux.ServeHTTP(w, r)
+				status, code := 401, "AUTHENTICATION_REQUIRED"
+				if state == "database" {
+					status, code = 503, "SERVICE_UNAVAILABLE"
+				}
+				assertResponse(t, w, status, code)
+				if len(f.hooks) != 0 {
+					t.Fatal("拒绝后发送撤销通知")
+				}
+				if state != "database" && f.snapshot(t) != baseline {
+					t.Fatal("请求产生额外写入或续期")
+				}
+			})
+		}
+	}
 }
