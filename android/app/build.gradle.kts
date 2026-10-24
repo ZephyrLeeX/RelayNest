@@ -114,6 +114,9 @@ android {
 dependencies {
     implementation(libs.okhttp)
     implementation(libs.coroutines.core)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.0")
     // 新客户端的旧版 stdlib 兼容桥沿用仓库已锁定版本，不引入另一组 Kotlin 版本。
     constraints {
         implementation(libs.kotlin.stdlib.jdk7)
