@@ -2,6 +2,13 @@
 
 更新：2026-10-24。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot36：Android Hub 认证有限拆卡规划集成
+
+- 恢复优先本 snapshot。main 从 `a64338605cdb2b2f70a2e9632cfe6ec7164e1b56` 按序精确集成规划 `e9e7024ef7b89d56443086ea51f323dc8e27b4d3`、独审 PASS `af6b423e36f0f814b7eb8260e1fe22dff7c268c9`，对应 `b909256` / 组合 `033f818a9470aca50936ae06a9704745d5fd5864`；[I01](P08-04-PLAN01-I01.md) 独立提交 `d3f2a76a6f8cfbee1bc98dcf47303fe7bd3cc98f`。无冲突/修订，七文档 blob 同源，原父全文/五验收、44链接及最新 dirty registry 叠加建议后345节点 DAG均 PASS；无源码/API/SQL/依赖/锁变化，未重跑业务矩阵。
+- 调度登记后 S01→S02→S03 可依次先行，每卡仍须独审精确集成。父 P08-04 保留原 P03-03 与完整 P04-05 前置及全部目标验收；完整设备能力、D01同地址部署身份决策及获准工作分别阻塞 S04 对应验收和父收口。未选择D01方案、未新增身份契约，不以地址/Session.id/UUID/TLS证书冒充部署ID；真机/Keystore真机/成功release签名仍 NOT_RUN。
+- 本 snapshot 独立提交后，以最终 main 精确 SHA 用 app 准备 `android-auth-network` 干净 `codex/android-auth-network` 隔离树，仅供 S01后续派发；只准备、不研究或实施源码，实际路径/分支/base由工具回执交接。已检查 attached worktrees，现有Android树是规划/研究用途，旧 `android-auth-split` 树保留最终审计 `af6b423`，不reset/clean。设备 `device-session-finish` 有独立规划审计在途，不触碰。
+- registry 只由 root 维护；既有 dirty registry 与用户 `.directory` 未跟踪均未stage/覆盖。本角色仅提交精确规划/审计、I01与本snapshot；完成新树核验后释放 main index。无push/deploy、新聊天或额外子agent。旧snapshot历史保留。
+
 ## snapshot35：Android 登录安全会话先行研究集成
 
 - 恢复优先本 snapshot。main 前 `e2ea912c5bdedf1d57f2cb8a9a58bbc75a65ae15`；研究 `ed18b03c4555f6d6f9ab208e208b4b419d5f75d1` 已在祖先链，仅精确挑拣独审 PASS `c5aa01bfdfd33e06380c3edff8353a2ac3edd597` 为组合 `978efe153b311f1289403023a7cc5294503f7c12`，无冲突；[I01](P08-04-PREP01-I01.md) 独立提交 `29bb0fc4b8cd7600902d1693d04d4da79d14fe11`。研究及审计 blob 同源，文档引用/链接、范围、diff 核查 PASS；无源码/API/SQL/依赖变化，未重跑业务矩阵。
