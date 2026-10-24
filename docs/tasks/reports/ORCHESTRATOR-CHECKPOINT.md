@@ -1,6 +1,14 @@
 # 总调度恢复 checkpoint
 
-更新：2026-10-24。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
+更新：2026-10-25。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
+
+## snapshot49：Bot 独立凭据轮换与状态事务扩展点精确集成
+
+- 恢复优先本 snapshot。main 前 `a06995ca153c60b4410dfdeb544f543f7c1ff353`；按序实现 `8e7935186263565200b43097872e7f0df2f71c6d`→`7c79034`、独审 PASS `f6202b1114705014d5b8121d36b5e8e9c3acbcb3`→组合 `a3c50f838a52257f980ec2204f0f8173c7a4e3f7`。[I01](P04-07-S01-I01.md) 独立提交 `3c84d5e517c7095ecf8bbb3ef7c9e57827d4fa4b`；本 snapshot 另提交，其提交为本轮最终 main，精确 SHA 提交后交接。
+- 四 bots Go 与两报告 blob 同固定来源，六路径 scope/diff 检查 PASS，无冲突或源码改写、不需重审。源基线到集成前 main 只有既有 docs 漂移。本轮准确 main Go1.27.3/local 六包 bots/changes/storage/auth/httpapi/cmd 普通非缓存、race、vet、生产 build、四文件 gofmt/diff 全 PASS。已有 ignored embed 满足构建，本轮未跑 npm。独审恢复报告的前轮六包记录保留，本轮恢复仅重点/新 overlay/race，不冒称其重跑全量；本次集成的六包是新实际组合证据。
+- S01 仅独立轮换与状态/changes/管理员续期同 Tx 扩展点本地 PASS；父 P04-07 仍需 S02。真实 HTTP reset、取消 Long Polling、撤销租约/重排队、永久删除/完整 cascade 均未通过，仍等 S03/P06-07 与设备最终 A/I；公开耗尽错误映射由 S03 门槛处理。未改 HTTP/API/auth/storage/SQL/迁移，migration0005 未分配；手机/NAS/外部系统/部署仍 NOT_RUN。
+- 来源 `/home/lijx/Projects/RelayNest-recovery-20261024/bot-lifecycle-store`、`codex/bot-lifecycle-store-20261024` 保留干净 HEAD `f6202b1114705014d5b8121d36b5e8e9c3acbcb3`。本 snapshot 后以最终 main 精确 ref 仅准备 S02 `/home/lijx/Projects/RelayNest-recovery-20261024/bot-delete-store`、`codex/bot-delete-store-20261024`；已核目标 path/ref 无占用。沿已授权 managed app 成功后目录消失的原生 Git 稳定目录回退，实际 path/branch/base/干净核验提交后交接。不研究/实施、不覆盖旧树；后续若 schema 确需，worker 先给证据再串行分配迁移号。
+- root dirty registry 与用户 `.directory` 未 stage/覆盖；G1 C01 六 dirty 最终契约恢复及设备 F01 独立修复树未触碰。仅两精确提交、I01 和本 snapshot 入库，台账由 root 维护。新树核验后释放 main index，无 push/部署/新聊天/额外 agent；旧 snapshots 原样保留。
 
 ## snapshot48：已批准混合附件 Bot-first 提案精确集成
 
