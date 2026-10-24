@@ -2,6 +2,13 @@
 
 更新：2026-10-24。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot41：部署身份有限提案独审精确集成
+
+- 恢复优先本 snapshot。main 前 `b092e8481f720296d36ed7b6b0a36566990f1470`；仅依次精确集成提案 `46db3851c7d50e488ac3e45df65c08651ef0890d`→`ec1de5c4903ed6c251e185d4b8282e3976748375`、独审 PASS `2efbabb364600f4723d2f8886b191194f1cdeb94`→组合 `c6413a85c04e9f8809e07b3a6413e0a4bd348213`。[D01 PLAN01 I01](P08-04-D01-PLAN01-I01.md) 已独立提交 `f8696cd771285831d550de095d7f96201593ec57`；本 snapshot 另提交，最终 main 为本提交，准确 SHA 由提交后交接记录，不预写。
+- 两报告 blob 同源，8条相对链接、diff及父原依赖/验收保留检查 PASS；无冲突/修订，无源码、契约、SQL、技术设计变化。纯文档未跑业务 build/Go/Android矩阵、新契约或真实环境测试。G-API现契约 pass仅保持旧范围，不证明任何候选接口。
+- **proposal reviewed, not approved。** 用户仅选A准备方向；调度已另问具体G1/G2、生命周期、契约/兼容，仍pending，维护流程与可用性成本亦待批准。G1探测后切换仍可能让旧Bearer/密码字节抵达新部署；G2需更强通道/加密另规划。提案PASS不是API/安全授权，未实现新端点或新保证。D01、S04及父P08-04未完成，S04仍blocked，完整P04-05等原门槛不删；真机/NAS/Keystore/成功release签名仍NOT_RUN。
+- 来源 `deployment-identity-plan` / `codex/deployment-identity-plan` 原样保留，不新建树；Bot修复规划及Android S03各独立树继续运行，本轮不碰。registry只由root维护，读取期间调度更新仍原样保留，未stage/覆盖；用户`.directory`未动。仅两精确报告、I01与本checkpoint入库；最终核验后释放main index。无push/部署/新聊天/额外子agent；旧snapshots保留。
+
 ## snapshot40：Android 安全存储精确集成收尾与两树准备
 
 - 恢复优先本 snapshot。main 前 `78bbaa5bbbe62c3149853974920047c39330c130`；仅精确实现 `12d4e735e9c5147e70c49b7ea25d00ac6f80ce90`→`e839c7089f045be74c44fd21184f6d8c3b01c6c6`、独审 PASS `386c954c79d4dd434cb83b4d5448e5d4c077a2f1`→组合 `0262f117d4e0bdc948e192e160c4e3881607a2b6`。六文件 blob 同源，无冲突或源码改写。[S02 I01](P08-04-S02-I01.md) 已独立提交 `06b0bf09f0f661bf4787e8af2349634efa84d24a`；本 snapshot 仅 checkpoint 独立提交，最终 main 为本提交，准确 SHA 由提交后交接记录，不预写。
