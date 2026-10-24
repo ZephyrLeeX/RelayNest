@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"sync"
 	"time"
 
 	"relaynest/server/internal/storage"
@@ -49,9 +50,11 @@ type SessionInput struct {
 // SessionStore 使用现有 SQLite 写事务串行化创建、鉴权续期和撤销。
 // 注入时钟/随机源仅供测试；生产构造请使用 NewSessionStore。
 type SessionStore struct {
-	store  *storage.Store
-	now    func() time.Time
-	random io.Reader
+	store       *storage.Store
+	now         func() time.Time
+	random      io.Reader
+	hookMu      sync.RWMutex
+	revokedHook func(string)
 }
 
 func NewSessionStore(store *storage.Store) *SessionStore {
@@ -151,47 +154,63 @@ func (s *SessionStore) Revoke(ctx context.Context, token, expectedClient string)
 }
 
 func (s *SessionStore) access(ctx context.Context, token, client string, revoke, renew bool) (Session, SessionSecrets, error) {
-	raw, err := base64.RawURLEncoding.DecodeString(token)
-	if err != nil || len(raw) != 32 || base64.RawURLEncoding.EncodeToString(raw) != token || (client != "web" && client != "android") {
-		return Session{}, SessionSecrets{}, ErrInvalidSession
-	}
-	hash := sha256.Sum256([]byte(token))
 	var result Session
-	err = s.store.Write(ctx, func(tx *sql.Tx) error {
-		var idle, absolute int64
-		err := tx.QueryRowContext(ctx, `SELECT s.id,a.username,s.client_type,s.device_id,s.device_name,s.idle_expires_at,s.absolute_expires_at FROM sessions s JOIN administrator a ON a.id=1 AND a.auth_generation=s.auth_generation WHERE s.token_hash=? AND s.client_type=? AND s.revoked=0`, hash[:], client).Scan(&result.ID, &result.Username, &result.ClientType, &result.DeviceID, &result.DeviceName, &idle, &absolute)
-		if errors.Is(err, sql.ErrNoRows) {
-			return ErrInvalidSession
-		}
-		if err != nil {
-			return err
-		}
-		now := s.now().UTC()
-		if now.UnixNano() >= idle || now.UnixNano() >= absolute {
-			return ErrInvalidSession
-		}
-		result.AbsoluteExpiresAt = time.Unix(0, absolute).UTC()
-		if revoke {
-			_, err = tx.ExecContext(ctx, "UPDATE sessions SET revoked=1 WHERE id=?", result.ID)
-		} else if renew {
-			ttl, _ := sessionTTL(client)
-			next := now.Add(ttl).UnixNano()
-			if next > absolute {
-				next = absolute
-			}
-			if next < idle {
-				next = idle
-			}
-			idle = next
-			_, err = tx.ExecContext(ctx, "UPDATE sessions SET idle_expires_at=? WHERE id=?", idle, result.ID)
-		}
-		result.IdleExpiresAt = time.Unix(0, idle).UTC()
+	err := s.store.Write(ctx, func(tx *sql.Tx) error {
+		var err error
+		result, err = s.accessTx(ctx, tx, token, client, revoke, renew)
 		return err
 	})
 	if err != nil {
 		return Session{}, SessionSecrets{}, sessionError(err)
 	}
+	if revoke {
+		s.notifyRevoked(result.ID)
+	}
 	return result, secrets(token, client), nil
+}
+
+// accessTx 复用鉴权 SQL；调用者负责提交或回滚，不在此开启事务。
+func (s *SessionStore) accessTx(ctx context.Context, tx *sql.Tx, token, client string, revoke, renew bool) (Session, error) {
+	return s.accessStateTx(ctx, tx, token, client, revoke, renew, 0)
+}
+
+// accessStateTx 的 revokedState 仅供自撤事务末尾检查刚刚撤销的同一身份。
+func (s *SessionStore) accessStateTx(ctx context.Context, tx *sql.Tx, token, client string, revoke, renew bool, revokedState int) (Session, error) {
+	raw, err := base64.RawURLEncoding.DecodeString(token)
+	if err != nil || len(raw) != 32 || base64.RawURLEncoding.EncodeToString(raw) != token || (client != "web" && client != "android") || tx == nil {
+		return Session{}, ErrInvalidSession
+	}
+	hash := sha256.Sum256([]byte(token))
+	var result Session
+	var idle, absolute int64
+	err = tx.QueryRowContext(ctx, `SELECT s.id,a.username,s.client_type,s.device_id,s.device_name,s.idle_expires_at,s.absolute_expires_at FROM sessions s JOIN administrator a ON a.id=1 AND a.auth_generation=s.auth_generation WHERE s.token_hash=? AND s.client_type=? AND s.revoked=?`, hash[:], client, revokedState).Scan(&result.ID, &result.Username, &result.ClientType, &result.DeviceID, &result.DeviceName, &idle, &absolute)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Session{}, ErrInvalidSession
+	}
+	if err != nil {
+		return Session{}, err
+	}
+	now := s.now().UTC()
+	if now.UnixNano() >= idle || now.UnixNano() >= absolute {
+		return Session{}, ErrInvalidSession
+	}
+	result.AbsoluteExpiresAt = time.Unix(0, absolute).UTC()
+	if revoke {
+		_, err = tx.ExecContext(ctx, "UPDATE sessions SET revoked=1 WHERE id=?", result.ID)
+	} else if renew {
+		ttl, _ := sessionTTL(client)
+		next := now.Add(ttl).UnixNano()
+		if next > absolute {
+			next = absolute
+		}
+		if next < idle {
+			next = idle
+		}
+		idle = next
+		_, err = tx.ExecContext(ctx, "UPDATE sessions SET idle_expires_at=? WHERE id=?", idle, result.ID)
+	}
+	result.IdleExpiresAt = time.Unix(0, idle).UTC()
+	return result, err
 }
 
 func sessionError(err error) error {
