@@ -2,6 +2,15 @@
 
 更新：2026-10-25。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot52：实例身份 G1 机器契约正式精确冻结
+
+- 恢复优先本 snapshot。main 前 `62b3d98de48c71c18a10c36d65b7ba26efb0e5cc`；仅按序正式实现 `09deddba6ace42261c227b57254f8ae9ebbd1a2a`→`7e235e3`、独审 PASS `8d012c9941f771a64236e38c735d09d379936259`→组合 `f72a11c147269b4c81f0e319998292a3228a83f9`。[I01](P08-04-D01-C01-I01.md) 独立提交 `20d86d7699d2a9878c81a56ed5801debb0c625e8`；本 snapshot 另提交，其提交为本轮最终 main，精确 SHA 提交后交接，不预写自身SHA。已映射提案fcab/混合独审5d0未重复。
+- 六契约与实施/独审两报告共8 blobs精确同源，无冲突或改写、不需重审；8138原基线至集成前main六契约/API无漂移。准确main复用原require-hashes环境Python3.13.15，18锁版本全部核对；OpenAPI CLI及全量validator PASS：40ops/118schemas/2455cases（1537valid+918invalid）、34声明变异及12 Session引用图。辅助实际复核原1229例仅3 Android响应补ID、四公共schema完全兼容。A01另有35变异/155优先级/8probe/12mixed及旧39操作剥离增量同源证据；本轮不机械重跑全部独立overlay。
+- 仅支持root登记 **G-INSTANCE-CONTRACT** 冻结，输入为09deddb六契约与A01/I01证据。G-API历史39/115/1229单独保留；旧Bot/设备runtime已审但不证明新G1。用户已批准G1三项与仅两附件Bot-first例外，历史pending不覆新授权。probe后瞬切凭据字节残余窗口及生命周期/兼容成本保留，不声称G2。
+- storage/service/client及G-INSTANCE-RUNTIME/COMPOSITION、S04/父门槛仍pending；HTTP/SQLite真实初始化迁移并发/维护命令/Go/Android/WS/Room/outbox/真机G1均NOT_RUN，不跑无关runtime或phone/NAS/OPPO。Bot下载独立身份发现不可直接复用需botID的Authenticate；root已登记B01-SCOPE01，补狭窄scope后才实施适配/资源权限回归。
+- 本 snapshot 提交后，以最终main准备 `/home/lijx/Projects/RelayNest-recovery-20261024/instance-storage`、`codex/instance-storage-20261024` 干净S01树；target/branch已核不存在，app无适合存储树，既有managed目录失踪已有恢复证据，按调度允许原生git worktree fallback。只准备不研究/实现；实际ref/path/干净状态提交后交接。迁移实际0001_initial.sql、0002_admin.sql、0003_sessions.sql、0004_bots.sql，0005当前未占但本轮不分配号/写SQL，交root串行安排。
+- 来源instance-contract-freeze干净HEAD8d012c9保留；root/user dirty registry与`.directory`未stage/覆盖，registry/gates仅root维护。仅精确两提交、I01与本snapshot入库，核验准备树后立即释放main index。无push/部署/新聊天/额外agent，旧snapshots原样保留。
+
 ## snapshot51：Bot 双确认基础删除精确集成与父卡基础事务收口
 
 - 恢复优先本 snapshot。main 前 `a22b1ed2f668fe33d53c4d3c658e5b0f7d40745a`；按序实现 `1dfac3f222d46083684a0f5b333dded4f7baee0d`→`e5c918c`、独审 PASS `c8ad4b7dd7234181f287dd386e9e7f93e544a6cd`→准确组合 `e6de9e5e039a85e57ec8020ee03d7f24c6f59563`。[I01](P04-07-S02-I01.md) 独立提交 `d2b58adb83ce69311e94fe9ebafd2843ec390c49`；本 snapshot 另提交，最终 main SHA 提交后交接，不预写自身 SHA。
