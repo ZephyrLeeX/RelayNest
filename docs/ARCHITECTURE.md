@@ -99,6 +99,9 @@ Bot 永久删除是明确的数据删除操作，取消其受保护队列并发�
 - FCM 传输不含正文、附件 URL 或登录凭据。服务账号仅在部署侧提供，不打包进 APK/镜像或写日志。
 - 后续 RelayShelf 使用专属 HTTP 客户端和 CookieJar。即使两端同域，Cookie、CSRF 与请求拦截器也不得混用；跨 Origin 重定向不转发认证。
 
+
+实例身份边界（P08-04-D01-C01）：公开无凭据 `GET /api/v1/instance` 返回数据库持久随机 UUIDv4；Android 每个保护请求/WS 握手前独立探测并携期望头，服务端 Android 分支先校验身份、在同一事务绑定会话/认证代次；仅 uploadAttachment/downloadAttachment 允许 ID 前读取 Bearer识别 Bot API，独立匹配不得仅依私有 token形状，匹配后拒绝绝不回退 Admin、依赖/存储故障503，确定不匹配才先 ID后 Admin（接受无效凭据缺头400/错ID409）。Web Origin/CSRF、Bot 传输权限和 RelayShelf 独立边界不变。保证仅 G1 诚实替换/误连；公开 ID 不证明服务器秘密，probe 后瞬切仍可能把旧 Bearer/密码字节发至新对端，用户已接受此窗口。恢复/clone 必须停服人工换 ID并原子撤销所有管理员会话/推送映射；正常重启/原库无回滚停机迁移保留，清库新 ID，身份腐败停服。旧 cipher重登、旧 Android缺头拒绝、旧 server无 probe不降级；逐请求5秒探测及20/s burst40共享额度是获准成本。精确格式、错误/顺序、存储接口及维护命令以 TECHNICAL_DESIGN §3.3/5.1–5.2/7.1/9.0 与 OpenAPI 为准；不承诺透明滚动升级、自动识别 DB 副本或 G2。
+
 ## 6. 部署、运行与发布
 
 - 一个 Hub 容器，内嵌 Web 静态产物；不单独部署前端运行服务。

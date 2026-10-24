@@ -141,6 +141,28 @@ Web 静态页面只调用管理路由。Android 可调用管理路由，并通�
 
 客户端先建立 WS、缓存提示，再从已持久游标追赶；或先同步后立即再校验 hello 高水位，避免连接窗口丢变更。提示只触发 REST 同步，不直接推进游标。25 秒 ping、75 秒无响应断开；慢客户端提示合并，不无限缓存正文。断线指数退避加抖动，上限 60 秒；进入后台关闭连接，恢复前台立即同步。
 
+### 3.3 实例身份探测与 Android 分支（P08-04-D01-C01）
+
+本节落实已批准 D01 提案，保证级别为 G1：防止诚实部署替换或误连后继续使用旧会话。公开随机 ID 不是秘密、签名或服务端身份证明；同 origin 的主动伪造不在保证内。探测成功后瞬间从 A 切至 B，旧 Bearer 或显式输入密码的字节仍可能抵达 B；取消不能撤回已发字节，服务端先检查头也不代表代理没有收到 Authorization。用户已接受此窗口，不得宣称 G2 或绝不泄露凭据。
+
+`GET /api/v1/instance` 独立于 health/auth，公开且无凭据，无 query/body。拒绝任何大小写形式的 Authorization、Cookie、X-CSRF-Token、X-RelayNest-Instance-ID（包括空值），400 INVALID_REQUEST；不得解析或记录其值。账号、安装 ID、Session.id 不得随 query/body 发送。只允许 GET；不提供重定向或其他路由兜底。
+
+200 为 UTF-8 `application/json` 单对象 `{"instance_id":"<UUIDv4>"}`，仅此 required 字段。ID 为标准小写 36 字符 UUIDv4，version=4、variant=8/9/a/b。所有成功/错误响应固定 `Cache-Control: no-store`、`X-Content-Type-Options: nosniff`；不得带 ETag/Last-Modified/Location，不返回 304。部署反代须禁此路径缓存。错误沿用封闭 Error 外壳，request_id 非空；固定 code/message/retryable：400 `INVALID_REQUEST` / `请求无效` / false，429 `RATE_LIMITED` / `请求过于频繁` / true，503 `INSTANCE_UNAVAILABLE` / `实例暂不可用` / true；429 固定 `Retry-After: 1`。错误不含实际 ID、路径或 DB 错误。请求非法优先于限流，限流优先于身份读取；未启动可以连接失败，无须保证 503。
+
+客户端独立构造无凭据请求，禁止带默认认证的客户端/拦截器。仅既有 HTTPS 和标准证书/主机名验证；禁 trust-all、HTTP 降级、所有 3xx 自动跟随（含同源），404/405 不降级到 health/session。禁 HTTP/磁盘缓存与缓存命中；已绑定 ID 仅供比较。完整 call 上限 5 秒、无自动重试；解压后的成功或错误 body 上限 1024 字节，超限立即关闭且不落日志，不信任 Content-Length；严格 UTF-8、单 JSON、无重复键/额外字段，Content-Type 仅 application/json 或其 UTF-8 charset 形式。不增加压缩依赖。共享进程级常量内存令牌桶 20 次/秒、burst 40，多客户端共享可用性成本，不承诺吞吐。日志仅 request_id/固定路由/状态/耗时/错误码，不记录头、body 或实例 ID。
+
+Android login（LoginRequest.client_type=android）及一切 AdminBearer 认证分支必须带 `X-RelayNest-Instance-ID`；包括 auth/session/logout、设备列表/撤销/通知/推送、管理状态/设置/Bot/凭据/投递、client 消息/历史/详情/callback/同步/已读/bootstrap、附件上传下载、WS 握手。完整操作矩阵固定在 OpenAPI 每个 `x-instance-binding` 和 validator 的 INSTANCE_BOUND_OPERATIONS；混合附件端点仅 Android 分支适用。Web Cookie 分支仍执行原 Origin/CSRF，Bot API Token/Webhook Key 分支沿用原权限与作用域；实例头不赋予任何认证能力，这些分支忽略实例头，不能用 client_type 或头把 Android Bearer 降级为 Web/Bot。
+
+除下述两条附件例外外，顺序固定：先传输格式/客户端判别，Android 分支缺头 400 INSTANCE_REQUIRED、畸形（含多值/空/非严格 UUID）400 INVALID_REQUEST；身份读取失败/缺失/腐败 503 INSTANCE_UNAVAILABLE，期望不符 409 INSTANCE_MISMATCH；通过后才读取密码/Bearer并执行原认证、Origin/CSRF。实例错误不回显实际 ID、不跳转；400/409 不可重试，503 可重试且不当成 401 清正常会话。Web login 的原 Origin 规则保留，Android login 也不得绕过既有客户端/Origin 策略。认证写操作（含登录创建、续期、注销/撤销）在同一 DB 写事务提交前再校验 ID 和 auth_generation；只读操作在同一一致事务快照里读取 ID/会话/代次与业务投影。二次 ID 不符 409，代次失效沿用 401，DB 失败 503；均不得发布/提交部分认证结果。启动缓存仅可提前拒绝，不能代替事务核对；WS 握手在发布升级前校验，存活连接不跨部署搬迁。
+
+仅 `uploadAttachment` / `downloadAttachment` 采用已批准的 Bot-first 狭窄例外：先检查传输/凭据通道格式（多 Authorization、Cookie/Bearer 混用、非 Bearer/空值按原规则拒绝），允许 ID 前读取 Bearer，仅用于 Bot API 凭据匹配，不认证/续期管理员会话，不读上传流、Range/条件请求或附件资源。分支识别不能仅依未冻结的私有 token 形状。最小独立匹配适配按现有唯一 credential_id 且 kind=api_token 查询、常量时间核对摘要并取得 Bot 身份/代次；下载不得先查附件取得 botID。现有 `bots.Repository.Authenticate(ctx, botID, kind, secret)` 需要 botID，不能直接充当此身份发现接口；本契约不新增 token、表/索引或公开接口。
+
+匹配适配必须区分 NoMatch（确定无 API 凭据或摘要不符）、Matched（摘要匹配即固定 Bot 分支，包含随后拒绝）、Unavailable（依赖/存储错误或超时）。匹配后停用/能力不足沿用403、跨 Bot/资源域不授权沿用404、提交前撤销/代次失效沿用401；均绝不回退 Admin，不能把后续 ErrUnauthorized 降级为 NoMatch。故障返回503 INSTANCE_UNAVAILABLE、固定“实例暂不可用”、retryable=true，不回显底层错误，绝不回退。上传仍须 send 且 bot_id 与已认证身份一致；receive-only 禁上传；下载 send 仅本 Bot 获准发送附件，receive 仅已领取事件必需附件，不能只凭任一能力授权任意附件。原事务/幂等与文件打开顺序保持。
+
+仅确定 NoMatch 才进入 Android：先检查实例头再认证 Admin，保留同一快照/提交前 ID 与代次复核。故接受部分无效/旧 Bot 凭据由401变为缺头400 INSTANCE_REQUIRED、畸形头400 INVALID_REQUEST、错 ID409 INSTANCE_MISMATCH；匹配存储故障即使缺头/错 ID仍先503。有效 Bot 忽略缺失/畸形/错实例头；实例头不选认证分支、不授予权限。全部响应 no-store；日志只含固定路由/request_id/状态/耗时/错误码，禁 token、credential_id、实例 ID、附件路径、头与正文。其余端点继续先 ID后读取 Android密码/Bearer。G1 已接受的 probe后瞬切凭据字节窗口也适用于此例外，不声称 G2。
+
+公共 `Session` 及 DeviceSessionPage 仍为原字段封闭投影，不新增 instance_id；专属 `AndroidSession` 复制公共元数据字段并固定 client_type=android，新增 required instance_id，独立 additionalProperties=false，禁止 allOf 扩展旧封闭 Session。login 与 GET session 的 Android 响应均使用此对象，返回处理请求的数据库 ID且等于期望。只有 AndroidLoginResponse 含 access_token/token_type=Bearer；GET session 不回传 Bearer。WebSession/响应和 Bot DTO 保持既有语义。
+
 ## 4. Long Polling、ACK 与失败恢复
 
 ### 4.1 领取与负载
@@ -215,6 +237,11 @@ failed ──管理员手动重试──> pending（retry_generation + 1）
 
 关键索引：messages(bot_id,bot_seq)；deliveries(bot_id,state,next_attempt_at)、(state,lease_until)；changes(change_seq)；messages(created_at)；attachments(state,created_at)；sessions(token_hash)、(device_id,revoked_at)。不在大正文/密钥上建日志型索引。
 
+
+实例身份存储接口冻结于 `server/internal/storage`，后续 S01 实现，不在本卡创建 SQL/代码：`InitInstanceIDTx(ctx context.Context, tx *sql.Tx) (string, error)`、`ReadInstanceIDTx(ctx context.Context, tx *sql.Tx) (string, error)`、`RotateInstanceIDTx(ctx context.Context, tx *sql.Tx, expectedID string) (string, error)`。三者不自行开启/提交事务，不发布未提交 ID。Init 仅供编号迁移首次初始化：不存在时用系统安全随机源创建，已存在则严格读取并返回原 ID；已有迁移完成标记但行缺失/畸形不能重建。Read 严格验证唯一行/格式，缺失、重复、腐败统一 `ErrInstanceUnavailable`；读失败原始错误只能内部包装，HTTP 映射 503。Rotate 严格核对 expectedID，错配 `ErrInstanceMismatch`，随机失败或更新失败整体回滚；返回候选新 ID 只能在外层事务提交成功后使用。`ErrInstanceUnavailable`/`ErrInstanceMismatch` 为包级可 errors.Is 判别的 sentinel；随机/SQL/锁/提交错误不得吞掉。数据库约束保证单例；随机 UUIDv4 不由域名/管理员/安装 UUID/机器路径派生，不复用 sync_epoch。
+
+正常启动/重启读取已提交 ID；首次建库及旧库一次性迁移在独占迁移事务内初始化，两个进程必须读同一提交值，随机/提交失败不就绪。迁移完成后的 ID 缺失/腐败停服，不能自动修复。在线替换 DB 文件不支持；运行中读错或身份变化停止新认证/就绪，不能继续用缓存 ID。
+
 ### 5.2 迁移
 
 启动持独占迁移锁，按编号执行嵌入 SQL，事务内更新版本与 checksum；版本不兼容或 checksum 改动即拒绝启动，不能自动重建数据库。首次创建与升级分别测试。大数据迁移拆小批，版本兼容说明随发布提供。禁止自动生成 SQLite 备份；任何需要不可逆数据转换的升级必须先说明影响，不提供虚假的一键降级保证。
@@ -278,6 +305,13 @@ Bot Hub 首版上传为单文件流式请求，失败可以重试并保持幂等
 
 Web Cookie 为 HttpOnly、SameSite=Lax，依据外部 HTTPS 设置 Secure，所有写操作验证同源 Origin/Referer 与会话 CSRF（包括登录的 Origin 验证）。Android Bearer 保存在 Keystore 密钥加密存储中，不写日志或普通备份；每安装生成设备 ID，重装不复用旧会话。撤销会话使对应推送映射失效；系统收到旧 FCM 提示也必须先验证当前会话，不展示缓存正文。
 
+
+实例生命周期：正常重启、原库无回滚的停机迁移保留 ID，旧进程必须停止接流量；清库重建生成新 ID。备份恢复、回滚或复制为第二个独立部署，必须由维护者先停所有服务进程、隔离入口、备份并核对影响，再人工换 ID；单写事务同时推进管理员 auth_generation、撤销全部管理员会话（Web/Android）及现有推送映射，失败全部回滚，成功后重启并要求重新登录。不自动改 Bot 凭据或 sync_epoch。数据库副本无法自行识别 clone/回滚，此人工流程是保证前提，不提供在线 rotation API 或保留旧 ID 的恢复快捷项。
+
+离线命令冻结为 `relaynest instance rotate-id --db PATH --expected-instance-id UUID --confirm-offline`。三个参数必填，拒绝未知/重复参数、位置参数、畸形 UUID，不接受新 ID 参数（始终安全随机生成），无在线调用/HTTP 接口。`--confirm-offline` 表示维护者确认已停全部进程并隔离入口；进程锁必须排他获取，无法获取不尝试修改。命令仅打开已存在、迁移完整数据库，不能创建库/自动跑迁移；expected ID 比对与 ID 更换/代次推进/全会话及推送映射撤销在 Store.Write 同一事务，任何一步/代次耗尽/提交失败整体回滚。退出码：0 已提交；2 用法/确认参数错误；3 数据库忙/独占锁不可用；4 身份缺失/腐败/expected 不匹配/迁移未完成；1 其他存储/随机/撤销/提交错误。输出只给固定成功/错误文本，不打印新旧 ID、会话/路径/SQL；成功后维护者重启再通过公开 probe 读取 ID。该参数是人工确认，不声称可检测任意其他机器上的副本进程。本卡不运行维护命令。
+
+升级顺序固定：停旧服务及入口→备份/迁移原库→启动新 server→安装新 Android 并显式重登。旧 Android 缺 header 被新 server 拒绝，旧 server 无 instance 端点被新 Android fail-closed；因此存在客户端阻断窗口，不承诺透明滚动升级。旧 cipher（含无 ID 的现格式）清旧 Bearer并重登，不允许先 GET session 补认绑定。
+
 ### 7.2 Bot 凭据和传输
 
 Bot API Token 和 Webhook Key 均至少 256 bit 随机、带公开凭据标识便于查找，摘要恒定时间比较；send/receive 能力绑定凭据授权，不能仅依 UI 是否显示输入框。重置只显示一次明文。receive 权限包括 claim/ACK/renew 及对应投递附件，不授予消息创建/编辑或其他 Bot 访问。
@@ -294,7 +328,18 @@ Bot API Token 和 Webhook Key 均至少 256 bit 随机、带公开凭据标识�
 
 管理员系统状态展示队列数量/最旧等待时间/失败数、附件恢复异常、数据库和推送错误摘要。连接状态区分 WS 在线、近期应用轮询与未知，单向 Webhook Bot 不宣称“持续在线”。无独立监控平台、消息队列、Redis 或自动备份。
 
+实例 probe 的资源/日志规则以 §3.3 为准，公开 ID 不进入实体 ID 日志；原登录限流保持原值，不与公开令牌桶合并。
+
 ## 9. Android 架构与通知
+
+### 9.0 实例门禁与凭据发布
+
+新加密记录严格版本化并同时绑定规范化 endpoint、instance_id、Session.id、本地代次；AAD 和严格序列化版本共同升级，安装 UUID 独立，URL 不是实例身份。旧记录无 ID 清旧凭据并要求显式登录，不自动认领服务器 ID。
+
+每次 login/session/logout、后续受保护 HTTP（含未来业务/outbox）及每次 WS 握手派发前，都要进行独立无凭据探测；与绑定 ID 一致才发送期望头和凭据。首次登录先探测，再接受显式密码；响应 ID/endpoint/代次不符，不保存/发布 Bearer，不用旧密码自动重试，不用新 Bearer另发“后探测”。每 endpoint/代次最多一个 probe 在飞；等待者串行，各自新探测和派发检查，成功只用于一次派发，不能缓存成功布尔值或无限共享。
+
+endpoint/instance/session/代次同一协调锁核对，网络在锁外；返回时按原票据复核。切地址/注销在派发临界区前生效则不发旧请求，之后仅取消/丢弃旧结果。有效 probe 得到新 ID 时锁内推进代次、清 Bearer、取消旧请求、结束认证；缓存/草稿/outbox留在旧 endpoint+ID隔离，不自动迁移或重登后自动发送。用户显式登录新实例。网络/TLS/超时/3xx/404/429/503/畸形/超限均停止凭据发送，进入身份待验证，暂留加密记录但不得交网络；显式重试重新探测，不提供继续旧会话旁路。离线本地注销立即清凭据，远端 logout 未经 probe 不发送并展示未确认。存活 WS 对端固定，重连重新门禁。未来 Room/outbox/WS/推送仍须继承门禁，当前设计/机器契约检查不等于这些运行时已通过。
+
 
 采用单向 UI 状态：Compose → ViewModel → Repository → Room/网络，协程和 Flow 驱动界面。`core/network` 按后端独立客户端，`core/sync` 负责唯一同步协调；`feature/bots`、`chat`、`management`、`settings` 先实现，RelayShelf feature 后置。不预建大量空模块。
 

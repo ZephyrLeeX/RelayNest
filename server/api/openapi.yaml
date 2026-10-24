@@ -6,6 +6,176 @@ info:
 servers:
 - url: /api/v1
 paths:
+  /instance:
+    get:
+      operationId: getInstance
+      summary: 公开无凭据实例身份探测
+      description: '不接受 query/body 或 Authorization、Cookie、X-CSRF-Token、X-RelayNest-Instance-ID；出现即 400，凭据值不解析不记录。所有响应
+        UTF-8 JSON、no-store/nosniff，无 ETag/Last-Modified/304 或重定向。仅标准 HTTPS；客户端完整 call 5 秒、无重试/缓存/重定向，解压后 body 上限
+        1024 字节并严格单 JSON 无重复键。共享进程令牌桶 20/s burst 40；耗尽 Retry-After: 1。'
+      security: []
+      x-instance-probe:
+        request:
+          query: false
+          body: false
+          forbidden-headers:
+          - authorization
+          - cookie
+          - x-csrf-token
+          - x-relaynest-instance-id
+        response:
+          max-decoded-body-bytes: 1024
+          single-json: true
+          duplicate-keys: false
+          redirects: false
+          cache: false
+          tls: standard-https
+        call-timeout-seconds: 5
+        automatic-retries: 0
+        rate-per-second: 20
+        burst: 40
+        error-priority:
+        - INVALID_REQUEST
+        - RATE_LIMITED
+        - INSTANCE_UNAVAILABLE
+      responses:
+        '200':
+          description: 当前数据库的公开实例身份
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceProbeResponse'
+        '400':
+          description: INVALID_REQUEST
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        const: INVALID_REQUEST
+                      message:
+                        const: 请求无效
+                      request_id:
+                        type: string
+                        minLength: 1
+                      retryable:
+                        const: false
+                    required:
+                    - code
+                    - message
+                    - request_id
+                    - retryable
+                    additionalProperties: false
+                required:
+                - error
+                additionalProperties: false
+        '429':
+          description: RATE_LIMITED
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+            Retry-After:
+              schema:
+                type: string
+                const: '1'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        const: RATE_LIMITED
+                      message:
+                        const: 请求过于频繁
+                      request_id:
+                        type: string
+                        minLength: 1
+                      retryable:
+                        const: true
+                    required:
+                    - code
+                    - message
+                    - request_id
+                    - retryable
+                    additionalProperties: false
+                required:
+                - error
+                additionalProperties: false
+        '503':
+          description: INSTANCE_UNAVAILABLE
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        const: INSTANCE_UNAVAILABLE
+                      message:
+                        const: 实例暂不可用
+                      request_id:
+                        type: string
+                        minLength: 1
+                      retryable:
+                        const: true
+                    required:
+                    - code
+                    - message
+                    - request_id
+                    - retryable
+                    additionalProperties: false
+                required:
+                - error
+                additionalProperties: false
+      x-error-codes:
+        '400':
+        - INVALID_REQUEST
+        '429':
+        - RATE_LIMITED
+        '503':
+        - INSTANCE_UNAVAILABLE
   /admin/settings:
     get:
       operationId: getGlobalSettings
@@ -38,6 +208,8 @@ paths:
           $ref: '#/components/responses/429'
         '503':
           $ref: '#/components/responses/503'
+        '409':
+          $ref: '#/components/responses/409'
       x-global-settings-policy:
         validation_order:
         - authentication
@@ -68,6 +240,24 @@ paths:
         ordinary_reference: does-not-permanently-protect-parent-message
         no_ttl: protected-delivery-or-failure-never-silently-dropped-under-pressure
         history: offline-or-unread-does-not-protect-history-no-permanent-recovery-guarantee
+      parameters:
+      - $ref: '#/components/parameters/ExpectedInstance'
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
     put:
       operationId: updateGlobalSettings
       summary: CAS替换全局设置
@@ -155,6 +345,7 @@ paths:
       x-error-codes:
         '400':
         - INVALID_REQUEST
+        - INSTANCE_REQUIRED
         '401':
         - AUTHENTICATION_REQUIRED
         '403':
@@ -162,10 +353,29 @@ paths:
         '409':
         - GLOBAL_SETTINGS_CONFLICT
         - GLOBAL_SETTINGS_VERSION_EXHAUSTED
+        - INSTANCE_MISMATCH
         '413':
         - REQUEST_TOO_LARGE
         '422':
         - VALIDATION_FAILED
+      parameters:
+      - $ref: '#/components/parameters/ExpectedInstance'
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
   /health/live:
     get:
       operationId: getHealthLive
@@ -282,12 +492,33 @@ paths:
           $ref: '#/components/responses/429'
         '503':
           $ref: '#/components/responses/503'
+        '400':
+          $ref: '#/components/responses/400'
+        '409':
+          $ref: '#/components/responses/409'
+      parameters:
+      - $ref: '#/components/parameters/ExpectedInstance'
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
   /client/ws:
     get:
       operationId: connectClientWS
       summary: Android 提交后同步提示 WebSocket
-      description: Authorization Bearer 仅当前 Android 设备会话；Web Cookie/Bot/Webhook 不可升级。原生无 Origin 可用，有 Origin
-        必须通过服务端配置策略；禁止查询串凭据及业务写入。101无JSON正文，后续frame按WSFrame单独校验。
+      description: Authorization Bearer 仅当前 Android 设备会话；Web Cookie/Bot/Webhook 不可升级。原生无 Origin 可用，有 Origin 必须通过服务端配置策略；禁止查询串凭据及业务写入。101无JSON正文，后续frame按WSFrame单独校验。
       security:
       - AdminBearer: []
       x-client-type: android
@@ -345,6 +576,7 @@ paths:
         schema:
           type: string
           pattern: ^[A-Za-z0-9+/]{22}==$
+      - $ref: '#/components/parameters/ExpectedInstance'
       responses:
         '101':
           description: 升级成功；无HTTP JSON正文。
@@ -376,19 +608,39 @@ paths:
           $ref: '#/components/responses/429'
         '503':
           $ref: '#/components/responses/503'
+        '409':
+          $ref: '#/components/responses/409'
       x-error-codes:
         '400':
         - INVALID_WS_HANDSHAKE
+        - INSTANCE_REQUIRED
+        - INVALID_REQUEST
         '401':
         - AUTHENTICATION_REQUIRED
         '403':
         - FORBIDDEN
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
   /auth/login:
     post:
       operationId: login
       summary: 登录唯一管理员
-      description: Web 只返回 Cookie 和 CSRF；Android 返回设备会话 Bearer。登录验证同源 Origin；Cookie HttpOnly、SameSite=Lax，外部 HTTPS
-        时 Secure。响应及日志不得泄露密码；凭据错误统一 401 AUTHENTICATION_FAILED。
+      description: Web 只返回 Cookie 和 CSRF；Android 返回设备会话 Bearer。登录验证同源 Origin；Cookie HttpOnly、SameSite=Lax，外部 HTTPS 时
+        Secure。响应及日志不得泄露密码；凭据错误统一 401 AUTHENTICATION_FAILED。
       security: []
       responses:
         '200':
@@ -422,12 +674,32 @@ paths:
           $ref: '#/components/responses/429'
         '503':
           $ref: '#/components/responses/503'
+        '409':
+          $ref: '#/components/responses/409'
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/LoginRequest'
+      parameters:
+      - $ref: '#/components/parameters/ExpectedInstance'
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
   /devices:
     get:
       operationId: listDeviceSessions
@@ -459,6 +731,8 @@ paths:
           $ref: '#/components/responses/503'
         '400':
           $ref: '#/components/responses/400'
+        '409':
+          $ref: '#/components/responses/409'
       parameters:
       - name: cursor
         in: query
@@ -470,6 +744,7 @@ paths:
           type: integer
           minimum: 1
         description: 有界分页；服务端资源控制限制实际页大小，客户端沿 next_cursor 继续。
+      - $ref: '#/components/parameters/ExpectedInstance'
       x-device-session-policy:
         identity: Session.id-exact-target-and-generation
         generation: new-session-id-every-login-never-reuse
@@ -478,12 +753,27 @@ paths:
         revoke: atomic-entire-target-session-all-providers-and-ws
         late_callback: reject-revoked-or-mismatched-session-id-before-commit
         logout: current-session-only-other-devices-and-bot-credentials-unchanged
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
   /devices/{id}/session:
     delete:
       operationId: revokeDeviceSession
       summary: 撤销指定设备会话
-      description: id路径参数为列表条目的Session.id，device_id仅为元数据，不能作为替代选择键。先鉴权并在提交前重新验证；仅当前管理员有权目标，未知/其他管理员会话统一404
-        RESOURCE_NOT_FOUND。事务内仅按所给Session.id定位有效会话，在提交前复核归属与有效性，撤销整个会话及所有provider映射，阻止新发送，关闭其全部WS（沿session_revoked）；旧提示不得展示缓存正文。操作只作用于所给Session.id代次，同device_id其他有效会话保持；迟到或重试DELETE旧id绝不回退选择新会话，迟到provider回调/在途结果提交前必须比对会话身份与有效性，不得复活旧映射或改写重新登录的新代次。重新登录必须生成新Session.id；device_id可保持。logout仍仅撤销当前会话，不影响其他设备或Bot凭据。Cookie写须CSRF及同源Origin/Referer，Bearer无需CSRF。无请求体；204无正文。对已无有效会话目标返回404；重试前可重新列表，不承诺跨重新登录重试幂等。
+      description: id路径参数为列表条目的Session.id，device_id仅为元数据，不能作为替代选择键。先鉴权并在提交前重新验证；仅当前管理员有权目标，未知/其他管理员会话统一404 RESOURCE_NOT_FOUND。事务内仅按所给Session.id定位有效会话，在提交前复核归属与有效性，撤销整个会话及所有provider映射，阻止新发送，关闭其全部WS（沿session_revoked）；旧提示不得展示缓存正文。操作只作用于所给Session.id代次，同device_id其他有效会话保持；迟到或重试DELETE旧id绝不回退选择新会话，迟到provider回调/在途结果提交前必须比对会话身份与有效性，不得复活旧映射或改写重新登录的新代次。重新登录必须生成新Session.id；device_id可保持。logout仍仅撤销当前会话，不影响其他设备或Bot凭据。Cookie写须CSRF及同源Origin/Referer，Bearer无需CSRF。无请求体；204无正文。对已无有效会话目标返回404；重试前可重新列表，不承诺跨重新登录重试幂等。
       security:
       - AdminBearer: []
       - WebCookie: []
@@ -513,6 +803,8 @@ paths:
           $ref: '#/components/responses/400'
         '404':
           $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
       parameters:
       - name: id
         in: path
@@ -520,6 +812,7 @@ paths:
         schema:
           $ref: '#/components/schemas/ID'
         description: 目标列表条目的Session.id；device_id或provider标识不能替代。
+      - $ref: '#/components/parameters/ExpectedInstance'
       x-error-codes:
         '401':
         - AUTHENTICATION_REQUIRED
@@ -535,6 +828,22 @@ paths:
         revoke: atomic-entire-target-session-all-providers-and-ws
         late_callback: reject-revoked-or-mismatched-session-id-before-commit
         logout: current-session-only-other-devices-and-bot-credentials-unchanged
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
   /auth/session:
     get:
       operationId: getSession
@@ -564,6 +873,28 @@ paths:
           $ref: '#/components/responses/429'
         '503':
           $ref: '#/components/responses/503'
+        '400':
+          $ref: '#/components/responses/400'
+        '409':
+          $ref: '#/components/responses/409'
+      parameters:
+      - $ref: '#/components/parameters/ExpectedInstance'
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
   /auth/logout:
     post:
       operationId: logout
@@ -594,6 +925,28 @@ paths:
           $ref: '#/components/responses/429'
         '503':
           $ref: '#/components/responses/503'
+        '400':
+          $ref: '#/components/responses/400'
+        '409':
+          $ref: '#/components/responses/409'
+      parameters:
+      - $ref: '#/components/parameters/ExpectedInstance'
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
   /admin/bots:
     get:
       operationId: listBots
@@ -627,6 +980,8 @@ paths:
           $ref: '#/components/responses/429'
         '503':
           $ref: '#/components/responses/503'
+        '409':
+          $ref: '#/components/responses/409'
       parameters:
       - name: cursor
         in: query
@@ -638,6 +993,23 @@ paths:
           type: integer
           minimum: 1
         description: 有界分页；服务端资源控制限制实际页大小，客户端沿 next_cursor 继续。
+      - $ref: '#/components/parameters/ExpectedInstance'
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
     post:
       operationId: createBot
       summary: 创建 Bot 并一次返回两套独立凭据
@@ -673,12 +1045,32 @@ paths:
           $ref: '#/components/responses/429'
         '503':
           $ref: '#/components/responses/503'
+        '409':
+          $ref: '#/components/responses/409'
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateBotRequest'
+      parameters:
+      - $ref: '#/components/parameters/ExpectedInstance'
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
   /admin/bots/{id}:
     patch:
       operationId: patchBot
@@ -725,6 +1117,24 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PatchBotRequest'
+      parameters:
+      - $ref: '#/components/parameters/ExpectedInstance'
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
     delete:
       operationId: deleteBot
       summary: 二次确认后永久删除 Bot
@@ -766,6 +1176,24 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DeleteBotRequest'
+      parameters:
+      - $ref: '#/components/parameters/ExpectedInstance'
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
     parameters:
     - name: id
       in: path
@@ -804,6 +1232,28 @@ paths:
           $ref: '#/components/responses/429'
         '503':
           $ref: '#/components/responses/503'
+        '400':
+          $ref: '#/components/responses/400'
+        '409':
+          $ref: '#/components/responses/409'
+      parameters:
+      - $ref: '#/components/parameters/ExpectedInstance'
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
     parameters:
     - name: id
       in: path
@@ -842,6 +1292,28 @@ paths:
           $ref: '#/components/responses/429'
         '503':
           $ref: '#/components/responses/503'
+        '400':
+          $ref: '#/components/responses/400'
+        '409':
+          $ref: '#/components/responses/409'
+      parameters:
+      - $ref: '#/components/parameters/ExpectedInstance'
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
     parameters:
     - name: id
       in: path
@@ -1071,6 +1543,7 @@ paths:
           $ref: '#/components/schemas/ID'
         description: ''
       - $ref: '#/components/parameters/IdempotencyKey'
+      - $ref: '#/components/parameters/ExpectedInstance'
       requestBody:
         required: true
         x-max-bytes: 262144
@@ -1082,6 +1555,22 @@ paths:
       x-client-type: android
       x-target-bot-capability: receive
       x-reference-policy: same-bot-authorized-ready
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
     get:
       operationId: listClientMessages
       summary: 获取授权消息历史/详情
@@ -1143,15 +1632,31 @@ paths:
           type: integer
           minimum: 1
         description: 有界页大小，服务端按资源限制处理；不使用offset。
+      - $ref: '#/components/parameters/ExpectedInstance'
       x-client-type: android
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
   /client/bots/{id}/callbacks:
     post:
       operationId: createCallback
       summary: 提交独立按钮事件
       description: 仅 Android 会话向启用且 receive 的 Bot 点击 callback 按钮。父消息非当前版本或按钮已不存在/不再是callback时409 BUTTON_STALE；Bot停用409
-        BOT_DISABLED，无receive能力403。独立生成button.callback，不生成可见聊天消息。业务授权/时效/重复执行由接入应用判断。所有资源引用（回复、附件、消息、按钮）均须在当前 Bot
-        授权域内验证；跨 Bot 或无权资源404 RESOURCE_NOT_FOUND，不泄露是否存在。附件仅 ready 可绑定；同一附件 ID 不得重复、kind 必须匹配。受保护响应与日志不泄露非授权正文/附件/路径。Bot
-        凭据访问须校验启用状态；写入提交前复验身份及凭据代次。
+        BOT_DISABLED，无receive能力403。独立生成button.callback，不生成可见聊天消息。业务授权/时效/重复执行由接入应用判断。所有资源引用（回复、附件、消息、按钮）均须在当前 Bot 授权域内验证；跨
+        Bot 或无权资源404 RESOURCE_NOT_FOUND，不泄露是否存在。附件仅 ready 可绑定；同一附件 ID 不得重复、kind 必须匹配。受保护响应与日志不泄露非授权正文/附件/路径。Bot 凭据访问须校验启用状态；写入提交前复验身份及凭据代次。
       security:
       - AdminBearer: []
       responses:
@@ -1195,6 +1700,7 @@ paths:
           $ref: '#/components/schemas/ID'
         description: ''
       - $ref: '#/components/parameters/IdempotencyKey'
+      - $ref: '#/components/parameters/ExpectedInstance'
       requestBody:
         required: true
         x-max-bytes: 262144
@@ -1206,6 +1712,22 @@ paths:
       x-client-type: android
       x-target-bot-capability: receive
       x-reference-policy: same-bot-authorized-ready
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
   /client/messages/{id}:
     get:
       operationId: getClientMessage
@@ -1255,7 +1777,24 @@ paths:
         schema:
           $ref: '#/components/schemas/ID'
         description: ''
+      - $ref: '#/components/parameters/ExpectedInstance'
       x-client-type: android
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
   /attachments:
     post:
       operationId: uploadAttachment
@@ -1330,6 +1869,7 @@ paths:
           minLength: 1
         description: 显示MIME，服务端校验/安全处理；不凭此放宽图片或文件实际字节限制。
       - $ref: '#/components/parameters/IdempotencyKey'
+      - $ref: '#/components/parameters/ExpectedInstance'
       requestBody:
         required: true
         content:
@@ -1345,14 +1885,45 @@ paths:
       x-client-type: android-or-bot
       x-bot-capability: send
       x-reference-policy: same-bot-authorized-ready
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-credential-channel-validation
+        - bot-api-credential-match-before-instance
+        - matched-bot-authorization-no-admin-fallback
+        - only-no-match-instance-header-syntax
+        - instance-read-and-match
+        - admin-session-authentication
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: Bot keeps enabled/capability/scope/generation rules and ignores instance header; only definite no-match enters Android
+        bot-match:
+          source: API credential lookup and constant-time digest verification; never private token shape alone
+          download: discover Bot identity independently of attachment; kind=api_token only
+          outcomes:
+          - no-match
+          - matched
+          - unavailable
+          no-match: only absent API credential or digest mismatch; parser rejection is not a private wire discriminator
+          matched: latch Bot identity before enabled/capability/resource/generation checks; never Admin fallback
+          unavailable: 503 INSTANCE_UNAVAILABLE; retryable=true; never Admin fallback
+        pre-auth-forbidden:
+        - admin-session-lookup
+        - attachment-body-or-range-processing
+        - attachment-resource-lookup
   /attachments/{id}:
     get:
       operationId: downloadAttachment
       summary: 权限下载与断点传输
       description: 仅Android管理员或启用Bot API下载ready授权附件。Bot send仅本Bot获准发送消息附件；receive仅已领取事件所需附件，不能枚举历史。Web Cookie/Webhook无权；管理员仍可下载停用Bot授权历史。先取得下载引用/短租约再打开，清理不能删除活动文件；ready缺文件返回404
         ATTACHMENT_MISSING并记录健康异常。先鉴权后处理条件与范围，错误不泄露资源大小。支持单/多字节范围，不能满足416；格式非法400。所有资源引用（回复、附件、消息、按钮）均须在当前 Bot 授权域内验证；跨
-        Bot 或无权资源404 RESOURCE_NOT_FOUND，不泄露是否存在。附件仅 ready 可绑定；同一附件 ID 不得重复、kind 必须匹配。受保护响应与日志不泄露非授权正文/附件/路径。Bot
-        凭据访问须校验启用状态；写入提交前复验身份及凭据代次。
+        Bot 或无权资源404 RESOURCE_NOT_FOUND，不泄露是否存在。附件仅 ready 可绑定；同一附件 ID 不得重复、kind 必须匹配。受保护响应与日志不泄露非授权正文/附件/路径。Bot 凭据访问须校验启用状态；写入提交前复验身份及凭据代次。
       security:
       - AdminBearer: []
       - BotAPIToken: []
@@ -1526,9 +2097,42 @@ paths:
         schema:
           type: string
         description: 匹配当前ETag返回304；优先于Range。
+      - $ref: '#/components/parameters/ExpectedInstance'
       x-client-type: android-or-bot
       x-bot-capability: send-authorized-or-receive-claimed-event
       x-reference-policy: same-bot-authorized-ready
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-credential-channel-validation
+        - bot-api-credential-match-before-instance
+        - matched-bot-authorization-no-admin-fallback
+        - only-no-match-instance-header-syntax
+        - instance-read-and-match
+        - admin-session-authentication
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: Bot keeps enabled/capability/scope/generation rules and ignores instance header; only definite no-match enters Android
+        bot-match:
+          source: API credential lookup and constant-time digest verification; never private token shape alone
+          download: discover Bot identity independently of attachment; kind=api_token only
+          outcomes:
+          - no-match
+          - matched
+          - unavailable
+          no-match: only absent API credential or digest mismatch; parser rejection is not a private wire discriminator
+          matched: latch Bot identity before enabled/capability/resource/generation checks; never Admin fallback
+          unavailable: 503 INSTANCE_UNAVAILABLE; retryable=true; never Admin fallback
+        pre-auth-forbidden:
+        - admin-session-lookup
+        - attachment-body-or-range-processing
+        - attachment-resource-lookup
   /bot/events/claim:
     post:
       operationId: claimEvents
@@ -1747,6 +2351,8 @@ paths:
           $ref: '#/components/responses/429'
         '503':
           $ref: '#/components/responses/503'
+        '409':
+          $ref: '#/components/responses/409'
       parameters:
       - name: bot_id
         in: query
@@ -1773,10 +2379,27 @@ paths:
           type: integer
           minimum: 1
         description: 服务有界返回，沿用元数据分页约定。
+      - $ref: '#/components/parameters/ExpectedInstance'
       x-management-projection: delivery-metadata-only
       x-error-codes:
         '403':
         - PERMISSION_DENIED
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
   /admin/deliveries/{id}/retry:
     post:
       operationId: retryDelivery
@@ -1835,18 +2458,36 @@ paths:
           $ref: '#/components/schemas/ID'
         description: ''
       - $ref: '#/components/parameters/IdempotencyKey'
+      - $ref: '#/components/parameters/ExpectedInstance'
       x-management-projection: delivery-metadata-only
       x-idempotency-policy: authorized-replay-before-state-check
       x-error-codes:
         '409':
         - DELIVERY_NOT_FAILED
         - IDEMPOTENCY_CONFLICT
+        - INSTANCE_MISMATCH
         '410':
         - RESOURCE_EXPIRED
         '404':
         - RESOURCE_NOT_FOUND
         '403':
         - PERMISSION_DENIED
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
   /client/bootstrap:
     get:
       operationId: bootstrapClient
@@ -1884,6 +2525,8 @@ paths:
           $ref: '#/components/responses/429'
         '503':
           $ref: '#/components/responses/503'
+        '409':
+          $ref: '#/components/responses/409'
       summary: 服务端缓存重建快照、分页及切换前复核
       description: 仅Android管理员。首次不传token，短读事务冻结H/epoch/Bot/共享已读并创建15分钟会话。按Bot UUID文本升序、Bot内不可变bot_seq升序扫描创建change_seq≤H的现存消息；每页短读并复核当前revision、删除及附件现存性。删除不返回旧正文；附件消失保留消息原引用，下载返回404
         ATTACHMENT_MISSING。固定快照仅为初值，后续sync按实体版本合并，删除为终态。重复请求同位置可因删除/编辑得到不同当前投影，空页仍可有下一token；位置按已扫描键推进，不按剩余条数推算。token不得解码或拼接，绑定管理员/H/epoch/位置和原到期时间。末页page_token仍用于verify，next_token为null。全部页完成后从sync_cursor追赶；phase=verify必须携带末页page_token及同身份同epoch已完成轮次且位置≥H的sync_cursor。服务端验证末页标记并重检epoch/floor；返回verified后客户端事务原子切换generation。复核后发现epoch/floor失效仍重新开始，不以通知推进游标。此为契约，Android未实现。
@@ -1914,10 +2557,13 @@ paths:
           minimum: 1
           maximum: 200
           default: 200
+      - $ref: '#/components/parameters/ExpectedInstance'
       x-error-codes:
         '400':
         - INVALID_BOOTSTRAP_TOKEN
         - INVALID_SYNC_CURSOR
+        - INSTANCE_REQUIRED
+        - INVALID_REQUEST
         '410':
         - BOOTSTRAP_RESET_REQUIRED
       x-bootstrap-policy:
@@ -1986,6 +2632,22 @@ paths:
         token_purpose:
           next_token: resume-after-scanned-position
           page_token: receipt-after-scanned-position-with-all_pages_complete-flag
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
   /client/sync:
     get:
       operationId: syncClientChanges
@@ -2023,9 +2685,11 @@ paths:
           $ref: '#/components/responses/429'
         '503':
           $ref: '#/components/responses/503'
+        '409':
+          $ref: '#/components/responses/409'
       summary: 固定高水位增量同步
-      description: 仅Android管理员Bearer；Web Cookie、Bot Token及Webhook Key不得读取正文。管理员域绑定游标，跨身份/篡改/格式错误为400
-        INVALID_SYNC_CURSOR；有效游标epoch不符或位置小于floor为410 SYNC_RESET_REQUIRED，必须提示仅保留部分历史并重建服务端缓存，不跳缺口或记为传输失败。省略cursor从当前epoch位置0开始，仍执行floor检查；完成游标下一轮重新冻结H。事件与当前投影同一读事务，无权实体不得泄漏正文。客户端事务保存批次和next_cursor，提交前崩溃重放；旧版本/重复删除幂等。停用Bot仍可同步授权历史。
+      description: 仅Android管理员Bearer；Web Cookie、Bot Token及Webhook Key不得读取正文。管理员域绑定游标，跨身份/篡改/格式错误为400 INVALID_SYNC_CURSOR；有效游标epoch不符或位置小于floor为410
+        SYNC_RESET_REQUIRED，必须提示仅保留部分历史并重建服务端缓存，不跳缺口或记为传输失败。省略cursor从当前epoch位置0开始，仍执行floor检查；完成游标下一轮重新冻结H。事件与当前投影同一读事务，无权实体不得泄漏正文。客户端事务保存批次和next_cursor，提交前崩溃重放；旧版本/重复删除幂等。停用Bot仍可同步授权历史。
       parameters:
       - name: cursor
         in: query
@@ -2040,6 +2704,7 @@ paths:
           minimum: 1
           maximum: 200
           default: 200
+      - $ref: '#/components/parameters/ExpectedInstance'
       x-sync-policy:
         cursor_binding:
         - administrator_id
@@ -2067,8 +2732,26 @@ paths:
       x-error-codes:
         '400':
         - INVALID_SYNC_CURSOR
+        - INSTANCE_REQUIRED
+        - INVALID_REQUEST
         '410':
         - SYNC_RESET_REQUIRED
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
   /client/bots/{id}/read:
     put:
       operationId: updateClientRead
@@ -2106,6 +2789,8 @@ paths:
           $ref: '#/components/responses/429'
         '503':
           $ref: '#/components/responses/503'
+        '409':
+          $ref: '#/components/responses/409'
       summary: 跨设备合并Bot共享已读
       description: 仅Android管理员Bearer；Web Cookie/Bot/Webhook不可调用。用户查看会话后提交实际展示最大bot_seq，不可使用change_seq；服务端不能证明实际展示，须由客户端遵守。验证through_seq不超过该Bot曾存在的最大bot_seq，超过422
         READ_SEQ_OUT_OF_RANGE；不存在/无权Bot返回404 RESOURCE_NOT_FOUND，停用Bot仍可阅读。原子max合并且前进时同事务更新version/updated_at并写read.updated变更；无前进保持原版本/时间，不产生重复变更。未读只计现存application且bot_seq>read_seq，编辑/自身发送/callback/过期不增加未读。其他设备同步后撤销对应通知，不保证离线通知即时撤回或跨设备原子去重；设备通知偏好由后卡负责。
@@ -2115,6 +2800,7 @@ paths:
         required: true
         schema:
           $ref: '#/components/schemas/ID'
+      - $ref: '#/components/parameters/ExpectedInstance'
       requestBody:
         required: true
         x-max-bytes: 262144
@@ -2141,6 +2827,22 @@ paths:
         - RESOURCE_NOT_FOUND
         '422':
         - READ_SEQ_OUT_OF_RANGE
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
   /devices/current/push:
     get:
       operationId: getCurrentPush
@@ -2181,11 +2883,31 @@ paths:
           $ref: '#/components/responses/429'
         '503':
           $ref: '#/components/responses/503'
+        '409':
+          $ref: '#/components/responses/409'
       x-error-codes:
         '401':
         - AUTHENTICATION_REQUIRED
         '403':
         - FORBIDDEN
+      parameters:
+      - $ref: '#/components/parameters/ExpectedInstance'
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
     put:
       operationId: updateCurrentPush
       summary: 局部更新当前会话单个provider注册
@@ -2239,6 +2961,7 @@ paths:
         '409':
         - REGISTRATION_CONFLICT
         - REGISTRATION_VERSION_EXHAUSTED
+        - INSTANCE_MISMATCH
       requestBody:
         required: true
         content:
@@ -2246,6 +2969,24 @@ paths:
             schema:
               $ref: '#/components/schemas/PushRegistrationUpdate'
         x-max-bytes: 262144
+      parameters:
+      - $ref: '#/components/parameters/ExpectedInstance'
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
   /devices/current/push/{provider}:
     delete:
       operationId: deleteCurrentPush
@@ -2300,6 +3041,7 @@ paths:
         '409':
         - REGISTRATION_CONFLICT
         - REGISTRATION_VERSION_EXHAUSTED
+        - INSTANCE_MISMATCH
       requestBody:
         required: true
         content:
@@ -2313,6 +3055,23 @@ paths:
         required: true
         schema:
           $ref: '#/components/schemas/PushProvider'
+      - $ref: '#/components/parameters/ExpectedInstance'
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
   /devices/current/notifications:
     get:
       operationId: getCurrentNotifications
@@ -2369,11 +3128,31 @@ paths:
           $ref: '#/components/responses/429'
         '503':
           $ref: '#/components/responses/503'
+        '409':
+          $ref: '#/components/responses/409'
       x-error-codes:
         '401':
         - AUTHENTICATION_REQUIRED
         '403':
         - FORBIDDEN
+      parameters:
+      - $ref: '#/components/parameters/ExpectedInstance'
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
     put:
       operationId: updateCurrentNotifications
       summary: CAS替换当前设备通知配置
@@ -2456,6 +3235,7 @@ paths:
         '409':
         - SETTINGS_CONFLICT
         - SETTINGS_VERSION_EXHAUSTED
+        - INSTANCE_MISMATCH
         '422':
         - VALIDATION_FAILED
         - PROVIDER_NOT_READY
@@ -2466,6 +3246,24 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/NotificationSettingsUpdate'
+      parameters:
+      - $ref: '#/components/parameters/ExpectedInstance'
+      x-instance-binding:
+        header: X-RelayNest-Instance-ID
+        applies-to: Android login or AdminBearer branch
+        missing: 400 INSTANCE_REQUIRED
+        malformed: 400 INVALID_REQUEST
+        mismatch: 409 INSTANCE_MISMATCH
+        unavailable: 503 INSTANCE_UNAVAILABLE
+        order:
+        - transport-and-client-discriminator
+        - instance-header-syntax
+        - instance-read-and-match
+        - existing-auth-origin-csrf-validation
+        - transaction-instance-and-auth-generation-check
+        - commit-or-publish
+        transaction: same database snapshot for reads; recheck before write commit
+        web-bot: existing rules unchanged; header ignored, never substitutes authentication
 components:
   schemas:
     GlobalSettingsValue:
@@ -3081,6 +3879,91 @@ components:
       - has_more
       additionalProperties: false
       description: 当前管理员有效设备会话的有界元数据页；无凭据、推送token或CSRF。过期/撤销会话不列出；分页不承诺跨页快照，操作时重新鉴权。时间复用Session服务端UTC到期时间。
+    InstanceID:
+      type: string
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
+      minLength: 36
+      maxLength: 36
+      description: 随机 UUIDv4，小写标准格式；公开部署标识，不是秘密或服务端证明。
+    InstanceProbeResponse:
+      type: object
+      properties:
+        instance_id:
+          $ref: '#/components/schemas/InstanceID'
+      required:
+      - instance_id
+      additionalProperties: false
+    InstanceProbeError:
+      oneOf:
+      - type: object
+        properties:
+          error:
+            type: object
+            properties:
+              code:
+                const: INVALID_REQUEST
+              message:
+                const: 请求无效
+              request_id:
+                type: string
+                minLength: 1
+              retryable:
+                const: false
+            required:
+            - code
+            - message
+            - request_id
+            - retryable
+            additionalProperties: false
+        required:
+        - error
+        additionalProperties: false
+      - type: object
+        properties:
+          error:
+            type: object
+            properties:
+              code:
+                const: RATE_LIMITED
+              message:
+                const: 请求过于频繁
+              request_id:
+                type: string
+                minLength: 1
+              retryable:
+                const: true
+            required:
+            - code
+            - message
+            - request_id
+            - retryable
+            additionalProperties: false
+        required:
+        - error
+        additionalProperties: false
+      - type: object
+        properties:
+          error:
+            type: object
+            properties:
+              code:
+                const: INSTANCE_UNAVAILABLE
+              message:
+                const: 实例暂不可用
+              request_id:
+                type: string
+                minLength: 1
+              retryable:
+                const: true
+            required:
+            - code
+            - message
+            - request_id
+            - retryable
+            additionalProperties: false
+        required:
+        - error
+        additionalProperties: false
     Session:
       type: object
       properties:
@@ -3118,11 +4001,36 @@ components:
           client_type:
             const: web
     AndroidSession:
-      allOf:
-      - $ref: '#/components/schemas/Session'
-      - properties:
-          client_type:
-            const: android
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ID'
+        administrator:
+          $ref: '#/components/schemas/Administrator'
+        client_type:
+          const: android
+        device_id:
+          $ref: '#/components/schemas/ID'
+        device_name:
+          type: string
+          minLength: 1
+        idle_expires_at:
+          $ref: '#/components/schemas/UTCDateTime'
+        absolute_expires_at:
+          $ref: '#/components/schemas/UTCDateTime'
+        instance_id:
+          $ref: '#/components/schemas/InstanceID'
+      required:
+      - id
+      - administrator
+      - client_type
+      - device_id
+      - device_name
+      - idle_expires_at
+      - absolute_expires_at
+      - instance_id
+      additionalProperties: false
+      description: Android 专属封闭会话元数据；instance_id 为处理请求的数据库身份，必须等于请求期望。公共 Session 继续用于无实例字段的设备列表投影。
     WebSessionResponse:
       type: object
       properties:
@@ -4730,6 +5638,14 @@ components:
       scheme: bearer
       description: 独立、仅发送；仅 POST /webhooks/{bot_id}，禁止在 URL 携带。
   parameters:
+    ExpectedInstance:
+      name: X-RelayNest-Instance-ID
+      in: header
+      required: false
+      description: Android login 与 AdminBearer 认证分支必须提供；Web/Bot 分支沿用既有认证且忽略此头。缺失 400 INSTANCE_REQUIRED，格式错误 400 INVALID_REQUEST，不匹配
+        409 INSTANCE_MISMATCH，身份不可读 503 INSTANCE_UNAVAILABLE；不回显实际 ID。
+      schema:
+        $ref: '#/components/schemas/InstanceID'
     IdempotencyKey:
       name: Idempotency-Key
       in: header

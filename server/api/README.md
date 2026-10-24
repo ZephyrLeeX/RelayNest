@@ -306,3 +306,42 @@ git diff --check
 ```
 
 全局配置状态例仅对合成预期执行输入分类、CAS/耗尽/原子提交结果、整日清理保护和同步应用规则；声明快照防止权限、边界、事务顺序和清理政策被弱化。它们不是 HTTP、SQLite 并发/事务、真实定时清理、Room、WS 帧或真机验证，这些运行时项仍为 NOT_RUN。
+
+## P08-04-D01-C01 实例身份契约
+
+本节落实已批准的 D01 三项决定，正式设计见 `docs/TECHNICAL_DESIGN.md` §3.3、5.1–5.2、7.1、9.0 及 `docs/ARCHITECTURE.md` §5。保证为 G1 诚实替换/误连隔离；公开随机 ID 不证明服务端秘密，probe 成功后瞬切仍可能使旧 Bearer/密码字节抵达 B。此次仅冻结设计和机器契约，后续实现以 C01 最终独审集成 SHA 为准。
+
+公开 `GET /api/v1/instance`（沿用 `/api/v1` 前缀，区别于根 health）不接受 query/body、Authorization/Cookie/X-CSRF-Token/X-RelayNest-Instance-ID；头名大小写不敏感且空值也拒绝。200 仅 `{"instance_id":"<小写标准UUIDv4>"}`；400 INVALID_REQUEST、429 RATE_LIMITED、503 INSTANCE_UNAVAILABLE 采用固定通用消息与封闭 Error。所有响应 no-store/nosniff，429 Retry-After: 1，无缓存协商、实际 ID 错误回显或重定向。严格 HTTPS/无 redirect/cache/retry，完整 call 5 秒，解压后 1024 字节封顶、严格 UTF-8/单 JSON/无重复键。共享进程桶 20/s、burst40。机器声明 `x-instance-probe` 固定这些边界，反代必须禁缓存；具体错误优先级和客户端失败关闭规则见正式设计。
+
+`ExpectedInstance` 参数在 OpenAPI 标为 `required: false`，因为一个操作可同时存在 Web/Bot 分支；这不允许 Android 省略。Android login 由 body.client_type 判别，其他操作由实际 AdminBearer 认证分支判别，均必须提供 X-RelayNest-Instance-ID。缺失 400 INSTANCE_REQUIRED、畸形 400 INVALID_REQUEST、身份存储不可用 503 INSTANCE_UNAVAILABLE、不匹配 409 INSTANCE_MISMATCH，除下述两附件 Bot识别例外外先于读取密码/Bearer；已有认证与 Origin/CSRF 随后执行。在同一 DB 快照/写提交前再核对实例及认证代次，启动缓存不能替代。`x-instance-binding` 固定精确顺序；validator 固定 31 个操作和所有认证类型矩阵：
+
+| 分支 | 操作 |
+| --- | --- |
+| Android 登录/会话 | login、getSession、logout |
+| Android 设备 | listDeviceSessions、revokeDeviceSession、getCurrentNotifications、updateCurrentNotifications、getCurrentPush、updateCurrentPush、deleteCurrentPush |
+| Android 管理 | getAdminStatus、getGlobalSettings、updateGlobalSettings、listBots、createBot、patchBot、deleteBot、resetAPIToken、resetWebhookKey、listDeliveries、retryDelivery |
+| Android 消息/同步/WS | createClientMessage、createCallback、listClientMessages、getClientMessage、syncClientChanges、updateClientRead、bootstrapClient、connectClientWS |
+| Android 附件 | uploadAttachment、downloadAttachment；同操作的 Bot 分支不加门禁 |
+| Web/Bot/Webhook | 原认证/Origin/CSRF/作用域保持原规则，忽略实例头；不能把实例头作为凭据或用它改选认证类型 |
+
+仅 `uploadAttachment` / `downloadAttachment` 采用已批准的 Bot-first 狭窄例外：先检查传输/凭据通道格式（多 Authorization、Cookie/Bearer 混用、非 Bearer/空值按原规则拒绝），允许 ID 前读取 Bearer，仅用于 Bot API 凭据匹配，不认证/续期管理员会话，不读上传流、Range/条件请求或附件资源。分支识别不能仅依未冻结的私有 token 形状。最小独立匹配适配按现有唯一 credential_id 且 kind=api_token 查询、常量时间核对摘要并取得 Bot 身份/代次；下载不得先查附件取得 botID。现有 `bots.Repository.Authenticate(ctx, botID, kind, secret)` 需要 botID，不能直接充当此身份发现接口；本契约不新增 token、表/索引或公开接口。
+
+匹配适配必须区分 NoMatch（确定无 API 凭据或摘要不符）、Matched（摘要匹配即固定 Bot 分支，包含随后拒绝）、Unavailable（依赖/存储错误或超时）。匹配后停用/能力不足沿用403、跨 Bot/资源域不授权沿用404、提交前撤销/代次失效沿用401；均绝不回退 Admin，不能把后续 ErrUnauthorized 降级为 NoMatch。故障返回503 INSTANCE_UNAVAILABLE、固定“实例暂不可用”、retryable=true，不回显底层错误，绝不回退。上传仍须 send 且 bot_id 与已认证身份一致；receive-only 禁上传；下载 send 仅本 Bot 获准发送附件，receive 仅已领取事件必需附件，不能只凭任一能力授权任意附件。原事务/幂等与文件打开顺序保持。
+
+仅确定 NoMatch 才进入 Android：先检查实例头再认证 Admin，保留同一快照/提交前 ID 与代次复核。故接受部分无效/旧 Bot 凭据由401变为缺头400 INSTANCE_REQUIRED、畸形头400 INVALID_REQUEST、错 ID409 INSTANCE_MISMATCH；匹配存储故障即使缺头/错 ID仍先503。有效 Bot 忽略缺失/畸形/错实例头；实例头不选认证分支、不授予权限。全部响应 no-store；日志只含固定路由/request_id/状态/耗时/错误码，禁 token、credential_id、实例 ID、附件路径、头与正文。其余端点继续先 ID后读取 Android密码/Bearer。G1 已接受的 probe后瞬切凭据字节窗口也适用于此例外，不声称 G2。
+
+`mixed_attachment` 用例从独立匹配适配结果驱动 wire分支，而非传入 Android/Bot branch；它是合成契约模型，不是 HTTP/数据库/文件系统运行结果。下载适配与真实 send/receive资源范围须由后续运行时卡实现及独审；B01当前范围不含 botsAuth模块，需调度补狭窄scope或另卡后实施，本卡不改运行时或任务卡。
+
+AndroidSession 是独立封闭对象，包含原元数据及 required instance_id，不能 allOf 扩展旧封闭 Session。login 返回 AndroidLoginResponse（唯一包含 Bearer），GET session 返回 AndroidSessionResponse（无 Bearer）；Web 响应、公共 Session 和 DeviceSessionPage 投影仍为原字段，设备列表不得泄漏 Android 专属实例字段。validator 同时冻结这些消费者，示例覆盖未知字段、缺 ID/错格式、oneOf 和旧字段兼容。
+
+正常重启、原库无回滚停机迁移保留 ID；恢复/clone 必须停服人工换 ID且同事务推进 auth_generation/撤销全部管理员会话和推送映射，清库新 ID、缺失/腐败停服。存储 Tx 接口和离线 `relaynest instance rotate-id --db PATH --expected-instance-id UUID --confirm-offline` 的参数、排他锁及退出码见正式设计 §5.1/7.1，本卡未实施命令或迁移、未执行现网维护。升级必须停旧进程→迁移→新 server→新 Android，旧 Android 缺头拒绝，旧 server 无端点不降级，旧 cipher 清 Bearer并显式重登；接受阻断窗口，不能宣称透明滚动升级。
+
+此次锁环境由项目 mise Python 3.13.15 重建，原 `requirements.txt` 18 个依赖通过 `pip install --require-hashes` 安装；未升级依赖。实际执行：
+
+```sh
+/tmp/relaynest-health-contract-locked/bin/python -m openapi_spec_validator server/api/openapi.yaml
+/tmp/relaynest-health-contract-locked/bin/python server/api/validate.py
+git diff --check
+```
+
+结果为 **40 operations / 118 schemas / 2455 cases（1537 valid + 918 invalid）**。原 1229 例保留，仅三个旧 Android 响应值加入 required instance_id；新增 1226 例包含 probe 请求/响应/错误头/畸形/UTF-8/字节上限、所有 Session 消费者、逐操作 Android 错误优先级/事务绑定以及完整认证分支正反例；其中本轮补265例覆盖混合分支与公开probe权限声明，另34项声明变异必须全部被拒绝，并锁定Session全部消费者引用图。状态模型是合成契约证据，不是 HTTP/SQLite/Go/Web/Android/WS/Room/outbox/真机验证；旧源码 audit 不自动证明新运行时。G-INSTANCE-CONTRACT 仍待最终 SHA 的独立 A01/I01，runtime/composition、phone/NAS/OPPO 门槛保持 pending/NOT_RUN。

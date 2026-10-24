@@ -1373,14 +1373,619 @@ GLOBAL_SETTINGS_PATH = {'get': {'operationId': 'getGlobalSettings',
                            '413': ['REQUEST_TOO_LARGE'],
                            '422': ['VALIDATION_FAILED']}}}
 
+
+# P08-04-D01-C01：已批准实例身份边界的固定声明；不是运行时实现。
+INSTANCE_PROBE_PATH = {'get': {'operationId': 'getInstance',
+         'summary': '公开无凭据实例身份探测',
+         'description': '不接受 query/body 或 '
+                        'Authorization、Cookie、X-CSRF-Token、X-RelayNest-Instance-ID；出现即 '
+                        '400，凭据值不解析不记录。所有响应 UTF-8 JSON、no-store/nosniff，无 ETag/Last-Modified/304 '
+                        '或重定向。仅标准 HTTPS；客户端完整 call 5 秒、无重试/缓存/重定向，解压后 body 上限 1024 字节并严格单 JSON '
+                        '无重复键。共享进程令牌桶 20/s burst 40；耗尽 Retry-After: 1。',
+         'security': [],
+         'x-instance-probe': {'request': {'query': False,
+                                          'body': False,
+                                          'forbidden-headers': ['authorization',
+                                                                'cookie',
+                                                                'x-csrf-token',
+                                                                'x-relaynest-instance-id']},
+                              'response': {'max-decoded-body-bytes': 1024,
+                                           'single-json': True,
+                                           'duplicate-keys': False,
+                                           'redirects': False,
+                                           'cache': False,
+                                           'tls': 'standard-https'},
+                              'call-timeout-seconds': 5,
+                              'automatic-retries': 0,
+                              'rate-per-second': 20,
+                              'burst': 40,
+                              'error-priority': ['INVALID_REQUEST',
+                                                 'RATE_LIMITED',
+                                                 'INSTANCE_UNAVAILABLE']},
+         'responses': {'200': {'description': '当前数据库的公开实例身份',
+                               'headers': {'Cache-Control': {'schema': {'type': 'string',
+                                                                        'const': 'no-store'}},
+                                           'X-Content-Type-Options': {'schema': {'type': 'string',
+                                                                                 'const': 'nosniff'}}},
+                               'content': {'application/json': {'schema': {'$ref': '#/components/schemas/InstanceProbeResponse'}}}},
+                       '400': {'description': 'INVALID_REQUEST',
+                               'headers': {'Cache-Control': {'schema': {'type': 'string',
+                                                                        'const': 'no-store'}},
+                                           'X-Content-Type-Options': {'schema': {'type': 'string',
+                                                                                 'const': 'nosniff'}}},
+                               'content': {'application/json': {'schema': {'type': 'object',
+                                                                           'properties': {'error': {'type': 'object',
+                                                                                                    'properties': {'code': {'const': 'INVALID_REQUEST'},
+                                                                                                                   'message': {'const': '请求无效'},
+                                                                                                                   'request_id': {'type': 'string',
+                                                                                                                                  'minLength': 1},
+                                                                                                                   'retryable': {'const': False}},
+                                                                                                    'required': ['code',
+                                                                                                                 'message',
+                                                                                                                 'request_id',
+                                                                                                                 'retryable'],
+                                                                                                    'additionalProperties': False}},
+                                                                           'required': ['error'],
+                                                                           'additionalProperties': False}}}},
+                       '429': {'description': 'RATE_LIMITED',
+                               'headers': {'Cache-Control': {'schema': {'type': 'string',
+                                                                        'const': 'no-store'}},
+                                           'X-Content-Type-Options': {'schema': {'type': 'string',
+                                                                                 'const': 'nosniff'}},
+                                           'Retry-After': {'schema': {'type': 'string',
+                                                                      'const': '1'}}},
+                               'content': {'application/json': {'schema': {'type': 'object',
+                                                                           'properties': {'error': {'type': 'object',
+                                                                                                    'properties': {'code': {'const': 'RATE_LIMITED'},
+                                                                                                                   'message': {'const': '请求过于频繁'},
+                                                                                                                   'request_id': {'type': 'string',
+                                                                                                                                  'minLength': 1},
+                                                                                                                   'retryable': {'const': True}},
+                                                                                                    'required': ['code',
+                                                                                                                 'message',
+                                                                                                                 'request_id',
+                                                                                                                 'retryable'],
+                                                                                                    'additionalProperties': False}},
+                                                                           'required': ['error'],
+                                                                           'additionalProperties': False}}}},
+                       '503': {'description': 'INSTANCE_UNAVAILABLE',
+                               'headers': {'Cache-Control': {'schema': {'type': 'string',
+                                                                        'const': 'no-store'}},
+                                           'X-Content-Type-Options': {'schema': {'type': 'string',
+                                                                                 'const': 'nosniff'}}},
+                               'content': {'application/json': {'schema': {'type': 'object',
+                                                                           'properties': {'error': {'type': 'object',
+                                                                                                    'properties': {'code': {'const': 'INSTANCE_UNAVAILABLE'},
+                                                                                                                   'message': {'const': '实例暂不可用'},
+                                                                                                                   'request_id': {'type': 'string',
+                                                                                                                                  'minLength': 1},
+                                                                                                                   'retryable': {'const': True}},
+                                                                                                    'required': ['code',
+                                                                                                                 'message',
+                                                                                                                 'request_id',
+                                                                                                                 'retryable'],
+                                                                                                    'additionalProperties': False}},
+                                                                           'required': ['error'],
+                                                                           'additionalProperties': False}}}}},
+         'x-error-codes': {'400': ['INVALID_REQUEST'],
+                           '429': ['RATE_LIMITED'],
+                           '503': ['INSTANCE_UNAVAILABLE']}}}
+
+INSTANCE_SCHEMAS = {'InstanceID': {'type': 'string',
+                'pattern': '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+                'minLength': 36,
+                'maxLength': 36,
+                'description': '随机 UUIDv4，小写标准格式；公开部署标识，不是秘密或服务端证明。'},
+ 'InstanceProbeResponse': {'type': 'object',
+                           'properties': {'instance_id': {'$ref': '#/components/schemas/InstanceID'}},
+                           'required': ['instance_id'],
+                           'additionalProperties': False},
+ 'InstanceProbeError': {'oneOf': [{'type': 'object',
+                                   'properties': {'error': {'type': 'object',
+                                                            'properties': {'code': {'const': 'INVALID_REQUEST'},
+                                                                           'message': {'const': '请求无效'},
+                                                                           'request_id': {'type': 'string',
+                                                                                          'minLength': 1},
+                                                                           'retryable': {'const': False}},
+                                                            'required': ['code',
+                                                                         'message',
+                                                                         'request_id',
+                                                                         'retryable'],
+                                                            'additionalProperties': False}},
+                                   'required': ['error'],
+                                   'additionalProperties': False},
+                                  {'type': 'object',
+                                   'properties': {'error': {'type': 'object',
+                                                            'properties': {'code': {'const': 'RATE_LIMITED'},
+                                                                           'message': {'const': '请求过于频繁'},
+                                                                           'request_id': {'type': 'string',
+                                                                                          'minLength': 1},
+                                                                           'retryable': {'const': True}},
+                                                            'required': ['code',
+                                                                         'message',
+                                                                         'request_id',
+                                                                         'retryable'],
+                                                            'additionalProperties': False}},
+                                   'required': ['error'],
+                                   'additionalProperties': False},
+                                  {'type': 'object',
+                                   'properties': {'error': {'type': 'object',
+                                                            'properties': {'code': {'const': 'INSTANCE_UNAVAILABLE'},
+                                                                           'message': {'const': '实例暂不可用'},
+                                                                           'request_id': {'type': 'string',
+                                                                                          'minLength': 1},
+                                                                           'retryable': {'const': True}},
+                                                            'required': ['code',
+                                                                         'message',
+                                                                         'request_id',
+                                                                         'retryable'],
+                                                            'additionalProperties': False}},
+                                   'required': ['error'],
+                                   'additionalProperties': False}]},
+ 'AndroidSession': {'type': 'object',
+                    'properties': {'id': {'$ref': '#/components/schemas/ID'},
+                                   'administrator': {'$ref': '#/components/schemas/Administrator'},
+                                   'client_type': {'const': 'android'},
+                                   'device_id': {'$ref': '#/components/schemas/ID'},
+                                   'device_name': {'type': 'string', 'minLength': 1},
+                                   'idle_expires_at': {'$ref': '#/components/schemas/UTCDateTime'},
+                                   'absolute_expires_at': {'$ref': '#/components/schemas/UTCDateTime'},
+                                   'instance_id': {'$ref': '#/components/schemas/InstanceID'}},
+                    'required': ['id',
+                                 'administrator',
+                                 'client_type',
+                                 'device_id',
+                                 'device_name',
+                                 'idle_expires_at',
+                                 'absolute_expires_at',
+                                 'instance_id'],
+                    'additionalProperties': False,
+                    'description': 'Android 专属封闭会话元数据；instance_id 为处理请求的数据库身份，必须等于请求期望。公共 Session '
+                                   '继续用于无实例字段的设备列表投影。'}}
+
+INSTANCE_PARAMETER = {'name': 'X-RelayNest-Instance-ID',
+ 'in': 'header',
+ 'required': False,
+ 'description': 'Android login 与 AdminBearer 认证分支必须提供；Web/Bot 分支沿用既有认证且忽略此头。缺失 400 '
+                'INSTANCE_REQUIRED，格式错误 400 INVALID_REQUEST，不匹配 409 INSTANCE_MISMATCH，身份不可读 503 '
+                'INSTANCE_UNAVAILABLE；不回显实际 ID。',
+ 'schema': {'$ref': '#/components/schemas/InstanceID'}}
+
+INSTANCE_BINDING = {'header': 'X-RelayNest-Instance-ID',
+ 'applies-to': 'Android login or AdminBearer branch',
+ 'missing': '400 INSTANCE_REQUIRED',
+ 'malformed': '400 INVALID_REQUEST',
+ 'mismatch': '409 INSTANCE_MISMATCH',
+ 'unavailable': '503 INSTANCE_UNAVAILABLE',
+ 'order': ['transport-and-client-discriminator',
+           'instance-header-syntax',
+           'instance-read-and-match',
+           'existing-auth-origin-csrf-validation',
+           'transaction-instance-and-auth-generation-check',
+           'commit-or-publish'],
+ 'transaction': 'same database snapshot for reads; recheck before write commit',
+ 'web-bot': 'existing rules unchanged; header ignored, never substitutes authentication'}
+
+MIXED_INSTANCE_BINDING = {'header': 'X-RelayNest-Instance-ID',
+ 'applies-to': 'Android login or AdminBearer branch',
+ 'missing': '400 INSTANCE_REQUIRED',
+ 'malformed': '400 INVALID_REQUEST',
+ 'mismatch': '409 INSTANCE_MISMATCH',
+ 'unavailable': '503 INSTANCE_UNAVAILABLE',
+ 'order': ['transport-and-credential-channel-validation',
+           'bot-api-credential-match-before-instance',
+           'matched-bot-authorization-no-admin-fallback',
+           'only-no-match-instance-header-syntax',
+           'instance-read-and-match',
+           'admin-session-authentication',
+           'transaction-instance-and-auth-generation-check',
+           'commit-or-publish'],
+ 'transaction': 'same database snapshot for reads; recheck before write commit',
+ 'web-bot': 'Bot keeps enabled/capability/scope/generation rules and ignores instance header; only '
+            'definite no-match enters Android',
+ 'bot-match': {'source': 'API credential lookup and constant-time digest verification; never '
+                         'private token shape alone',
+               'download': 'discover Bot identity independently of attachment; kind=api_token only',
+               'outcomes': ['no-match', 'matched', 'unavailable'],
+               'no-match': 'only absent API credential or digest mismatch; parser rejection is not '
+                           'a private wire discriminator',
+               'matched': 'latch Bot identity before enabled/capability/resource/generation '
+                          'checks; never Admin fallback',
+               'unavailable': '503 INSTANCE_UNAVAILABLE; retryable=true; never Admin fallback'},
+ 'pre-auth-forbidden': ['admin-session-lookup',
+                        'attachment-body-or-range-processing',
+                        'attachment-resource-lookup']}
+
+INSTANCE_BOUND_OPERATIONS = ['bootstrapClient',
+ 'connectClientWS',
+ 'createBot',
+ 'createCallback',
+ 'createClientMessage',
+ 'deleteBot',
+ 'deleteCurrentPush',
+ 'downloadAttachment',
+ 'getAdminStatus',
+ 'getClientMessage',
+ 'getCurrentNotifications',
+ 'getCurrentPush',
+ 'getGlobalSettings',
+ 'getSession',
+ 'listBots',
+ 'listClientMessages',
+ 'listDeliveries',
+ 'listDeviceSessions',
+ 'login',
+ 'logout',
+ 'patchBot',
+ 'resetAPIToken',
+ 'resetWebhookKey',
+ 'retryDelivery',
+ 'revokeDeviceSession',
+ 'syncClientChanges',
+ 'updateClientRead',
+ 'updateCurrentNotifications',
+ 'updateCurrentPush',
+ 'updateGlobalSettings',
+ 'uploadAttachment']
+
+
+INSTANCE_AUTH_MATRIX = {'getInstance': [],
+ 'getGlobalSettings': ['android', 'web'],
+ 'updateGlobalSettings': ['android', 'web'],
+ 'getHealthLive': [],
+ 'getHealthReady': [],
+ 'getAdminStatus': ['android', 'web'],
+ 'connectClientWS': ['android'],
+ 'login': ['android', 'web'],
+ 'listDeviceSessions': ['android', 'web'],
+ 'revokeDeviceSession': ['android', 'web'],
+ 'getSession': ['android', 'web'],
+ 'logout': ['android', 'web'],
+ 'listBots': ['android', 'web'],
+ 'createBot': ['android', 'web'],
+ 'patchBot': ['android', 'web'],
+ 'deleteBot': ['android', 'web'],
+ 'resetAPIToken': ['android', 'web'],
+ 'resetWebhookKey': ['android', 'web'],
+ 'createBotMessage': ['bot'],
+ 'createWebhookMessage': ['webhook'],
+ 'editBotMessage': ['bot'],
+ 'createClientMessage': ['android'],
+ 'listClientMessages': ['android'],
+ 'createCallback': ['android'],
+ 'getClientMessage': ['android'],
+ 'uploadAttachment': ['android', 'bot'],
+ 'downloadAttachment': ['android', 'bot'],
+ 'claimEvents': ['bot'],
+ 'ackDelivery': ['bot'],
+ 'renewDelivery': ['bot'],
+ 'listDeliveries': ['android', 'web'],
+ 'retryDelivery': ['android', 'web'],
+ 'bootstrapClient': ['android'],
+ 'syncClientChanges': ['android'],
+ 'updateClientRead': ['android'],
+ 'getCurrentPush': ['android'],
+ 'updateCurrentPush': ['android'],
+ 'deleteCurrentPush': ['android'],
+ 'getCurrentNotifications': ['android'],
+ 'updateCurrentNotifications': ['android']}
+
+INSTANCE_SESSION_CONSUMERS = {'Session': {'type': 'object',
+             'properties': {'id': {'$ref': '#/components/schemas/ID'},
+                            'administrator': {'$ref': '#/components/schemas/Administrator'},
+                            'client_type': {'enum': ['web', 'android']},
+                            'device_id': {'$ref': '#/components/schemas/ID'},
+                            'device_name': {'type': 'string', 'minLength': 1},
+                            'idle_expires_at': {'$ref': '#/components/schemas/UTCDateTime'},
+                            'absolute_expires_at': {'$ref': '#/components/schemas/UTCDateTime'}},
+             'required': ['id',
+                          'administrator',
+                          'client_type',
+                          'device_id',
+                          'device_name',
+                          'idle_expires_at',
+                          'absolute_expires_at'],
+             'additionalProperties': False,
+             'description': '仅会话元数据，无 Token/密码摘要。有效请求可延长空闲期但不超过绝对期限；过期需重新登录。'},
+ 'WebSession': {'allOf': [{'$ref': '#/components/schemas/Session'},
+                          {'properties': {'client_type': {'const': 'web'}}}]},
+ 'WebSessionResponse': {'type': 'object',
+                        'properties': {'session': {'$ref': '#/components/schemas/WebSession'},
+                                       'csrf_token': {'type': 'string', 'minLength': 1}},
+                        'required': ['session', 'csrf_token'],
+                        'additionalProperties': False,
+                        'description': 'Web CSRF bootstrap；csrf_token 不得写日志。Cookie 会话不在 JSON 中返回。'},
+ 'AndroidLoginResponse': {'type': 'object',
+                          'properties': {'session': {'$ref': '#/components/schemas/AndroidSession'},
+                                         'access_token': {'type': 'string', 'minLength': 1},
+                                         'token_type': {'const': 'Bearer'}},
+                          'required': ['session', 'access_token', 'token_type'],
+                          'additionalProperties': False,
+                          'description': '仅 Android 登录成功返回会话 Bearer；后续 GET session 不再返回。'},
+ 'AndroidSessionResponse': {'type': 'object',
+                            'properties': {'session': {'$ref': '#/components/schemas/AndroidSession'}},
+                            'required': ['session'],
+                            'additionalProperties': False},
+ 'LoginResponse': {'oneOf': [{'$ref': '#/components/schemas/WebSessionResponse'},
+                             {'$ref': '#/components/schemas/AndroidLoginResponse'}]},
+ 'SessionResponse': {'oneOf': [{'$ref': '#/components/schemas/WebSessionResponse'},
+                               {'$ref': '#/components/schemas/AndroidSessionResponse'}]},
+ 'DeviceSessionPage': {'type': 'object',
+                       'properties': {'items': {'type': 'array',
+                                                'items': {'$ref': '#/components/schemas/Session'}},
+                                      'next_cursor': {'oneOf': [{'$ref': '#/components/schemas/OpaqueCursor'},
+                                                                {'type': 'null'}]},
+                                      'has_more': {'type': 'boolean'}},
+                       'required': ['items', 'next_cursor', 'has_more'],
+                       'additionalProperties': False,
+                       'description': '当前管理员有效设备会话的有界元数据页；无凭据、推送token或CSRF。过期/撤销会话不列出；分页不承诺跨页快照，操作时重新鉴权。时间复用Session服务端UTC到期时间。'}}
+
+def instance_probe_request_valid(state):
+    """无凭据请求模型；头名大小写不敏感，空凭据值也拒绝。"""
+    forbidden = set(INSTANCE_PROBE_PATH['get']['x-instance-probe']['request']['forbidden-headers'])
+    return (state.get('method') == 'GET' and not state.get('query')
+            and not state.get('body') and not forbidden.intersection(
+                name.lower() for name in state.get('headers', {})))
+
+
+def instance_probe_response_valid(state, schemas):
+    """解压后字节封顶、严格 JSON 与 HTTP 信封；不执行网络请求。"""
+    headers = {k.lower(): v for k, v in state.get('headers', {}).items()}
+    status = state.get('status')
+    try:
+        body = (bytes.fromhex(state['body_hex']).decode('utf-8', errors='strict')
+                if 'body_hex' in state else state.get('body', ''))
+        decoded_size = len(body.encode('utf-8', errors='strict'))
+    except (ValueError, UnicodeError, TypeError):
+        return False
+    if (status not in (200, 400, 429, 503) or state.get('tls') != 'verified-https'
+            or state.get('redirected') or state.get('cached')
+            or state.get('elapsed_ms', 0) > 5000
+            or headers.get('cache-control') != 'no-store'
+            or headers.get('x-content-type-options') != 'nosniff'
+            or any(k in headers for k in ('etag', 'last-modified', 'location'))
+            or headers.get('content-type', '').lower() not in (
+                'application/json', 'application/json; charset=utf-8')
+            or decoded_size > 1024):
+        return False
+    if status == 429 and headers.get('retry-after') != '1':
+        return False
+    def unique_pairs(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError('duplicate JSON key')
+            result[key] = value
+        return result
+    try:
+        value = json.loads(body, object_pairs_hook=unique_pairs,
+                           parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)))
+    except (ValueError, TypeError):
+        return False
+    schema = INSTANCE_PROBE_PATH['get']['responses'][str(status)]['content']['application/json']['schema']
+    return ContractValidator({**schema, 'components': {'schemas': schemas}},
+                             format_checker=FormatChecker()).is_valid(value)
+
+
+def instance_binding_result(state, schemas):
+    """服务端分支与事务顺序的合成模型；不代表 SQL/HTTP 实测。"""
+    branch = state['branch']
+    if branch not in INSTANCE_AUTH_MATRIX.get(state['operationId'], []):
+        return (403, 'FORBIDDEN', False)
+    # Web/Bot 保留现有认证；实例头即使缺失或畸形也不改变旧规则。
+    if branch != 'android':
+        return (200 if state.get('auth_valid', True) else 401, 'OK' if state.get('auth_valid', True) else 'UNAUTHENTICATED', True)
+    expected = state.get('header')
+    if expected is None:
+        return (400, 'INSTANCE_REQUIRED', False)
+    if not ContractValidator(schemas['InstanceID']).is_valid(expected):
+        return (400, 'INVALID_REQUEST', False)
+    if not state.get('store_available', True):
+        return (503, 'INSTANCE_UNAVAILABLE', False)
+    if expected != state['current_id']:
+        return (409, 'INSTANCE_MISMATCH', False)
+    if not state.get('auth_valid', True):
+        return (401, 'UNAUTHENTICATED', True)
+    if not state.get('transaction_available', True):
+        return (503, 'INSTANCE_UNAVAILABLE', True)
+    if state.get('transaction_id', state['current_id']) != expected:
+        return (409, 'INSTANCE_MISMATCH', True)
+    if not state.get('generation_matches', True):
+        return (401, 'UNAUTHENTICATED', True)
+    return (200, 'OK', True)
+
+
+
+def mixed_attachment_result(state, schemas):
+    """仅两条混合操作的合成顺序模型：匹配身份后错误不得降级成未匹配。"""
+    if state['operationId'] not in ('uploadAttachment', 'downloadAttachment'):
+        return (403, 'FORBIDDEN', False)
+    match = state['bot_match']
+    if match == 'unavailable':
+        return (503, 'INSTANCE_UNAVAILABLE', False)
+    if match == 'matched':
+        if not state.get('bot_enabled', True) or not state.get('bot_capable', True):
+            return (403, 'FORBIDDEN', False)
+        if not state.get('bot_scope', True):
+            return (404, 'RESOURCE_NOT_FOUND', False)
+        if not state.get('bot_generation_matches', True):
+            return (401, 'UNAUTHENTICATED', False)
+        if not state.get('bot_transaction_available', True):
+            return (503, 'INSTANCE_UNAVAILABLE', False)
+        return (200, 'OK', False)
+    if match != 'no-match':
+        raise ValueError('未知 Bot 匹配结果')
+    # 只有独立匹配确定未匹配才进入 Android；不能由 header 或私有 token 形状选分支。
+    return instance_binding_result({**state, 'branch': 'android'}, schemas)
+
+
+def instance_error_codes(original):
+    expected = copy.deepcopy(original)
+    for status, codes in {'400': ['INSTANCE_REQUIRED', 'INVALID_REQUEST'],
+                          '409': ['INSTANCE_MISMATCH'], '503': ['INSTANCE_UNAVAILABLE']}.items():
+        if status in expected:
+            expected[status] = list(dict.fromkeys(expected[status] + codes))
+    return expected
+
+
+def legacy_parameters(operation):
+    # 新条件头在 check_instance_declarations 中精确校验；此处继续检查原路径参数。
+    return [p for p in operation.get('parameters', [])
+            if p != {'$ref': '#/components/parameters/ExpectedInstance'}]
+
+INSTANCE_SESSION_REFERENCES = {'/paths//auth/login/post/responses/200/content/application/json/schema': 'LoginResponse',
+ '/paths//devices/get/responses/200/content/application/json/schema': 'DeviceSessionPage',
+ '/paths//auth/session/get/responses/200/content/application/json/schema': 'SessionResponse',
+ '/components/schemas/DeviceSessionPage/properties/items/items': 'Session',
+ '/components/schemas/WebSession/allOf/0': 'Session',
+ '/components/schemas/WebSessionResponse/properties/session': 'WebSession',
+ '/components/schemas/AndroidSessionResponse/properties/session': 'AndroidSession',
+ '/components/schemas/SessionResponse/oneOf/0': 'WebSessionResponse',
+ '/components/schemas/SessionResponse/oneOf/1': 'AndroidSessionResponse',
+ '/components/schemas/AndroidLoginResponse/properties/session': 'AndroidSession',
+ '/components/schemas/LoginResponse/oneOf/0': 'WebSessionResponse',
+ '/components/schemas/LoginResponse/oneOf/1': 'AndroidLoginResponse'}
+
+
+def check_instance_declarations(document):
+    schemas = document['components']['schemas']
+    if document['paths'].get('/instance') != INSTANCE_PROBE_PATH:
+        raise SystemExit('实例公开探测声明错误')
+    for name, expected in {**INSTANCE_SCHEMAS, **INSTANCE_SESSION_CONSUMERS}.items():
+        if schemas.get(name) != expected:
+            raise SystemExit('实例 Schema 错误：' + name)
+    references = {}
+    def collect(value, path=''):
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if key == '$ref' and child.rsplit('/', 1)[-1] in {
+                        'Session', 'WebSession', 'AndroidSession', 'LoginResponse', 'SessionResponse',
+                        'AndroidLoginResponse', 'AndroidSessionResponse', 'WebSessionResponse',
+                        'DeviceSessionPage'}:
+                    references[path] = child.rsplit('/', 1)[-1]
+                collect(child, path + '/' + key)
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                collect(child, path + '/' + str(index))
+    collect(document)
+    if references != INSTANCE_SESSION_REFERENCES:
+        raise SystemExit('Session 全部消费者引用变化')
+    if document['components']['parameters'].get('ExpectedInstance') != INSTANCE_PARAMETER:
+        raise SystemExit('实例条件 header 声明错误')
+    found = []
+    for item in document['paths'].values():
+        for operation in item.values():
+            if not isinstance(operation, dict) or 'operationId' not in operation:
+                continue
+            required = (operation['operationId'] == 'login'
+                        or any('AdminBearer' in s for s in operation['security']))
+            if required:
+                found.append(operation['operationId'])
+                expected_binding = (MIXED_INSTANCE_BINDING if operation['operationId'] in
+                                    ('uploadAttachment', 'downloadAttachment') else INSTANCE_BINDING)
+                if operation.get('x-instance-binding') != expected_binding:
+                    raise SystemExit('实例认证/事务边界错误：' + operation['operationId'])
+                parameters = operation.get('parameters', [])
+                if parameters.count({'$ref': '#/components/parameters/ExpectedInstance'}) != 1:
+                    raise SystemExit('实例 header 缺失或重复：' + operation['operationId'])
+                if not {'400', '409', '503'} <= operation['responses'].keys():
+                    raise SystemExit('实例错误响应缺失：' + operation['operationId'])
+            elif 'x-instance-binding' in operation:
+                raise SystemExit('实例门禁扩大到公开/Bot接口')
+    if sorted(found) != INSTANCE_BOUND_OPERATIONS:
+        raise SystemExit('实例认证端点矩阵发生变化')
+    actual_matrix = {}
+    for item in document['paths'].values():
+        for operation in item.values():
+            if not isinstance(operation, dict) or 'operationId' not in operation:
+                continue
+            branches = [branch for security in operation['security']
+                        for scheme, branch in [('AdminBearer', 'android'), ('WebCookie', 'web'),
+                                               ('BotAPIToken', 'bot'), ('WebhookKey', 'webhook')]
+                        if scheme in security]
+            if operation['operationId'] == 'login':
+                branches = ['android', 'web']
+            actual_matrix[operation['operationId']] = branches
+    if actual_matrix != INSTANCE_AUTH_MATRIX:
+        raise SystemExit('实例认证类型矩阵发生变化')
+
+def instance_overlay(item):
+    """对原固定声明显式叠加获准边界，不改写历史快照。"""
+    item = copy.deepcopy(item)
+    for operation in item.values():
+        operation.setdefault('parameters', []).append({'$ref': '#/components/parameters/ExpectedInstance'})
+        operation['x-instance-binding'] = copy.deepcopy(
+            MIXED_INSTANCE_BINDING if operation['operationId'] in
+            ('uploadAttachment', 'downloadAttachment') else INSTANCE_BINDING)
+        for status in ('400', '409', '503'):
+            operation['responses'].setdefault(status, {'$ref': '#/components/responses/' + status})
+        if 'x-error-codes' in operation:
+            operation['x-error-codes'] = instance_error_codes(operation['x-error-codes'])
+    return item
+
+
+def check_instance_declaration_mutations(document):
+    """用有意破坏的声明验证门禁覆盖，不修改被验证文档。"""
+    mutations = []
+    def add(name, fn):
+        mutations.append((name, fn))
+    add('probe credentials',lambda x:x['paths']['/instance']['get']['x-instance-probe']['request']['forbidden-headers'].clear())
+    add('probe timeout',lambda x:x['paths']['/instance']['get']['x-instance-probe'].__setitem__('call-timeout-seconds',6))
+    add('probe limit',lambda x:x['paths']['/instance']['get']['x-instance-probe']['response'].__setitem__('max-decoded-body-bytes',1025))
+    add('probe bucket',lambda x:x['paths']['/instance']['get']['x-instance-probe'].__setitem__('rate-per-second',21))
+    add('probe redirect',lambda x:x['paths']['/instance']['get']['responses'].__setitem__('302',x['paths']['/instance']['get']['responses']['200']))
+    add('probe cache',lambda x:x['paths']['/instance']['get']['responses']['200']['headers']['Cache-Control']['schema'].__setitem__('const','public'))
+    add('probe errors',lambda x:x['paths']['/instance']['get']['responses']['400']['content']['application/json']['schema']['properties']['error']['properties']['retryable'].__setitem__('const',True))
+    add('ID format',lambda x:x['components']['schemas']['InstanceID'].__setitem__('maxLength',40))
+    add('extra probe field',lambda x:x['components']['schemas']['InstanceProbeResponse'].__setitem__('additionalProperties',True))
+    add('Android closed',lambda x:x['components']['schemas']['AndroidSession'].__setitem__('additionalProperties',True))
+    add('Android ID optional',lambda x:x['components']['schemas']['AndroidSession']['required'].remove('instance_id'))
+    add('public projection changed',lambda x:x['components']['schemas']['Session']['properties'].__setitem__('instance_id',{'type':'string'}))
+    add('session bearer',lambda x:x['components']['schemas']['AndroidSessionResponse']['properties'].__setitem__('access_token',{'type':'string'}))
+    add('login bearer missing',lambda x:x['components']['schemas']['AndroidLoginResponse']['required'].remove('access_token'))
+    add('binding disabled',lambda x:x['paths']['/auth/session']['get'].pop('x-instance-binding'))
+    add('binding priority',lambda x:x['paths']['/auth/session']['get']['x-instance-binding']['order'].reverse())
+    add('missing header',lambda x:x['paths']['/auth/session']['get']['parameters'].clear())
+    add('wrong ID status missing',lambda x:x['paths']['/auth/session']['get']['responses'].pop('409'))
+    add('Web auth removed',lambda x:x['paths']['/auth/session']['get']['security'].pop())
+    add('Bot broadened',lambda x:x['paths']['/bot/messages']['post']['security'].append({'AdminBearer':[]}))
+    add('header schema type', lambda x:x['components']['parameters']['ExpectedInstance'].__setitem__('schema', {'type':'integer'}))
+    add('ID schema type', lambda x:x['components']['schemas']['InstanceID'].__setitem__('type','integer'))
+    for path, method in [('/attachments', 'post'), ('/attachments/{id}', 'get')]:
+        def mutate(x, key, value, path=path, method=method):
+            x['paths'][path][method]['x-instance-binding']['bot-match'][key] = value
+        add(path + ' shape-only match', lambda x, mutate=mutate: mutate(x, 'source', 'private token shape'))
+        add(path + ' matched fallback', lambda x, mutate=mutate: mutate(x, 'matched', 'retry Admin on 401/403'))
+        add(path + ' fault fallback', lambda x, mutate=mutate: mutate(x, 'unavailable', 'NoMatch'))
+        add(path + ' resource-first discovery', lambda x, mutate=mutate: mutate(x, 'download', 'read attachment bot_id first'))
+        add(path + ' ID first', lambda x, path=path, method=method: x['paths'][path][method]['x-instance-binding'].__setitem__('order', INSTANCE_BINDING['order']))
+    add('exception scope broadened', lambda x:x['paths']['/auth/session']['get'].__setitem__('x-instance-binding', copy.deepcopy(MIXED_INSTANCE_BINDING)))
+    add('unknown Session consumer', lambda x: x['components']['schemas'].__setitem__(
+        'UnexpectedSessionConsumer', {'$ref': '#/components/schemas/Session'}))
+    for name, mutate in mutations:
+        changed = copy.deepcopy(document)
+        mutate(changed)
+        try:
+            check_instance_declarations(changed)
+        except SystemExit:
+            continue
+        raise SystemExit('实例声明变异未被拒绝：' + name)
+    check_instance_declarations(document)
+    return len(mutations)
+
+
 def main():
     document = yaml.safe_load((ROOT / 'openapi.yaml').read_text(encoding='utf-8'))
     validate_spec(document)
+    check_instance_declarations(document)
+    mutation_count = check_instance_declaration_mutations(document)
     schemas = document['components']['schemas']
     for schema in schemas.values():
         Draft202012Validator.check_schema(schema)
     # health根servers/公开权限/纯文本及管理JSON分别固定，不能扩大公开例外。
     for path, expected in HEALTH_PATHS.items():
+        if path == '/admin/status':
+            expected = instance_overlay(expected)
         if document['paths'].get(path) != expected:
             raise SystemExit('健康/管理操作声明错误：' + path)
     if document['servers'] != [{'url': '/api/v1'}]:
@@ -1388,7 +1993,7 @@ def main():
     for name, expected in HEALTH_SCHEMAS.items():
         if schemas.get(name) != expected:
             raise SystemExit('健康/管理Schema错误：' + name)
-    if document['paths'].get('/admin/settings') != GLOBAL_SETTINGS_PATH:
+    if document['paths'].get('/admin/settings') != instance_overlay(GLOBAL_SETTINGS_PATH):
         raise SystemExit('全局配置操作声明错误')
     for name, expected in GLOBAL_SETTINGS_SCHEMAS.items():
         if schemas.get(name) != expected:
@@ -1459,11 +2064,26 @@ def main():
         if ('health_response' in case
                 and health_response_valid(document, case['health_response']) != case['valid']):
             failures.append(case['name'] + ' 公开纯文本信封')
+        if 'instance_request' in case and instance_probe_request_valid(case['instance_request']) != case['valid']:
+            failures.append(case['name'] + ' 实例探测请求')
+        if 'instance_response' in case and instance_probe_response_valid(case['instance_response'], schemas) != case['valid']:
+            failures.append(case['name'] + ' 实例探测信封')
+        if 'instance_binding' in case:
+            state = case['instance_binding']
+            actual_result = instance_binding_result(state, schemas)
+            expected_result = tuple(state['result'])
+            if (actual_result == expected_result) != case.get('state_valid', True):
+                failures.append(case['name'] + ' 实例绑定认证/事务模型')
+        if 'mixed_attachment' in case:
+            state = case['mixed_attachment']
+            matches = mixed_attachment_result(state, schemas) == tuple(state['result'])
+            if matches != case.get('state_valid', True):
+                failures.append(case['name'] + ' 混合附件 wire 分支模型')
         if 'declaration' in case:
             declaration = case['declaration']
             declared_security = operation_map[declaration['operationId']]['security']
             allowed = (declaration['security'] in declared_security
-                       or (declaration['operationId'] in ('getHealthLive', 'getHealthReady')
+                       or (declaration['operationId'] in ('getHealthLive', 'getHealthReady', 'getInstance')
                            and declared_security == [] and declaration['security'] == {}))
             if allowed != case['valid']:
                 failures.append(case['name'] + ' 权限声明')
@@ -1518,7 +2138,7 @@ def main():
             if method == 'parameters':
                 continue
             oid = operation['operationId']
-            if oid in ('login', 'getHealthLive', 'getHealthReady'):
+            if oid in ('login', 'getHealthLive', 'getHealthReady', 'getInstance'):
                 expected = []
             elif oid in new_security:
                 expected = [{scheme: []} for scheme in new_security[oid]]
@@ -1555,7 +2175,7 @@ def main():
             ('/devices/{id}/session', 'delete', 'revokeDeviceSession',
              {'204', '400', '401', '403', '404', '429', '503'})):
         operation = document['paths'][path][method]
-        if (operation['operationId'] != oid or set(operation['responses']) != statuses
+        if (operation['operationId'] != oid or set(operation['responses']) != statuses | {'400', '409', '503'}
                 or operation.get('x-device-session-policy') != DEVICE_POLICY
                 or 'requestBody' in operation):
             raise SystemExit('设备会话冻结声明不符：' + path)
@@ -1564,8 +2184,8 @@ def main():
     if listing['responses']['200']['content']['application/json']['schema'] != {
             '$ref': '#/components/schemas/DeviceSessionPage'}:
         raise SystemExit('设备列表缺少安全元数据投影')
-    if (len(revoke.get('parameters', [])) != 1
-            or {key: revoke['parameters'][0].get(key) for key in ('name', 'in', 'required', 'schema')}
+    if (len(legacy_parameters(revoke)) != 1
+            or {key: legacy_parameters(revoke)[0].get(key) for key in ('name', 'in', 'required', 'schema')}
             != {'name': 'id', 'in': 'path', 'required': True,
                 'schema': {'$ref': '#/components/schemas/ID'}}
             or 'content' in revoke['responses']['204']
@@ -1587,11 +2207,11 @@ def main():
         statuses = {'200', '400', '401', '403', '429', '503'}
         if body:
             statuses |= {'409', '413', '422'}
-        if (op['operationId'] != oid or set(op['responses']) != statuses
+        if (op['operationId'] != oid or set(op['responses']) != statuses | {'400', '409', '503'}
                 or op.get('x-push-registration-policy') != PUSH_POLICY
                 or op['responses']['200']['content']['application/json']['schema'] != {
                     '$ref': '#/components/schemas/PushRegistrationState'}
-                or op.get('parameters', []) != ([{'name': 'provider', 'in': 'path',
+                or legacy_parameters(op) != ([{'name': 'provider', 'in': 'path',
                     'required': True, 'schema': {'$ref': '#/components/schemas/PushProvider'}}]
                     if method == 'delete' else [])):
             raise SystemExit('注册路径/投影/事务声明不符：' + oid)
@@ -1600,7 +2220,7 @@ def main():
         expected_codes = {'401': ['AUTHENTICATION_REQUIRED'], '403': ['FORBIDDEN']}
         if body:
             expected_codes['409'] = ['REGISTRATION_CONFLICT', 'REGISTRATION_VERSION_EXHAUSTED']
-        if op.get('requestBody') != expected_body or op.get('x-error-codes') != expected_codes:
+        if op.get('requestBody') != expected_body or op.get('x-error-codes') != instance_error_codes(expected_codes):
             raise SystemExit('注册请求/错误声明不符：' + oid)
     for name, expected in NOTIFICATION_SCHEMAS.items():
         if schemas.get(name) != expected:
@@ -1615,9 +2235,9 @@ def main():
                           '422': ['VALIDATION_FAILED', 'PROVIDER_NOT_READY']})
         expected_body = ({'required': True, 'x-max-bytes': 262144, 'content': {'application/json': {'schema': {
             '$ref': '#/components/schemas/NotificationSettingsUpdate'}}}} if method == 'put' else None)
-        if (op['operationId'] != oid or set(op['responses']) != statuses
-                or op.get('x-client-type') != 'android' or op.get('parameters', []) != []
-                or op.get('requestBody') != expected_body or op.get('x-error-codes') != codes
+        if (op['operationId'] != oid or set(op['responses']) != statuses | {'400', '409', '503'}
+                or op.get('x-client-type') != 'android' or legacy_parameters(op) != []
+                or op.get('requestBody') != expected_body or op.get('x-error-codes') != instance_error_codes(codes)
                 or op.get('x-notification-settings-policy') != NOTIFICATION_POLICY
                 or op.get('x-notification-job-policy') != NOTIFICATION_JOB_POLICY
                 or op['responses']['200']['content']['application/json']['schema'] != {
@@ -1630,7 +2250,7 @@ def main():
                       'SyncReadUpdate', 'SyncDeliveryUpsert', 'SyncDeviceNotifications', 'SyncGlobalSettings']
     if schemas['SyncChange']['oneOf'] != [{'$ref': '#/components/schemas/' + name} for name in expected_union]:
         raise SystemExit('同步union全局与设备配置分支不完整')
-    if set(operation_map) != baseline_ids | set(new_security) | delivery_ids | {'listDeviceSessions', 'revokeDeviceSession', 'getHealthLive', 'getHealthReady', 'getAdminStatus', 'getGlobalSettings', 'updateGlobalSettings'}:
+    if set(operation_map) != baseline_ids | set(new_security) | delivery_ids | {'listDeviceSessions', 'revokeDeviceSession', 'getHealthLive', 'getHealthReady', 'getAdminStatus', 'getGlobalSettings', 'updateGlobalSettings', 'getInstance'}:
         raise SystemExit('冻结操作集合不符')
     if any(method in document['paths']['/client/messages/{id}'] for method in ('put', 'patch')):
         raise SystemExit('不得提供 Android 编辑接口')
@@ -1678,7 +2298,7 @@ def main():
     for oid, codes in {'ackDelivery': {'LEASE_CONFLICT', 'BOT_DISABLED'},
                        'renewDelivery': {'LEASE_CONFLICT', 'BOT_DISABLED', 'LEASE_LIMIT_EXCEEDED'},
                        'retryDelivery': {'DELIVERY_NOT_FAILED', 'IDEMPOTENCY_CONFLICT'}}.items():
-        if set(operation_map[oid].get('x-error-codes', {}).get('409', [])) != codes:
+        if set(operation_map[oid].get('x-error-codes', {}).get('409', [])) != codes | ({'INSTANCE_MISMATCH'} if oid == 'retryDelivery' else set()):
             raise SystemExit('状态错误码声明错误：' + oid)
     if operation_map['claimEvents'].get('x-initial-lease-seconds') != 120:
         raise SystemExit('默认领取租约错误')
@@ -1735,11 +2355,11 @@ def main():
     for operation in (sync, read):
         if operation.get('x-client-type') != 'android':
             raise SystemExit('同步/已读仅允许Android管理员')
-    if sync.get('x-error-codes') != {'400': ['INVALID_SYNC_CURSOR'], '410': ['SYNC_RESET_REQUIRED']}:
+    if sync.get('x-error-codes') != instance_error_codes({'400': ['INVALID_SYNC_CURSOR'], '410': ['SYNC_RESET_REQUIRED']}):
         raise SystemExit('同步错误码声明错误')
     if read.get('x-error-codes') != {'404': ['RESOURCE_NOT_FOUND'], '422': ['READ_SEQ_OUT_OF_RANGE']}:
         raise SystemExit('已读错误码声明错误')
-    limit = next(p for p in sync['parameters'] if p['name'] == 'limit')
+    limit = next(p for p in legacy_parameters(sync) if p['name'] == 'limit')
     if limit['schema'] != {'type': 'integer', 'minimum': 1, 'maximum': 200, 'default': 200}:
         raise SystemExit('同步有界页大小声明错误')
     if schemas['SyncPage'].get('x-sync-envelope') is not True:
@@ -1807,11 +2427,11 @@ def main():
         raise SystemExit('bootstrap快照/令牌/恢复声明错误')
     if bootstrap.get('x-client-type') != 'android':
         raise SystemExit('bootstrap仅允许Android管理员')
-    if bootstrap.get('x-error-codes') != {
+    if bootstrap.get('x-error-codes') != instance_error_codes({
             '400': ['INVALID_BOOTSTRAP_TOKEN', 'INVALID_SYNC_CURSOR'],
-            '410': ['BOOTSTRAP_RESET_REQUIRED']}:
+            '410': ['BOOTSTRAP_RESET_REQUIRED']}):
         raise SystemExit('bootstrap错误码声明错误')
-    params = {item['name']: item for item in bootstrap['parameters']}
+    params = {item['name']: item for item in legacy_parameters(bootstrap)}
     if set(params) != {'phase', 'token', 'sync_cursor', 'limit'} or params['limit']['schema'] != {
             'type': 'integer', 'minimum': 1, 'maximum': 200, 'default': 200}:
         raise SystemExit('bootstrap参数与有界页大小错误')
@@ -1846,9 +2466,9 @@ def main():
         raise SystemExit('WS frame必须独立引用严格Schema')
     if 'content' in ws['responses']['101'] or 'requestBody' in ws:
         raise SystemExit('WS升级不得返回JSON正文或接收业务写入')
-    if set(ws['responses']) != {'101', '400', '401', '403', '429', '503'}:
+    if set(ws['responses']) != {'101', '400', '401', '403', '409', '429', '503'}:
         raise SystemExit('WS握手错误分支缺失')
-    if ws.get('parameters') != WS_PARAMETERS or ws.get('x-error-codes') != WS_ERRORS:
+    if legacy_parameters(ws) != WS_PARAMETERS or ws.get('x-error-codes') != instance_error_codes(WS_ERRORS):
         raise SystemExit('WS握手参数/错误契约不符')
     for name, expected in WS_SCHEMAS.items():
         if schemas[name] != expected:
@@ -1861,6 +2481,7 @@ def main():
     invalid = len(cases) - valid
     if not valid or not invalid:
         raise SystemExit('必须同时包含合法与非法示例')
+    print(f'PASS: {mutation_count} declaration mutations rejected; Session consumer graph fixed')
     print(f'PASS: OpenAPI 3.1; {len(schemas)} schemas; '
           f'{valid} valid + {invalid} invalid examples; {len(operation_map)} operations/security')
 
