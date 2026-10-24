@@ -2,6 +2,15 @@
 
 更新：2026-10-25。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot50：设备 HTTP 最终组合、401 修复与父卡本地验收精确集成
+
+- 恢复优先本 snapshot。main 前 `7bd18fbbaf8125850de36f2ae2d36cfb507e3ff4`；只依序 snapshot `03b95101c3bf0671118aa54b1c70f7b56d9389ef`→`8263b5b`、原实现 `013823a684645755cb49557e103360c30b31d05e`→`702241e`、F01 `a950f489dd3b7d5e2f2a81c74cb0b1b379f05129`→`91208d8`、完整 A02 PASS `15649ac7fb03f24bb013888fe467c76428ca7f0d`→组合 `d78711faa56dd01b7e10cf4eec3b70490f2d04e9`。[I01](P04-05-S03-I01.md) 独立提交 `005994a049635163e879c069ecf02526c8ddbe1f`；本 snapshot 另提交，其提交为最终 main，精确 SHA 提交后交接。
+- 八 Go/三报告共11 blob 全同固定来源，无冲突/源码改写、不需重审；原snapshot唯一父79c4601，完整P04-02/P04-03/PLAN01/S01/S02集成祖先均PASS。排除根恢复报告 `de9f2ca91536f442a4230a68dd653053e6524a17`，不整枝合并，原A01/规划已main不重复。旧snapshot47缺失原S03 implementation引用现由013选择补齐。原main较79c仅多Bot S01四Go及docs，Bot三路由与设备两路由均在。
+- 本次准确main含Bot轮换新组合，Go1.27.3/local七包 devices/auth/bots/httpapi/cmd/changes/storage普通非缓存/race/vet、生产build、八Go gofmt/diff全PASS，SQLite实测3.53.4。已有ignored embed可用，npm未运行。A02审完整最终实现、关闭原F01无新finding；不能只沿旧source PASS。仅文档后续提交不改变所测源码。
+- 父P04-05原三项本地验收逐项支持收口：真实production登录/TLS/mux/文件SQLite验证A撤销不影响B、同安装S1/S2精确Session.id/重登旧ID重试、旧Token后续失败及关闭重开、固定metadata不返真实管理员Token/CSRF/Bot双凭据/hash。DELETE请求和唯一事务错误出口用公共REQUIRED薄包装，GET/auth/Bot仍FAILED；401失效矩阵/503/403/404与Cookie/hook/回滚均有本地证据。HTTP延迟注入仅事务前，内部tail/self-final沿真实auth事务测试+映射+唯一出口核查，不声称全部HTTP时序独立注入。
+- I支持调度登记S03/F01及父P04-05本地收口，台账由root维护。真实WS/provider解绑或迟到回调/Android真机/外部正式AC及新G1仍NOT_RUN；C01另树未最终冻结，未改或选择其API/header，旧runtime PASS不能当新实例PASS，后续B01按最终契约另验。此次不继续G1或Bot删除/S02、不新建tree。
+- 来源 `/home/lijx/Projects/RelayNest-recovery-20261024/device-admin`、`codex/device-admin-recovery-20261024` 干净HEAD `15649ac7fb03f24bb013888fe467c76428ca7f0d` 保留。root dirty registry和用户`.directory`未stage/覆盖；仅四精确提交、I01和本snapshot入库。完成核验后释放main index，无push/部署/新聊天/额外agent；旧snapshots原样保留。
+
 ## snapshot49：Bot 独立凭据轮换与状态事务扩展点精确集成
 
 - 恢复优先本 snapshot。main 前 `a06995ca153c60b4410dfdeb544f543f7c1ff353`；按序实现 `8e7935186263565200b43097872e7f0df2f71c6d`→`7c79034`、独审 PASS `f6202b1114705014d5b8121d36b5e8e9c3acbcb3`→组合 `a3c50f838a52257f980ec2204f0f8173c7a4e3f7`。[I01](P04-07-S01-I01.md) 独立提交 `3c84d5e517c7095ecf8bbb3ef7c9e57827d4fa4b`；本 snapshot 另提交，其提交为本轮最终 main，精确 SHA 提交后交接。
