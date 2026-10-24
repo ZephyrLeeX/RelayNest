@@ -2,6 +2,14 @@
 
 更新：2026-10-24。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot42：Bot JSON 精确键修复规划独审集成
+
+- 恢复优先本 snapshot。main 前 `29991d445b1414c59d7ac8d9f8b5b34a551032e7`；依序仅精确集成失败 A01 `2ae091cb65de8c4c0b4c5abcebe289927b8867b1`→`b64ecbe`、F01规划 `f3dc0dae54cbab7db7e8d63bf76f55e254688fc1`→`d40ce27`、规划独审 PASS `39298292641cd3ac2a388b8ec3e1e20e1718783b`→组合 `42501a9e8bef53946a2c361421631eb2fbf0fc7d`。[I01](P04-06-S02-F01-PLAN01-I01.md) 独立提交 `5cd145bc7b854e160c59599d93c7fa3fc35202cd`；本 snapshot 另提交，最终 main 为本提交，准确 SHA 提交后交接，不预写。
+- 四文档 blob 同源、diff及原 S02 七矩阵/父五验收和完整前置保留检查通过；主树相对链接10条存在、2条缺原 `P04-06-S02-implementation.md`，来源存在。该报告归禁止集成的原实现，故不额外带入；root已确认保留精确四blob，最终已审源码组合集成时补齐复核，不称链接全 PASS。无源码/API/SQL/依赖变化，纯文档不跑业务测试或旧反例。
+- **未集成原实现 `80a87509f0687afbb7f6a23c945b96363da480a8`，A01-01 / P2仍开放。** 规划 PASS不等于代码 PASS、F01关闭、S02/父卡完成或消费者放行。root登记后可派F01逐层精确JSON键最小修复；不同agent对最终修复SHA作S02-A02，PASS后精确集成原实现加修复组合，再核原全部条件。真实手机/NAS、未来消息HTTP及正式AC仍NOT_RUN。
+- 来源 `/home/lijx/.codex/worktrees/bot-admin-http/RelayNest`、`codex/bot-admin-http` 原样保留 HEAD `39298292641cd3ac2a388b8ec3e1e20e1718783b`；最终状态核验干净，适合调度固定此来源接续F01。不新树、不reset/clean。Android UI独立树未碰；D01具体G1/G2、生命周期、契约/兼容三项用户确认仍pending，proposal reviewed不是approved，S04/父门槛不变。
+- registry仅root维护，既有dirty原样保留、未stage/覆盖；用户`.directory`未动。仅三文档提交、I01及本checkpoint入库。最终核验后释放main index；无push/部署/新聊天/额外子agent，旧snapshots保留。
+
 ## snapshot41：部署身份有限提案独审精确集成
 
 - 恢复优先本 snapshot。main 前 `b092e8481f720296d36ed7b6b0a36566990f1470`；仅依次精确集成提案 `46db3851c7d50e488ac3e45df65c08651ef0890d`→`ec1de5c4903ed6c251e185d4b8282e3976748375`、独审 PASS `2efbabb364600f4723d2f8886b191194f1cdeb94`→组合 `c6413a85c04e9f8809e07b3a6413e0a4bd348213`。[D01 PLAN01 I01](P08-04-D01-PLAN01-I01.md) 已独立提交 `f8696cd771285831d550de095d7f96201593ec57`；本 snapshot 另提交，最终 main 为本提交，准确 SHA 由提交后交接记录，不预写。
