@@ -112,6 +112,18 @@ android {
 }
 
 dependencies {
+    implementation(libs.okhttp)
+    implementation(libs.coroutines.core)
+    // 新客户端的旧版 stdlib 兼容桥沿用仓库已锁定版本，不引入另一组 Kotlin 版本。
+    constraints {
+        implementation(libs.kotlin.stdlib.jdk7)
+        implementation(libs.kotlin.stdlib.jdk8)
+    }
+    testImplementation(libs.junit)
+    testImplementation(libs.mockwebserver)
+    testImplementation(libs.okhttp.tls)
+    // Android 已提供 org.json；本地 JVM 测试使用实际解析器而非 android.jar 空桩。
+    testImplementation(libs.json.test)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.ui)
