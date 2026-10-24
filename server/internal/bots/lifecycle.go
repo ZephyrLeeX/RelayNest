@@ -14,9 +14,12 @@ type LifecycleAction string
 const (
 	LifecyclePatch          LifecycleAction = "patch"
 	LifecycleRotateAPIToken LifecycleAction = "rotate_api_token"
+	LifecycleDeleteBefore   LifecycleAction = "delete_before"
+	LifecycleDeleteAfter    LifecycleAction = "delete_after"
 )
 
 // LifecycleChange 只有公开元数据，前后快照明确目标、状态及凭据代次。
+// 删除的两个阶段均以 Before 标识当前实体，After 为零值，不能当作存活 Bot。
 type LifecycleChange struct {
 	Action LifecycleAction
 	Before Bot
@@ -27,6 +30,65 @@ type LifecycleChange struct {
 // 不得保留 Tx、嵌套写事务、执行网络等待或自行提交/回滚。
 // 后续队列实现负责解释动作；此处不定义租约 schema 或完整 HTTP 级联。
 type LifecycleFunc func(context.Context, *sql.Tx, LifecycleChange) error
+
+// Delete 只实现基础删除；正式永久删除装配必须接入 P06-07 完整级联。
+func (r *Repository) Delete(ctx context.Context, id string, req DeleteRequest) (changes.Sequence, error) {
+	return r.DeleteWithWrite(ctx, id, req, r.store.Write, nil)
+}
+
+// DeleteWithWrite 将确认、基础删除、两阶段扩展、删除标记及调用方续期合并提交。
+// 扩展必须遵守 LifecycleFunc 约束；空扩展不代表已实现消息/队列/附件永久级联。
+func (r *Repository) DeleteWithWrite(ctx context.Context, id string, req DeleteRequest, write WriteFunc, hook LifecycleFunc) (changes.Sequence, error) {
+	if write == nil || id == "" || req.ConfirmName == "" || req.ExpectedVersion < 1 {
+		return 0, ErrInvalid
+	}
+	var seq changes.Sequence
+	err := write(ctx, func(tx *sql.Tx) error {
+		b, err := get(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		if b.Version != req.ExpectedVersion {
+			return ErrConflict
+		}
+		// 按持久名称逐字确认，不在仓储暗中 trim 或变更大小写规则。
+		if b.Name != req.ConfirmName {
+			return ErrInvalid
+		}
+		if b.Version == math.MaxInt64 {
+			return ErrConflict
+		}
+		if hook != nil {
+			if err := hook(ctx, tx, LifecycleChange{Action: LifecycleDeleteBefore, Before: b}); err != nil {
+				return err
+			}
+		}
+		// 凭据沿既有 FK 同事务级联；CAS 仍核对受信扩展后的目标，禁止删错版本。
+		result, err := tx.ExecContext(ctx, "DELETE FROM bots WHERE id=? AND version=? AND name=?", id, b.Version, b.Name)
+		if err != nil {
+			return err
+		}
+		n, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if n != 1 {
+			return ErrConflict
+		}
+		if hook != nil {
+			if err := hook(ctx, tx, LifecycleChange{Action: LifecycleDeleteAfter, Before: b}); err != nil {
+				return err
+			}
+		}
+		// 终态版本加一；changes 无 Bot 外键，实体删除后仍保留 ID/版本/删除时间。
+		seq, err = changes.Append(ctx, tx, changes.Metadata{Type: changes.BotDeleted, EntityID: id, Revision: b.Version + 1, BotID: &id, CreatedAt: time.Now()})
+		return err
+	})
+	if err != nil {
+		return 0, err
+	}
+	return seq, nil
+}
 
 func (r *Repository) RotateAPIToken(ctx context.Context, id string) (IssuedAPIToken, changes.Sequence, error) {
 	return r.RotateAPITokenWithWrite(ctx, id, r.store.Write, nil)

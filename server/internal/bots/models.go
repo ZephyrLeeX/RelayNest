@@ -50,6 +50,12 @@ type PatchRequest struct {
 	Enabled         *bool
 	Capabilities    *Capabilities
 }
+
+// DeleteRequest 仅在调用方完成二次确认后提交；取消确认不调用仓储。
+type DeleteRequest struct {
+	ConfirmName     string
+	ExpectedVersion int64
+}
 type IssuedAPIToken struct {
 	Credential   CredentialMetadata `json:"credential"`
 	Token        string             `json:"token"`

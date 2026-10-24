@@ -18,7 +18,7 @@ import (
 // 通过真实 RequestSecurity 签发 actor，再由 WithAuthorizedWrite 执行生命周期写入。
 // 仅缩短持久 idle 截止时间以观察续期，不依赖 sleep 或伪造私有 actor。
 func TestLifecycleAuthorizedSessionTransaction(t *testing.T) {
-	for _, operation := range []string{"api", "webhook", "patch"} {
+	for _, operation := range []string{"api", "webhook", "patch", "delete"} {
 		for _, mode := range []string{"success", "changes", "renew", "commit", "revoked"} {
 			t.Run(operation+"/"+mode, func(t *testing.T) {
 				c := context.Background()
@@ -99,14 +99,22 @@ func TestLifecycleAuthorizedSessionTransaction(t *testing.T) {
 				hooks := 0
 				hook := func(c context.Context, tx *sql.Tx, e bots.LifecycleChange) error {
 					hooks++
-					if e.After.ID != created.Bot.ID {
+					id := e.After.ID
+					if operation == "delete" {
+						id = e.Before.ID
+					}
+					if id != created.Bot.ID {
 						return errors.New("wrong hook Bot")
 					}
-					_, err := tx.ExecContext(c, "INSERT INTO queue_marker VALUES(?)", e.After.ID)
+					_, err := tx.ExecContext(c, "INSERT INTO queue_marker VALUES(?)", id)
 					return err
 				}
 				var released bool
 				switch operation {
+				case "delete":
+					seq, e := r.DeleteWithWrite(c, created.Bot.ID, bots.DeleteRequest{ConfirmName: created.Bot.Name, ExpectedVersion: 1}, write, hook)
+					err = e
+					released = seq != 0
 				case "api":
 					v, seq, e := r.RotateAPITokenWithWrite(c, created.Bot.ID, write, hook)
 					err = e
@@ -122,16 +130,23 @@ func TestLifecycleAuthorizedSessionTransaction(t *testing.T) {
 					released = v.ID != "" || seq != 0
 				}
 				after, getErr := r.Get(c, created.Bot.ID)
-				if getErr != nil {
+				deleted := operation == "delete" && mode == "success"
+				if deleted && !errors.Is(getErr, bots.ErrNotFound) {
+					t.Fatal("deleted Bot survived", getErr)
+				}
+				if !deleted && getErr != nil {
 					t.Fatal(getErr)
 				}
 				if mode == "success" {
-					if err != nil || !released || after.Version != 2 || integer("SELECT count(*) FROM changes") != 2 || integer("SELECT idle_expires_at FROM sessions WHERE id=?", actorSession.ID) <= deadline {
+					if err != nil || !released || (!deleted && after.Version != 2) || integer("SELECT count(*) FROM changes") != 2 || integer("SELECT idle_expires_at FROM sessions WHERE id=?", actorSession.ID) <= deadline {
 						t.Fatal("atomic success", err)
 					}
 					expected := int64(1)
 					if operation == "webhook" {
 						expected = 0
+					}
+					if operation == "delete" {
+						expected = 2
 					}
 					if int64(hooks) != expected || integer("SELECT count(*) FROM queue_marker") != expected {
 						t.Fatal("hook isolation")
