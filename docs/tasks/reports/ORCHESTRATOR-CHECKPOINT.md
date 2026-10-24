@@ -2,6 +2,15 @@
 
 更新：2026-10-25。本文件只记录恢复信息；唯一任务台账为 `registry.json`。不是全部完成报告。
 
+## snapshot51：Bot 双确认基础删除精确集成与父卡基础事务收口
+
+- 恢复优先本 snapshot。main 前 `a22b1ed2f668fe33d53c4d3c658e5b0f7d40745a`；按序实现 `1dfac3f222d46083684a0f5b333dded4f7baee0d`→`e5c918c`、独审 PASS `c8ad4b7dd7234181f287dd386e9e7f93e544a6cd`→准确组合 `e6de9e5e039a85e57ec8020ee03d7f24c6f59563`。[I01](P04-07-S02-I01.md) 独立提交 `d2b58adb83ce69311e94fe9ebafd2843ec390c49`；本 snapshot 另提交，最终 main SHA 提交后交接，不预写自身 SHA。
+- 四 bots Go/两报告共六 blob 全同固定来源，无冲突/源码改写，不需重审。source base `7bd18fb` 到集成前 main 的设备/auth/httpapi/cmd 八个已审 Go blob 完整保留，实际组合包含 public auth 薄包装 F01 与基础删除；无 API/SQL/storage/迁移/依赖新源码变化，0005 未分配。
+- 本轮准确 main Go1.27.3/local 七包 bots/changes/storage/auth/httpapi/cmd/devices 普通非缓存、race、vet、生产 build、四 Go gofmt/diff 全 PASS。已有 ignored embed 可用，未运行 npm。A01 六包及独立 name CAS、after hook/真实 COMMIT 回滚后原凭据认证证据可信；本次不机械重跑独立 overlay，不把旧 source PASS 代替当前组合检查。
+- S02 双确认/版本耗尽/CAS、A 删除 B 隔离、旧 Identity 拒绝、可读 typed BotDeleted、扩展/changes/续期/真实提交故障原子回滚都有证据；S01 原停用拒绝、独立重置、旧代次最终 Tx 拒绝回归 PASS。支持调度登记 S02/I01 及父 P04-07 **仅基础仓储事务 done**，不改完整需求含义。
+- 真实 reset/DELETE HTTP、取消 LP、lease/requeue、完整消息/受保护队列/失败记录/附件 cascade 与回收、真实 UI 取消、手机/NAS 均 NOT_RUN。S03 仍保留 P06-07 完整组合、设备最终 A/I 和公开错误契约门槛；设备最终 A/I 已 main，不豁免其他门槛。G1 C01 独立树独审，新 runtime 仍 NOT_RUN；旧 API 行为不能外推新 G1 gate。
+- 来源 `/home/lijx/Projects/RelayNest-recovery-20261024/bot-delete-store`、`codex/bot-delete-store-20261024` 干净 HEAD `c8ad4b7dd7234181f287dd386e9e7f93e544a6cd` 保留。root/user dirty registry 与 `.directory` 未 stage/覆盖；仅两精确来源提交、I01 和本 snapshot 入库。完成核验立即释放 main index；C01 后续集成与 Webdevice 规划另树，不扩业务、不建树、push、部署、新聊天或派生 agent。旧 snapshots 原样保留。
+
 ## snapshot50：设备 HTTP 最终组合、401 修复与父卡本地验收精确集成
 
 - 恢复优先本 snapshot。main 前 `7bd18fbbaf8125850de36f2ae2d36cfb507e3ff4`；只依序 snapshot `03b95101c3bf0671118aa54b1c70f7b56d9389ef`→`8263b5b`、原实现 `013823a684645755cb49557e103360c30b31d05e`→`702241e`、F01 `a950f489dd3b7d5e2f2a81c74cb0b1b379f05129`→`91208d8`、完整 A02 PASS `15649ac7fb03f24bb013888fe467c76428ca7f0d`→组合 `d78711faa56dd01b7e10cf4eec3b70490f2d04e9`。[I01](P04-05-S03-I01.md) 独立提交 `005994a049635163e879c069ecf02526c8ddbe1f`；本 snapshot 另提交，其提交为最终 main，精确 SHA 提交后交接。
