@@ -366,7 +366,7 @@ endpoint/instance/session/代次同一协调锁核对，网络在锁外；返回
 
 ### 9.3 推送通道适配器规划（PUSH-PLAN-01 已集成，PUSH-D1～D3 已批准）
 
-本节细化用户已授权的 OPPO Push 与适配器方向；不是已经冻结的 HTTP/DDL/SDK 实现。PUSH-PLAN-01 已完成独立审计与集成；P03-07 继续冻结通道无关契约。用户于 2026-10-21 批准下列 PUSH-D1～D3，决定来源和边界见 [PUSH-DECISION-01](tasks/reports/PUSH-DECISION-01-implementation.md)。§9.2 保持 FCM 自绘模式验收；本节仅对显式可选 OPPO 提醒模式记录已批准的体验差异。原提案的 title-only、注册后自动优先 vendor 及固定审核天数不作为实施依据。官方证据与不可读取限制见 [外部研究](tasks/reports/PUSH-PLAN-01-external-research.md)，执行验证见 [P02-05](tasks/cards/P02-05.md)。Hub 只传输、存储和路由，不执行业务命令或 MCP。
+本节细化用户已授权的 OPPO Push 与适配器方向；不是已经冻结的 HTTP/DDL/SDK 实现。PUSH-PLAN-01 已完成独立审计与集成；P03-07 继续冻结通道无关契约。用户于 2026-10-21 批准下列 PUSH-D1～D3，决定来源和边界见 [PUSH-DECISION-01](tasks/COMPLETED.md#e2)。§9.2 保持 FCM 自绘模式验收；本节仅对显式可选 OPPO 提醒模式记录已批准的体验差异。原提案的 title-only、注册后自动优先 vendor 及固定审核天数不作为实施依据。官方证据与不可读取限制见 [外部研究](tasks/COMPLETED.md#e2)，执行验证见 [P02-05](tasks/ANDROID.md#and-06)。Hub 只传输、存储和路由，不执行业务命令或 MCP。
 
 #### 职责与插槽
 
@@ -400,7 +400,7 @@ endpoint/instance/session/代次同一协调锁核对，网络在锁外；返回
 
 PUSH-D1～D3 已批准，不再作为用户待决；历史规划/审计/集成报告保留其当时状态，以本节及决定报告为当前依据。账号/资格/测试与正式权限、SDK/API 及版本、签名关联、分类/模板/限额/错误码与真机能力仍未验证，由 P02-05 提供证据；不能把个人认证支持等同于个人账号拥有正式 Push 权限，不能自动降为公信或承诺审核天数。批准体验边界不激活厂商、不授权平台注册/提交或创建正式密钥。服务端鉴权秘密不得打包进 APK；SDK 必需客户端参数按锁定 SDK 文档分类并安全注入，不能把 MasterSecret 当客户端 AppSecret。
 
-P02-05 外部审核只阻 OPPO 分支；P03 签名注入准备、通道无关契约及 P4～8 可继续。P09-03/04 应先完成框架+FCM，再独立验收 OPPO；建议子卡与依赖见 [实施报告](tasks/reports/PUSH-PLAN-01-implementation.md)，registry 仅由调度登记。
+P02-05 外部审核只阻 OPPO 分支；P03 签名注入准备、通道无关契约及 P4～8 可继续。P09-03/04 应先完成框架+FCM，再独立验收 OPPO；建议子卡与依赖见 [实施报告](tasks/COMPLETED.md#e2)，模块任务状态仅由调度登记。
 
 ## 10. MoviePilot v3.1.5 适配研究与条件方案
 

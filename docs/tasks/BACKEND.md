@@ -1,0 +1,564 @@
+# Go 后端剩余任务
+
+推送分支依赖说明：原 BE-10-03 父依赖字段保留；下游只做框架／FCM 的准备或验证时，执行包必须明确消费 [BE-10-03-FCM](BACKEND.md#be-10-03-fcm) 精确独审已集成子结果，OPPO 外部阻塞不传播至 FCM。全范围最终验收仍须两通道分别有证据，OPPO 缺条件保留 blocked／NOT_RUN，不能以 FCM 代验或将父项标完成。
+
+本文件是后端唯一剩余任务入口；BE-01～BE-10 是功能导航，其中 BE-01、BE-02 和 BE-10-03 同时承担旧父任务收口，不能整组派给一次 worker。仅下列 leaf 可独立实施；依赖须完成独立审计和精确集成后才满足。状态为重组基线 `086fa51d79d7726545a9abbab8feebb25770034e` 的快照，不代表已启动新 worker。
+
+需求与接口以 [PRD](../PRD.md)、[架构](../ARCHITECTURE.md)、[技术设计](../TECHNICAL_DESIGN.md) 和 [OpenAPI](../../server/api/openapi.yaml) 为准；这里只保留实施范围和验收，不建立新合同。工程检查、独立提交与 Git 规则见 [CONTRIBUTING](../CONTRIBUTING.md)。Bot Hub 只传输、存储和路由，不执行业务命令/MCP，不增加 Web 聊天/历史或正文推送，不修改 RelayShelf 后端/数据库。
+
+已完成基础统一见 [COMPLETED](COMPLETED.md)：认证/设备、Bot 基础事务、消息事务仓储、幂等存储、实例身份/离线维护和 Bot 内部身份发现。尤其 P05-02-S01 的最终收口为 `e674801f3640508327e102bda37805b687c3108d`，不等于正式消息 HTTP 完成。
+
+每个 leaf 默认只读相关设计局部、列出的主要文件及对应测试；拟定路径不存在时先核对当前等价入口，不凭空新建模块。默认 3～5 主要实现文件；迁移须串行核号。router/main、共用 auth 接口与迁移不能并行覆盖。每项交付记录基线/最终 SHA、真实命令/环境/结果、未测项及遗留问题，独审与集成后才可完成；不以桩、源码推断或局部测试代替组合验收。
+
+共同检查：代码任务在 `server` 运行受影响包 `go test`、相关 `go test -race`、`go vet` 和 gofmt；集成公共 auth/router/main 时补 server build/全包检查及受影响路由非回归。固定 Go 1.27.3，不升级工具链。下文“检查”还列各项专有必验行为；环境不足须明确 NOT_RUN/blocked。测试任务只补交叉回归，发现实现缺陷应形成有限修复项，不能借测试整组重写。
+
+依赖写作 已完成依赖链接 的项均指 [已完成证据锚](COMPLETED.md)，不重新实施旧任务。BE-01/BE-02/BE-10-03 仅在其 leaf 和本节父验收全部满足后供消费者依赖，其他 BE 组号只导航。
+
+## BE-01 完整实例绑定
+
+<a id="be-01"></a>
+
+### BE-01 服务实例绑定
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P08-04-D01-B01`；类型：父收口，不整组派发；状态：进行中（父收口未完成）。
+- 依赖：[已完成基线 P08-04-D01-M01](COMPLETED.md#g4)、[已完成基线 P04-05-S03](COMPLETED.md#g1)、[已完成基线 P04-06](COMPLETED.md#g1)、[已完成基线 P08-04-D01-B01-SCOPE01](COMPLETED.md#g4)、[已完成基线 P08-04-D01-B01-BOT01](COMPLETED.md#g4)、[已完成基线 P08-04-D01-B01-PLAN02](COMPLETED.md#g4)、`BE-01-AUTH`、`BE-01-HTTP`。
+- 门槛：`G-GIT`、`G-API`、`G-INSTANCE-CONTRACT`；条件未实证不记通过。
+
+父收口目标：公开 probe 与 Android 登录/会话/设备/Bot 管理真实路由完整 G1 组合；依赖中的 M01/SCOPE01/BOT01/PLAN02 仅是已完成局部基线。AUTH 和 HTTP 两包及 BOT01 最终集成后，在同一组合 SHA 逐项验收；不以 AUTH 局部通过放行消费者。当前 G-INSTANCE-RUNTIME、G-INSTANCE-COMPOSITION 均 pending。
+
+G1 已批准生命周期：Android 先验证实例 ID 再读取密码/Bearer，授权读同一事务快照，写提交前复核 ID/auth_generation；ID/会话/代次变化不得提交部分结果。probe 后诚实切库仍可能使旧凭据字节抵达 B，这是已接受的有限窗口，不宣称 G2。未来未实现业务/附件/WS 路由保留强门禁及 NOT_RUN。
+
+附件仅 uploadAttachment/downloadAttachment 是 Bot-first 例外：格式校验后可先读 Bearer 用于真实 API 凭据发现，不能提前读上传流/Range/附件资源；NoMatch 才进入 Android ID 校验，Matched 后拒绝不回退管理员，Unavailable 失败关闭503。下载不能先查附件求 BotID；send/receive 必须按资源域授权。有效 Bot 忽略实例头；未来真实两附件路由、授权及文件打开顺序由 BE-05 验收，不能拿内部发现已完成替代。Web Origin/CSRF、设备精确撤销/自撤、Bot 与 health 非回归，日志禁头/正文/实例ID。
+
+<a id="be-01-auth"></a>
+
+### BE-01-AUTH Android实例入口与事务绑定
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P08-04-D01-B01-AUTH01`；类型：有限 leaf；状态：已有WIP，待独审集成。
+- 依赖：[已完成基线 P08-04-D01-M01](COMPLETED.md#g4)、[已完成基线 P08-04-D01-B01-PLAN02](COMPLETED.md#g4)。
+- 门槛：`G-GIT`、`G-API`、`G-INSTANCE-CONTRACT`；条件未实证不记通过。
+
+当前已有 WIP `d894f14175249bbd17609a0eb3521462577151c8`，分支 `codex/instance-server-bind-20261025` 已保存并推送，尚未独审/集成；不是现有活跃 worker。旧 Bot/Device fixture 缺实例头导致全 server 检查失败，必须更新真实输入并保留断言，不能标整体通过。
+
+允许五个 auth 主文件：http.go、request_security.go、session.go、device_sessions.go、instance_binding.go 及测试。实现不可伪造的私有请求绑定、同 SessionStore 控制的读/写闭包；复用 ReadInstanceIDTx、不缓存/嵌套事务，失败清空输出，提交前不发布凭据。Android login 分阶段解码，不能在 ID 校验前先解完整 Password；AndroidSession 保持独立封闭 DTO，GET session 不返 Bearer。其他 AdminBearer 分支先 ID 后读 Bearer，混合/重复凭据失败关闭。
+
+检查：真实 auth HTTP+SQLite 验证缺头400 INSTANCE_REQUIRED、畸形/空/多值400 INVALID_REQUEST、错ID409 INSTANCE_MISMATCH、身份/DB故障503 INSTANCE_UNAVAILABLE，代次失效401；错误no-store且不泄实际ID。Create、读取/续期、logout、WithAuthorizedWrite、设备列表/撤销同快照/提交复核，revoked自撤、Session.id与提交后通知保持；登录校验后切库和事务中变化无部分结果，Web/CSRF不回归。运行 auth/storage 定向及 race/静态检查；交付真实内部接口后才允许 HTTP 包接入。
+
+<a id="be-01-http"></a>
+
+### BE-01-HTTP 实例探测与真实路由同快照组合
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P08-04-D01-B01-HTTP01`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-01-AUTH`、[已完成基线 P08-04-D01-B01-BOT01](COMPLETED.md#g4)、[已完成基线 P08-04-D01-B01-PLAN02](COMPLETED.md#g4)。
+- 门槛：`G-GIT`、`G-API`、`G-INSTANCE-CONTRACT`；条件未实证不记通过。
+
+允许 router.go、instance.go、httpapi/bots.go、bots/repository.go、cmd/relaynest/main.go 五个主文件及测试；auth/devices只读消费最终接口，main只接线。Bot ListPage 与 RenewRead 不得分离快照；仓储读取放入 AUTH 授权读闭包，Bot写继续同事务授权写，devices只验证共享安全入口。
+
+公开 GET /api/v1/instance 无 query/body，拒绝 Authorization/Cookie/X-CSRF-Token/X-RelayNest-Instance-ID 的存在（含空值/大小写），不解析记录值。非法优先于限流，限流优先于读库；全局常量内存20rps/burst40，429 Retry-After:1。每次严格读取持久化ID，200仅小写UUIDv4单字段，缺失/损坏/读取失败503。成功/错误no-store、nosniff，禁止ETag/Last-Modified/Location/304/redirect；固定Error/request_id/code/message/retryable。
+
+检查：真实HTTP+SQLite验证探测格式/错误顺序/限流/缓存/503，逐项列八个现有auth/device/admin-bot路由的绑定证据；切A→B、事务ID/代次变化、读投影不拼接。包含Web/CSRF、设备全撤/自撤、Bot内部发现、health/static非回归。运行httpapi/auth/devices/bots/storage测试及race、vet/build/必要全包检查；Web embed按锁版构建。客户端完整call5秒/1024字节由Android任务验收，不冒充本卡结果。
+
+## BE-02 正式幂等消息创建与回执
+
+<a id="be-02"></a>
+
+### BE-02 消息幂等创建和接收回执
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P05-02`；类型：父收口，不整组派发；状态：进行中（父收口未完成）。
+- 依赖：[已完成基线 P05-01](COMPLETED.md#g2)、[已完成基线 P05-02-PLAN01](COMPLETED.md#g3)、[已完成基线 P05-02-S01](COMPLETED.md#g3)、`BE-02-BOT`、`BE-02-ADMIN`。
+- 允许范围：`server/internal/messages/**`、`server/internal/idempotency/**`、`server/migrations/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+父卡保留四项原验收：提交后才回执；丢失响应重试不重复；同键异内容409；Token重置不更换稳定身份作用域。存储基础虽已完成，必须组合真实 Bot 与管理员 HTTP+SQLite 复验。
+
+当前有限阶段仅 plain/markdown 文本且无附件/引用/按钮；其他输入显式拒绝并记录未实现，不能吞字段或声称完整 CreateMessageRequest 通过。后续引用、附件、按钮、标准Webhook的阶段门槛分别由 BE-04/05 保留。回执仅代表持久化，不代表应用ACK、已读或业务成功。
+
+<a id="be-02-bot"></a>
+
+### BE-02-BOT Bot正式创建HTTP
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P05-02-S02`；类型：有限 leaf；状态：未开始。
+- 依赖：[已完成基线 P05-02-S01](COMPLETED.md#g3)、[已完成基线 P05-02-PLAN01](COMPLETED.md#g3)、[已完成基线 P08-04-D01-B01-BOT01](COMPLETED.md#g4)。
+- 门槛：`G-GIT`、`G-API`；条件未实证不记通过。
+
+允许 httpapi/messages.go、router.go、cmd/relaynest/main.go 三主文件及测试；不改auth/bots/SQL/API/管理员/Webhook分支，共享接线串行。正式 POST /api/v1/bot/messages 只用真实 API Token 与 BOT01 固定身份；启用/send/提交前凭据代次仍需验证，BotID只来自身份、不接受body指定，实例头不切身份。调用S01同事务创建，commit后201 Message+no-store。
+
+请求≤256KiB、UUIDv4幂等头；未知/结构400、语义422、超限413、未授权401、能力403、资源域404、异摘要409 IDEMPOTENCY_CONFLICT、墓碑410 RESOURCE_EXPIRED、存储503，遵循冻结Error/request_id/retryable及默认值摘要；日志不含凭据/正文。检查真实路由+SQLite丢首响应/重启同键仍同ID且不增序号/changes/job，并发同键/异内容、commit失败全回滚、API reset新Token同作用域旧Token拒绝、跨Bot不泄漏；当前授权/能力先于查重，实例头缺失/畸形/错误不影响Bot身份。必跑httpapi/messages/idempotency/bots/cmd测试、相关race、go vet ./...；Webhook未接线须记NOT_RUN。
+
+<a id="be-02-admin"></a>
+
+### BE-02-ADMIN Android管理员正式创建HTTP
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P05-02-S03`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-02-BOT`、[已完成基线 P05-02-PLAN01](COMPLETED.md#g3)、`BE-01`。
+- 门槛：`G-GIT`、`G-API`；条件未实证不记通过。
+
+允许 httpapi/messages.go、router.go、cmd/relaynest/main.go、必要 messages/create.go 四主文件及测试；auth只消费 BE-01 已集成接口。正式 POST /api/v1/client/bots/{id}/messages 仅 Android AdminBearer，固定sender=administrator、Bot启用/receive。S01幂等/消息/投递/changes/待办必须处于 B01 WithAuthorizedWrite 的同一受控事务，先ID再读Bearer，提交前复核ID/会话/代次；不能以M01/BOT01/桩middleware代替完整绑定。
+
+commit后201 ClientMessageReceipt含原message/delivery_id，no-store；同有效管理员换会话仍同作用域，重放前核当前授权。错误同Bot分支并保实例错误，接受G1瞬切字节窗口。检查真实HTTP+SQLite丢响应重试/重新登录同键不增消息/投递/不可变事件/序号/changes/job，异内容409；任一步/commit失败全回滚；缺/重复/畸形/错ID无副作用，事务中ID/会话/代次失效拒绝，probe A切B不认证/不执行；Web/Bot误用及管理/设备/health非回归。必跑httpapi/messages/idempotency/auth/cmd测试、相关race、go vet ./...、go test -race -count=1 ./...。
+
+## BE-03 Bot生命周期和身份权限收口
+
+<a id="be-03-02"></a>
+
+### BE-03-02 身份权限矩阵回归
+
+- 完成追加依赖（不改变上述开工依赖）：[BE-03-01](BACKEND.md#be-03-01)、[BE-03-03](BACKEND.md#be-03-03)；基础准备可先进行，真实全范围收口必须满足。
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P04-08`；类型：有限 leaf；状态：未开始。
+- 依赖：[已完成基线 P04-03](COMPLETED.md#g1)、[已完成基线 P04-04](COMPLETED.md#g1)、[已完成基线 P04-05](COMPLETED.md#g1)、[已完成基线 P04-07](COMPLETED.md#g1)。
+- 允许范围：`server/internal/auth/*test*`、`server/internal/bots/*test*`、`server/internal/devices/*test*`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+只补管理员/Bot/Webhook/send/receive权限、重置/撤销矩阵和AC-02证据。旧前置均为已完成基础；正式reset/delete、租约和队列组合验收还需BE-03-01与BE-03-03真实完成。只改auth/bots/devices对应测试；发现实现缺陷另列有限修复项，不能扩成业务实现。
+
+<a id="be-03-03"></a>
+
+### BE-03-03 启停重置删除的队列集成
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P06-07`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-06-04`、`BE-07-02`、[已完成基线 P04-07](COMPLETED.md#g1)。
+- 允许范围：`server/internal/bots/**`、`server/internal/delivery/**`、`server/internal/retention/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+目标：启停暂停/恢复租约与去重；API reset旧代次取消轮询/撤销租约/重排，Webhook reset不影响API租约；旧轮询/ACK拒绝。永久删除级联队列/保护并留tombstone，共享附件不得误删其他Bot引用；同事务和重启故障回滚。
+
+验收：旧轮询/ACK 拒绝。；恢复去重。；永久删除取消保护且不误删其他 Bot 附件。 运行上述允许包的共同检查。
+
+<a id="be-03-01"></a>
+
+### BE-03-01 生命周期完整HTTP
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P04-07-S03`；类型：有限 leaf；状态：未开始。
+- 依赖：[已完成基线 P04-07](COMPLETED.md#g1)、`BE-03-03`、[已完成基线 P04-07-PLAN01](COMPLETED.md#g1)、[已完成基线 P04-05-S03](COMPLETED.md#g1)。
+
+正式接入两个凭据reset与DELETE，并验证PATCH启停走完整事务；只改httpapi/bots.go、router.go、cmd/relaynest/main.go及测试，仓储/SQL/auth只读。复用publicRequestSecurity、BotAuthorize、WithAuthorizedWrite，认证/目标/业务/changes/renew同事务；Cookie维持CSRF/同源，Bot凭据无管理权。reset无expected_version请求体，返回对应IssuedAPIToken/IssuedWebhookKey且no-store；普通查询不泄密。DELETE仅冻结confirm_name/expected_version，成功204，取消确认不发请求。
+
+检查：真实路由覆盖Android Bearer、Cookie+CSRF、Bot拒绝、缺失/撤销/跨Bot与事务内失效，失败不续期/不写changes；API reset撤销旧租约/取消轮询并重排，Webhook reset不影响API租约，消息/failed保留。DELETE错名/旧版本无副作用、正确确认完整级联并保tombstone，共享附件不误删的证据来自BE-03-03。运行httpapi/cmd/bots/真实delivery/retention包测试、httpapi/cmd vet及gofmt；缺真实队列/故障组合不得用桩替代。reset内部耗尽等未冻结对外错误映射，实施前核对现有通则；若需新增状态/code/结构，先具体提案确认并串行更新合同，不自行猜。G1用实际已集成契约/接口。
+
+## BE-04 消息读取编辑事件及故障边界
+
+<a id="be-04-01"></a>
+
+### BE-04-01 历史分页引用和共享已读
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P05-03`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-02`。
+- 允许范围：`server/internal/messages/**`、`server/internal/sync/read*`、`server/migrations/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+目标：按bot_seq分页、引用校验、共享已读取max和未读计数；自己的消息与编辑不增未读，旧设备不能倒退。
+
+验收：越 Bot 引用拒绝。；旧设备不倒退。；自己的消息与编辑不增加未读。 运行上述允许包的共同检查。
+
+<a id="be-04-02"></a>
+
+### BE-04-02 应用消息 CAS 编辑
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P05-04`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-04-01`。
+- 允许范围：`server/internal/messages/**`、`server/migrations/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+目标：只允许应用编辑自身应用消息；保原bot_seq/创建时间/已读语义，revision CAS；正文/按钮与changes同事务，附件引用在BE-05-02组合。Android及Webhook不可编辑。
+
+验收：旧revision冲突。；Android及Webhook不可编辑。；文本/按钮与变更同事务；附件引用集成由 P05-06 收口验收。 运行上述允许包的共同检查。
+
+<a id="be-04-03"></a>
+
+### BE-04-03 标准 JSON Webhook 接入
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P05-09`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-02`、`BE-05-02`。
+- 允许范围：`server/internal/httpapi/webhook*`、`server/internal/messages/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+目标：1. 复用消息创建事务接入独立只发送密钥。；2. 不增加映射/脚本/出站功能。
+
+验收：标准 JSON/未知字段/幂等/超限/停用。；Webhook 不能编辑或下载。 运行上述允许包的共同检查。
+
+<a id="be-04-04"></a>
+
+### BE-04-04 消息附件故障边界回归
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P05-10`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-04-02`、`BE-05-04`、`BE-04-03`、`BE-04-05`。
+- 允许范围：`server/internal/messages/*test*`、`server/internal/attachments/*test*`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+目标：提交/附件恢复/编辑冲突交叉故障：所有已宣称持久成功的数据能恢复，无受保护文件被误回收。
+
+验收：所有声明持久化成功的记录可恢复。；无受保护文件误回收。 运行上述允许包的共同检查。
+
+<a id="be-04-05"></a>
+
+### BE-04-05 按钮回调独立事件与投递
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P05-11`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-04-02`。
+- 允许范围：`server/internal/messages/callback*`、`server/internal/delivery/event*`、`server/migrations/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+目标：callback为独立持久快照/事件/投递，父消息和按钮版本校验；编辑不改已提交callback快照。旧版本/失效按钮409 BUTTON_STALE，callback_data原样；一次点击网络重试复用键，再次点击是新事件。
+
+验收：旧版本/失效按钮409。；callback_data原样。；重复点击网络重试复用键。 运行上述允许包的共同检查。
+
+## BE-05 附件完整生命周期
+
+<a id="be-05-01"></a>
+
+### BE-05-01 附件流式上传状态机
+
+- 完成追加依赖（不改变上述开工依赖）：[BE-01](BACKEND.md#be-01)；基础准备可先进行，真实全范围收口必须满足。
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P05-05`；类型：有限 leaf；状态：未开始。
+- 依赖：[已完成基线 P05-01](COMPLETED.md#g2)。
+- 允许范围：`server/internal/attachments/**`、`server/migrations/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+补充检查：ready前不能关联；流式内存有界，随机物理路径、字节限制/hash/fsync/rename及幂等一致，URL仅保存不抓取。默认图片10MiB/文件50MiB按已确认配置；不能把默认值当不可配置硬上限。真实上传接线必须依BE-01 runtime及Bot-first附件矩阵，上传流在正确授权后才读取。
+
+<a id="be-05-02"></a>
+
+### BE-05-02 附件关联权限与保护引用
+
+- 完成追加依赖（不改变上述开工依赖）：[BE-01](BACKEND.md#be-01)；基础准备可先进行，真实全范围收口必须满足。
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P05-06`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-04-02`、`BE-05-01`、`BE-04-05`。
+- 允许范围：`server/internal/attachments/**`、`server/internal/messages/**`、`server/migrations/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+关联与消息/编辑/投递更新同事务；覆盖ready→关联竞态、引用增减和pending/leased/failed保护。receive-only只能下载已领取事件必需附件，不能任意浏览本Bot附件；跨Bot绑定拒绝。真实HTTP授权消费BE-01完整绑定/BOT01发现，匹配后拒绝不降级，存储故障503；未实现路由不得提前写已验收。
+
+<a id="be-05-03"></a>
+
+### BE-05-03 附件下载 Range 和安全响应
+
+- 完成追加依赖（不改变上述开工依赖）：[BE-01](BACKEND.md#be-01)；基础准备可先进行，真实全范围收口必须满足。
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P05-07`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-05-02`。
+- 允许范围：`server/internal/attachments/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+下载先授权资源域再打开文件；覆盖Range/ETag/下载租约、内容类型/安全文件名，路径穿越、symlink和物理路径泄漏拒绝。仅两附件端点按BE-01 Bot-first分流；NoMatch后Android先ID/会话同快照，Matched后停用/能力/资源域/代次拒绝不回退；不得先读Range或附件求BotID。真实HTTP+SQLite+文件组合必须验证资源/下载并发及保护租约释放，不能只做文件单测。
+
+<a id="be-05-04"></a>
+
+### BE-05-04 附件启动恢复与孤儿回收
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P05-08`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-05-03`。
+- 允许范围：`server/internal/attachments/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+目标：staging/deleting启动恢复与孤儿扫描；rename成功DB失败、进程退出、缺文件、活动上传保护可恢复且不伪造文件。本项不做消息历史清理。
+
+验收：rename 成功 DB 失败/进程退出/缺文件/活动上传保护可恢复。；无伪造文件。 运行上述允许包的共同检查。
+
+## BE-06 投递租约与失败管理
+
+<a id="be-06-01"></a>
+
+### BE-06-01 原子领取与 Long Polling
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P06-01`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-04-02`、`BE-04-05`。
+- 允许范围：`server/internal/delivery/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+目标：原子pending领取、不可预测lease token、多消费者互斥有效租约；Long Poll等待不持写事务，唤醒丢失/断链可取消恢复重领。
+
+验收：多消费者不重复占有效租约。；等待不持写事务。；断链后可重领。 运行上述允许包的共同检查。
+
+<a id="be-06-02"></a>
+
+### BE-06-02 ACK 幂等与受限续约
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P06-02`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-06-01`、`BE-05-02`。
+- 允许范围：`server/internal/delivery/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+目标：有效租约ACK/受限renew与完成租约幂等重试，释放保护引用；旧租约/撤销/过期拒绝，同ACK200，续约限额验证；ACK只表接收而非业务成功。
+
+验收：旧租约/撤销/过期拒绝。；同 ACK 200。；续约限额。；ACK 不代表业务成功。 运行上述允许包的共同检查。
+
+<a id="be-06-03"></a>
+
+### BE-06-03 退避失败与重启扫描
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P06-03`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-06-02`。
+- 允许范围：`server/internal/delivery/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+目标：仅实际领取消耗尝试，8次实际领取后第8次超时转failed；指数退避/抖动、租约超时扫描、可控时钟与重启恢复，内存唤醒丢失不丢持久任务。
+
+验收：无消费者不耗次数。；第8次超时转失败。；时钟可控。；内存唤醒丢失仍恢复。 运行上述允许包的共同检查。
+
+<a id="be-06-04"></a>
+
+### BE-06-04 失败元数据列表和手动重试
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P06-04`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-06-03`。
+- 允许范围：`server/internal/admin/deliver*`、`server/internal/delivery/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+目标：失败列表仅脱敏元数据，禁止正文/附件URL/callback/原始错误；手动重试幂等并推进代次但event_id不变，不能重跑业务或改原持久快照。
+
+验收：不含正文/附件 URL/callback/原始错误。；event_id 不变。；不重跑业务。 运行上述允许包的共同检查。
+
+## BE-07 历史与墓碑清理
+
+<a id="be-07-01"></a>
+
+### BE-07-01 普通历史清理与投递保护
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P06-05`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-06-03`、`BE-05-04`。
+- 允许范围：`server/internal/retention/**`、`server/internal/messages/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+目标：默认30天、可控时钟和小批次期限清理；消息tombstone，pending/leased/failed、父消息及附件引用保护，未ACK/failed不删，离线设备不阻塞清理，引用过期可显示。
+
+验收：30天可控时钟。；未 ACK/失败不删除。；离线设备不阻塞。；引用过期可显示。 运行上述允许包的共同检查。
+
+<a id="be-07-02"></a>
+
+### BE-07-02 变更 floor 与幂等墓碑回收
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P06-06`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-07-01`。
+- 允许范围：`server/internal/retention/**`、`server/internal/idempotency/**`、`server/internal/sync/cursor*`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+目标：事件保留/floor单调与最小幂等墓碑回收，受保护键不删，已过期资源410不复活，epoch/floor边界一致；不保留旧正文。
+
+验收：受保护键不删。；过期资源410不复活。；epoch/floor 边界一致。 运行上述允许包的共同检查。
+
+## BE-08 配置健康及并发综合回归
+
+<a id="be-08-01"></a>
+
+### BE-08-01 配置资源控制和系统健康投影
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P06-08`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-03-03`、[已完成基线 P04-04](COMPLETED.md#g1)。
+- 允许范围：`server/internal/admin/**`、`server/internal/health/**`、`server/internal/httpapi/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+全局设置retention_days/image_max_bytes/file_max_bytes为1～9223372036854775807规范十进制字符串，0非法；默认30天/10485760/52428800。SQLite int64序号在协议中保字符串，不擅改公共Sequence/Attachment.size。专用设置version/expected_version为JSON整数且1～9007199254740991，与设备版本/注册版本分开；CAS、同值递增、updated_at、settings.updated同事务。输入结构400/语义422、旧版409 GLOBAL_SETTINGS_CONFLICT；版本耗尽409 GLOBAL_SETTINGS_VERSION_EXHAUSTED，先输入再CAS再耗尽，禁止回绕/写入/发变更，GET仍可用。缩短保留期限的影响明确；磁盘满/写压力不得成功，检查DB和附件卷，FCM失败不使Hub整体unready。合同已冻结，具体schema/错误以OpenAPI为准。
+
+<a id="be-08-02"></a>
+
+### BE-08-02 投递与清理并发故障回归
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P06-09`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-08-01`、`BE-04-04`。
+- 允许范围：`server/internal/delivery/*test*`、`server/internal/retention/*test*`、`server/internal/bots/*test*`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+目标：租约/清理/下载/编辑/删除交叉并发及重启故障注入，AC-04/05关键状态证据；不得半提交、越权或误回收保护引用。
+
+验收：AC-04/05 关键状态有证据。；无半提交/越权/保护竞态。 运行上述允许包的共同检查。
+
+## BE-09 Hub同步bootstrap及WS
+
+<a id="be-09-01"></a>
+
+### BE-09-01 Hub 增量同步服务端
+
+- 完成追加依赖（不改变上述开工依赖）：[BE-01](BACKEND.md#be-01)；基础准备可先进行，真实全范围收口必须满足。
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P08-01`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-07-02`。
+- 允许范围：`server/internal/sync/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+当前投影与事件在同一读事务，固定高水位分页，删除事件不导致整批失败，重复消费幂等；所有序号为字符串，epoch/floor和410边界一致。新增Android保护路由必须接入BE-01真实绑定/事务接口后才验收，不以入口单次读ID替代。
+
+<a id="be-09-02"></a>
+
+### BE-09-02 Hub bootstrap 重建协议
+
+- 完成追加依赖（不改变上述开工依赖）：[BE-01](BACKEND.md#be-01)；基础准备可先进行，真实全范围收口必须满足。
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P08-02`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-09-01`、`BE-04-01`。
+- 允许范围：`server/internal/sync/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+固定H及创建序列限定，分页令牌和过期按冻结协议，不持跨请求长事务；并发编辑/删除/新建、floor超越均可重建，版本不回退。路由实例绑定消费BE-01同快照接口。
+
+<a id="be-09-03"></a>
+
+### BE-09-03 Hub WS 提示与连接撤销
+
+- 完成追加依赖（不改变上述开工依赖）：[BE-01](BACKEND.md#be-01)；基础准备可先进行，真实全范围收口必须满足。
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P08-03`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-09-01`、[已完成基线 P04-05](COMPLETED.md#g1)、`BE-03-03`。
+- 允许范围：`server/internal/realtime/**`、`server/internal/httpapi/ws*`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+仅Bearer WS，hello/提示合并/心跳/session_revoked，凭据不进URL、消息写仍REST、Web管理不建聊天WS。握手升级发布前验证实例/会话，连接窗口可由增量补齐，慢客户端有界，撤销关闭；消费BE-01完整runtime门禁，存活连接不跨部署搬迁。
+
+## BE-10 正式推送服务端
+
+<a id="be-10-01"></a>
+
+### BE-10-01 Hub 推送注册与设备通知偏好
+
+- 完成追加依赖（不改变上述开工依赖）：[BE-01](BACKEND.md#be-01)；基础准备可先进行，真实全范围收口必须满足。
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P09-01`；类型：有限 leaf；状态：未开始。
+- 依赖：[已完成基线 P04-05](COMPLETED.md#g1)、[已完成基线 P03-07](COMPLETED.md#e1)。
+- 允许范围：`server/internal/devices/**`、`server/migrations/**`，及对应测试。
+- 门槛：`G-API`、`G-GIT`；条件未实证不记通过。
+
+按T9.3冻结通道集合及逐provider注册版本/时间实现，仅当前设备会话可登记；部分上报不清空其他通道。全局/Bot/DND/预览配置CAS独立于注册代次，SDK注册成功不改用户提醒模式，vendor激活须满足冻结资格门槛。target_invalid仅设备/会话/provider/发送注册版本匹配才条件解绑对应注册，保留设备/会话/其他通道/偏好；会话撤销使全部通道失效，token与秘密不回显/日志。覆盖同版异值、并发模式切换、撤销后迟到登记及旧代次失败不删新注册。Android写入口另须BE-01实例绑定。
+
+<a id="be-10-02"></a>
+
+### BE-10-02 Hub 推送待办合并与调度
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P09-02`；类型：有限 leaf；状态：未开始。
+- 依赖：`BE-10-01`、[已完成基线 P05-01](COMPLETED.md#g2)。
+- 允许范围：`server/internal/push/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+消费消息事务待办，按设备合并水位、退避/期限/共享已读过滤；用途sync/alert分开、job记录会话/注册/配置版本、稳定提醒键和期限，水位合并不使旧提醒复活。重试前复核当前DND/已读/配置/注册/期限，模式或注册改变隔离旧job，同设备租约及条件状态防双worker/迟到结果污染。平台受理不是展示或已读ACK，超时为结果不确定，不自动vendor→FCM补响。
+
+先用假adapter验证框架/FCM路径，OPPO外部审核不阻该有限任务；假结果不算厂商真机通过。PUSH-D2/D3已批准切换仅未来新事件、外发在途残余和离线展示限制；本地fencing不能撤回已外发，不以批准替代P02-05验证。发送失败不回滚消息，推送耗尽不进业务failed、不保护普通历史，DND/全部已读任务不复活。
+
+<a id="be-10-03"></a>
+
+### BE-10-03 推送适配父收口（FCM／OPPO）
+
+- 完成追加依赖（不改变上述开工依赖）：[BE-10-03-FCM](BACKEND.md#be-10-03-fcm)、[BE-10-03-OPPO](BACKEND.md#be-10-03-oppo)；基础准备可先进行，真实全范围收口必须满足。
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P09-03`；类型：父收口，不整组派发；状态：未开始。
+- 依赖：`BE-10-02`、[已完成基线 P02-04](COMPLETED.md#a2)。
+- 允许范围：`server/internal/push/**`，及对应测试。
+- 门槛：`G-FCM`、`G-GIT`；条件未实证不记通过。
+
+同一旧卡保留两个可分别派发的有限分支，不能把FCM通过写成双adapter完成：先做类型化插槽/静态装配与FCM；OPPO为可选、外部条件未满足时blocked的独立分支，依 [ANDROID 的AND-06](ANDROID.md) 对P02-05现行鉴权/单推/错误表及实测证据，不阻框架/FCM。分支没有新合同或自动激活资格；父项只在两分支按适用发布范围分别有证据后收口。
+
+框架/FCM锁SDK/API并安全加载凭据，核心不含厂商请求字段；adapter只收通用提示/必要元数据，不传业务消息模型，无正文/附件URL/秘密，不把服务端秘密装进APK。OPPO按已批准PUSH-D1文案及D2/D3边界，实施前核官方当前接口，不能编造外部结果。
+
+输出区分平台受理、明确失效、暂态、限流、配置错、结果不确定；未知/格式/鉴权错误不无条件删注册。明确失效按发送快照条件解绑单通道，绝不删除会话/设备/新token；稳定提醒键重试，超时不跨通道补响，不承诺恰好一次。桩覆盖限流/鉴权/未知/已受理后超时/轮换迟到失败；FCM与OPPO分别记录版本、环境、真实证据，OPPO无环境明确blocked。
+
+<a id="be-10-03-fcm"></a>
+
+### BE-10-03-FCM 类型化插槽、静态装配与FCM适配
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P09-03` 拆分叶；类型：有限 leaf；状态：未开始。
+- 开工依赖：`BE-10-02`、[已完成基线 P02-04](COMPLETED.md#a2)。
+- 门槛：`G-FCM`、`G-GIT`。
+
+server/internal/push/**：T9.3类型化插槽/静态装配、FCM最小data载荷、安全凭据加载、错误分类；核心无厂商字段。限定框架+FCM，不等待OPPO资格。
+
+外部条件：测试服务账号安全加载；SDK/API固定版本及真实环境证据。
+
+验收：
+
+- [ ] 无正文/URL/服务端秘密。
+- [ ] 按明确无效响应与发送快照版本条件解绑对应通道，不删设备会话/新token；暂态/未知/鉴权错误不无条件删除。
+- [ ] 桩覆盖限流、鉴权、未知、受理后超时、注册轮换迟到失败；真实provider版本/环境证据单列，必需未测blocked。
+- [ ] 稳定提醒键重试，超时不跨通道补响，不保证恰好一次；独审最终实现SHA及精确集成。
+
+检查：运行受影响 push 包普通／race、vet、gofmt 与真实 HTTP/SQLite 调度组合；固定SDK/API及实际 provider 环境分别记录，缺必须条件记 blocked／NOT_RUN。沿用父项完整验收及通道边界，不用桩代替真实厂商结果。
+
+<a id="be-10-03-oppo"></a>
+
+### BE-10-03-OPPO OPPO适配及独立平台验收
+
+- 完成门槛角色：`G-OPPO` 须通过后父项／消费者才能收口。
+
+- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+
+- 旧ID：`P09-03` 拆分叶；类型：有限 leaf；状态：受阻（缺平台资格／权限与实测证据，只阻本分支）。
+- 开工依赖：`BE-10-03-FCM`、`AND-06`。
+- 门槛：`G-FCM`、`G-GIT`。
+
+server/internal/push/**：基于已查证平台接口独立OPPO适配；PUSH-D1固定通用标题正文及D2/D3显式选择、未知结果不跨通道回退等边界。缺账号/审核只阻本分支，不要求现在开户，不编造接口/资格。
+
+外部条件：P02-05现行鉴权/单推/错误表与实测证据；获准测试/正式权限（依本次目标）。
+
+验收：
+
+- [ ] 无正文/URL/服务端秘密。
+- [ ] 按明确无效响应与发送快照版本条件解绑对应通道，不删设备会话/新token；暂态/未知/鉴权错误不无条件删除。
+- [ ] 桩覆盖限流、鉴权、未知、受理后超时、注册轮换迟到失败；真实provider版本/环境证据单列，必需未测blocked。
+- [ ] 稳定提醒键重试，超时不跨通道补响，不保证恰好一次；独审最终实现SHA及精确集成。
+
+检查：运行受影响 push 包普通／race、vet、gofmt 与真实 HTTP/SQLite 调度组合；固定SDK/API及实际 provider 环境分别记录，缺必须条件记 blocked／NOT_RUN。沿用父项完整验收及通道边界，不用桩代替真实厂商结果。

@@ -2,9 +2,9 @@
 
 此探针验证 `channel=None + 独立 source` 的模块分发和受控文本入站。0.0.1 已验证模块入口，0.0.2 已在用户现有 MoviePilot v3.1.5 主进程验证固定 `/noai` 输入及原生定向提示回复。每轮测试后均卸载并移除了远端源码。不作为正式插件发布，不代表 P1 完整双向验收通过。
 
-0.0.3 增加原生媒体／种子候选控制测试：合成候选首屏、翻页、越界输入和退出共 16 项通过；同 userid 跨 source 会覆盖会话，原生空 channel 回调返回 AttributeError。详见 [候选执行报告](../../../docs/tasks/reports/P01-04-implementation.md)。
+0.0.3 增加原生媒体／种子候选控制测试：合成候选首屏、翻页、越界输入和退出共 16 项通过；同 userid 跨 source 会覆盖会话，原生空 channel 回调返回 AttributeError。详见 [候选执行报告](../../../docs/tasks/COMPLETED.md#mp1)。
 
-0.0.4 增加 `transport-probe`：MP 主进程经真实发送方法向临时 loopback HTTP 接收桩传输，返回 ID、同消息编辑、夹具图片/文件字节、定向同步/异步通知及原生回复/候选路径检查通过。它是协议桩，不是正式 Hub 或 Android；广播、持久重放、容器重启仍未运行。完整结果及失败轮次见 [P01-05 报告](../../../docs/tasks/reports/P01-05-implementation.md)。
+0.0.4 增加 `transport-probe`：MP 主进程经真实发送方法向临时 loopback HTTP 接收桩传输，返回 ID、同消息编辑、夹具图片/文件字节、定向同步/异步通知及原生回复/候选路径检查通过。它是协议桩，不是正式 Hub 或 Android；广播、持久重放、容器重启仍未运行。完整结果及失败轮次见 [P01-05 报告](../../../docs/tasks/COMPLETED.md#mp1)。
 
 ## 能力边界
 
@@ -23,7 +23,7 @@
 PYTHONDONTWRITEBYTECODE=1 python integrations/moviepilot/poc/verify_probe.py
 ```
 
-该脚本使用宿主桩验证拒绝边界和状态清理。真实 MP 的模块证据见 [模块执行报告](../../../docs/tasks/reports/P01-02-implementation.md)，原生文本证据见 [文本执行报告](../../../docs/tasks/reports/P01-03-implementation.md)。
+该脚本使用宿主桩验证拒绝边界和状态清理。真实 MP 的模块证据见 [模块执行报告](../../../docs/tasks/COMPLETED.md#mp1)，原生文本证据见 [文本执行报告](../../../docs/tasks/COMPLETED.md#mp1)。
 
 ## 在当前 fnOS 实例复现
 
@@ -100,7 +100,7 @@ PYTHONDONTWRITEBYTECODE=1 python integrations/moviepilot/poc/verify_patch.py
 PYTHONDONTWRITEBYTECODE=1 python integrations/moviepilot/poc/verify_patch.py --source-root /tmp/relaynest-p1-research/3.1.5
 ```
 
-原型阶段的实现记录见[补丁助手报告](../../../docs/tasks/reports/P01-06-callback-patch-prototype.md)。后续已获用户授权部署并应用，MP重启恢复后原生callback最小检查通过，详见[实际部署与回调报告](../../../docs/tasks/reports/P01-06-callback-live.md)。真实浏览器点击及正式Hub/Android链路仍未验证。
+原型阶段的实现记录见[补丁助手报告](../../../docs/tasks/COMPLETED.md#mp1)。后续已获用户授权部署并应用，MP重启恢复后原生callback最小检查通过，详见[实际部署与回调报告](../../../docs/tasks/COMPLETED.md#mp1)。真实浏览器点击及正式Hub/Android链路仍未验证。
 
 
 ## 已部署助手的持久本地仓库
