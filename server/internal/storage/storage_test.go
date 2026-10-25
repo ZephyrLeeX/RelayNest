@@ -305,6 +305,7 @@ func TestMigrationUpgradeFailureAndLock(t *testing.T) {
 		defer db.Close()
 		old := migrationFixture(t)
 		delete(old, "0004_bots.sql")
+		delete(old, instanceMigration)
 		if err := migrate(context.Background(), db, old); err != nil {
 			t.Fatal(err)
 		}

@@ -25,8 +25,9 @@ type Config struct {
 // Store 的写池固定一个连接，读池有界且在连接级禁止写入。
 // 调用方不得在事务中等待网络、长轮询或文件上传。
 type Store struct {
-	writer *sql.DB
-	reader *sql.DB
+	writer     *sql.DB
+	reader     *sql.DB
+	instanceID string
 }
 
 // Open 打开本地数据库并完成迁移。失败时关闭连接，保留原库供人工诊断。
@@ -73,6 +74,13 @@ func Open(ctx context.Context, cfg Config) (*Store, error) {
 	if err = s.reader.PingContext(ctx); err != nil {
 		return fail(fmt.Errorf("storage reader: %w", err))
 	}
+	if err = transact(ctx, s.reader, func(tx *sql.Tx) error {
+		var readErr error
+		s.instanceID, readErr = ReadInstanceIDTx(ctx, tx)
+		return readErr
+	}); err != nil {
+		return fail(err)
+	}
 	return s, nil
 }
 
@@ -102,12 +110,27 @@ func openPool(path string, cfg Config, readOnly bool) (*sql.DB, error) {
 
 // Read 在只读事务中提供一致快照；回调不得保留事务或未关闭的 Rows。
 func (s *Store) Read(ctx context.Context, fn func(*sql.Tx) error) error {
-	return transact(ctx, s.reader, fn)
+	return s.transact(ctx, s.reader, fn)
 }
 
 // Write 将写操作合并到单个短事务，提交失败原样返回，不宣称写入成功。
 func (s *Store) Write(ctx context.Context, fn func(*sql.Tx) error) error {
-	return transact(ctx, s.writer, fn)
+	return s.transact(ctx, s.writer, fn)
+}
+
+// 每次事务重新读取身份；启动值只用于比较，不能替代数据库读取。
+// 离线换 ID 后必须重启 Store；仍运行的旧 Store 失败关闭。
+func (s *Store) transact(ctx context.Context, db *sql.DB, fn func(*sql.Tx) error) error {
+	return transact(ctx, db, func(tx *sql.Tx) error {
+		id, err := ReadInstanceIDTx(ctx, tx)
+		if err != nil {
+			return err
+		}
+		if id != s.instanceID {
+			return ErrInstanceUnavailable
+		}
+		return fn(tx)
+	})
 }
 
 func transact(ctx context.Context, db *sql.DB, fn func(*sql.Tx) error) error {

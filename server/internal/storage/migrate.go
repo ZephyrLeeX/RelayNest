@@ -102,8 +102,22 @@ func migrate(ctx context.Context, db *sql.DB, source fs.FS) error {
 		if _, err = tx.ExecContext(ctx, m.sql); err != nil {
 			return fmt.Errorf("storage migration %s: %w", m.name, err)
 		}
+		if m.name == instanceMigration {
+			if _, err = InitInstanceIDTx(ctx, tx); err != nil {
+				return err
+			}
+		}
 		if _, err = tx.ExecContext(ctx, "INSERT INTO schema_migrations(version,name,checksum,applied_at) VALUES(?,?,?,strftime('%Y-%m-%dT%H:%M:%fZ','now'))", i+1, m.name, m.checksum); err != nil {
 			return err
+		}
+	}
+	// 已完成身份升级的库严格校验；缺失行不能视作首次安装。
+	for _, m := range all {
+		if m.name == instanceMigration {
+			if _, err = ReadInstanceIDTx(ctx, tx); err != nil {
+				return err
+			}
+			break
 		}
 	}
 	if err = tx.Commit(); err != nil {
