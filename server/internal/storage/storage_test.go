@@ -303,10 +303,7 @@ func TestMigrationUpgradeFailureAndLock(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer db.Close()
-		old := migrationFixture(t)
-		delete(old, "0004_bots.sql")
-		delete(old, instanceMigration)
-		delete(old, "0006_messages.sql")
+		old := migrationFixtureThrough(t, 3)
 		if err := migrate(context.Background(), db, old); err != nil {
 			t.Fatal(err)
 		}
@@ -497,6 +494,18 @@ func migrationFixture(t *testing.T) fstest.MapFS {
 	return source
 }
 
+// 历史起点只保留目标版本前缀；全量 fixture 始终包含所有真实迁移。
+func migrationFixtureThrough(t *testing.T, version int) fstest.MapFS {
+	t.Helper()
+	source := migrationFixture(t)
+	for name := range source {
+		if name >= fmt.Sprintf("%04d_", version+1) {
+			delete(source, name)
+		}
+	}
+	return source
+}
+
 // 消息升级只新增结构；已有身份、epoch 与认证/Bot 数据必须逐值保留。
 func TestMessagesUpgradeAndFailureBoundaries(t *testing.T) {
 	ctx := context.Background()
@@ -508,8 +517,7 @@ func TestMessagesUpgradeAndFailureBoundaries(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer db.Close()
-			old := migrationFixture(t)
-			delete(old, "0006_messages.sql")
+			old := migrationFixtureThrough(t, 5)
 			if err := migrate(ctx, db, old); err != nil {
 				t.Fatal(err)
 			}
@@ -540,7 +548,7 @@ func TestMessagesUpgradeAndFailureBoundaries(t *testing.T) {
 						if err := rows.Scan(targets...); err != nil {
 							t.Fatal(err)
 						}
-						if table == "schema_migrations" && values[0] == int64(6) {
+						if table == "schema_migrations" && values[0].(int64) > 5 {
 							continue
 						}
 						result += fmt.Sprintf("%s:%#v\n", table, values)
@@ -590,7 +598,7 @@ func TestMessagesUpgradeAndFailureBoundaries(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			// 台账只新增真实 0006，比较旧台账时暂时限定前五个版本。
+			// 快照仅比较原五版台账；完整升级目标另逐项校验，不能隐藏后续真实迁移。
 			db.Close()
 			for i := 0; i < 2; i++ {
 				s, err := Open(ctx, cfg)
@@ -604,6 +612,21 @@ func TestMessagesUpgradeAndFailureBoundaries(t *testing.T) {
 				var count int
 				if err := s.reader.QueryRow("SELECT count(*) FROM schema_migrations WHERE version=6 AND name='0006_messages.sql'").Scan(&count); err != nil || count != 1 {
 					t.Fatal("missing message migration", err)
+				}
+				all, err := loadMigrations(migrations.Files)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := s.reader.QueryRow("SELECT count(*) FROM schema_migrations").Scan(&count); err != nil || count != len(all) {
+					t.Fatal("incomplete latest migration ledger", count, err)
+				}
+				for index, m := range all {
+					if err := s.reader.QueryRow("SELECT count(*) FROM schema_migrations WHERE version=? AND name=? AND checksum=?", index+1, m.name, m.checksum).Scan(&count); err != nil || count != 1 {
+						t.Fatal("latest migration name/checksum mismatch", m.name, err)
+					}
+				}
+				if err := s.reader.QueryRow("SELECT count(*) FROM idempotency").Scan(&count); err != nil || count != 0 {
+					t.Fatal("missing or nonempty idempotency table", count, err)
 				}
 				if err := s.Close(); err != nil {
 					t.Fatal(err)
