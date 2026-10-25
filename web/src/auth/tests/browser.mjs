@@ -107,6 +107,7 @@ try {
   console.log('PASS real browser: login failure/password clearing/login/reload/session/Secure+HttpOnly+SameSite/storage/CSRF403/logout204/browser Origin');
 
   // 以下显式为协议桩交互：隔离401、403、429及短到期窗口，不能冒称服务端E2E。
+  await page.route('**/api/v1/devices?*', route => route.fulfill({ json: { items: [], next_cursor: null, has_more: false } }));
   let mode = 'session';
   const synthetic = () => ({ session: { id: 'synthetic', administrator: { username: '<script>private</script>' },
     client_type: 'web', device_name: 'test', idle_expires_at: new Date(Date.now() + 1200).toISOString(),

@@ -1,7 +1,11 @@
+import { DeviceClient } from '../devices/client.js';
+import { mountDevices } from '../devices/page.js';
 import { AuthClient, type WebSession } from './client.js';
 import { errorMessage, RequestError } from '../shared/errors.js';
 
 export function mountAuth(root: HTMLElement, client = new AuthClient()): () => void {
+  let generation = 0;
+  let disposeDevices: (() => void) | undefined;
   let session: WebSession | undefined;
   let pending = false;
   let disposed = false;
@@ -13,6 +17,9 @@ export function mountAuth(root: HTMLElement, client = new AuthClient()): () => v
   }
 
   function expire(): void {
+    generation++;
+    pending = false;
+    disposeDevices?.();
     session = undefined;
     client.clear();
     message = '会话已过期或已撤销，请重新登录。';
@@ -30,24 +37,27 @@ export function mountAuth(root: HTMLElement, client = new AuthClient()): () => v
 
   function controls(): void {
     root.querySelectorAll<HTMLInputElement | HTMLButtonElement>('input, button').forEach(control => {
-      control.disabled = pending;
+      if (!control.closest('[data-devices]')) control.disabled = pending;
     });
     root.setAttribute('aria-busy', String(pending));
   }
 
   async function run(action: () => Promise<WebSession | void>, kind: 'login' | 'restore' | 'logout'): Promise<void> {
     if (pending || disposed) return;
+    // 切换认证状态前卸载设备页；旧请求只可结束自身，不能重画新会话。
+    const ticket = ++generation;
+    disposeDevices?.();
     pending = true;
     message = '';
     root.querySelector('[role="alert"]')?.replaceChildren();
     controls();
     try {
       const result = await action();
-      if (disposed) return;
+      if (disposed || ticket !== generation) return;
       session = result || undefined;
       message = kind === 'logout' ? '已安全退出。' : '';
     } catch (error) {
-      if (disposed) return;
+      if (disposed || ticket !== generation) return;
       if (error instanceof RequestError && error.status === 401 && kind !== 'login') {
         session = undefined;
         // 初次打开没有 Cookie 是正常未登录；已登录会话失效应明确提示。
@@ -55,13 +65,14 @@ export function mountAuth(root: HTMLElement, client = new AuthClient()): () => v
         else message = errorMessage(error);
       } else message = errorMessage(error, kind === 'login');
     } finally {
-      pending = false;
-      if (!disposed) { render(); checkExpiry(); }
+      if (!disposed && ticket === generation) { pending = false; render(); checkExpiry(); }
     }
   }
 
   function render(): void {
     if (disposed) return;
+    disposeDevices?.();
+    disposeDevices = undefined;
     root.innerHTML = `<h1>RelayNest 管理</h1><p role="alert" aria-live="polite"></p>`;
     root.querySelector('[role="alert"]')!.textContent = message;
     if (session) {
@@ -76,7 +87,11 @@ export function mountAuth(root: HTMLElement, client = new AuthClient()): () => v
       logout.textContent = '退出登录';
       logout.addEventListener('click', () => { void run(() => client.logout(), 'logout'); });
       section.append(identity, note, logout);
+      const devices = document.createElement('section');
+      devices.dataset.devices = '';
+      section.append(devices);
       root.append(section);
+      if (!pending) disposeDevices = mountDevices(devices, new DeviceClient(client), session.id, expire);
     } else {
       const form = document.createElement('form');
       form.innerHTML = `<p><label>管理员用户名 <input name="username" autocomplete="username" required></label></p>
@@ -121,6 +136,8 @@ export function mountAuth(root: HTMLElement, client = new AuthClient()): () => v
   document.addEventListener('visibilitychange', onVisibility);
   return () => {
     disposed = true;
+    generation++;
+    disposeDevices?.();
     clearTimeout(timer);
     clearPassword();
     client.clear();
