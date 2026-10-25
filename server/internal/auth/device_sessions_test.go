@@ -32,6 +32,7 @@ func deviceActor(t *testing.T, s *SessionStore, secret SessionSecrets, client st
 		r.Header.Set("X-CSRF-Token", secret.CSRFToken)
 	} else {
 		r.Header.Set("Authorization", "Bearer "+secret.Token)
+		r.Header.Set(instanceHeader, testInstanceID(t, s.store))
 	}
 	w := httptest.NewRecorder()
 	actor, ok := guard.Authorize(w, r, RequestWrite)
@@ -124,6 +125,7 @@ func TestDeviceSessionsPersistenceAndExactRevocation(t *testing.T) {
 	}
 	r := httptest.NewRequest("DELETE", "https://relay.test/api/v1/devices/x/session", nil)
 	r.Header.Set("Authorization", "Bearer "+sa.Token)
+	r.Header.Set(instanceHeader, testInstanceID(t, s.store))
 	w := httptest.NewRecorder()
 	if _, ok := deviceGuard(t, s).Authorize(w, r, RequestWrite); ok || w.Code != 401 {
 		t.Fatal("revoked request accepted")

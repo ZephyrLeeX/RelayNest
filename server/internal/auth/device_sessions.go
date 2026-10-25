@@ -57,6 +57,9 @@ func (s *SessionStore) authorizeStateTx(ctx context.Context, tx *sql.Tx, actor A
 	if s == nil || tx == nil || actor.store != s || actor.issuer == nil || actor.issuer.sessions != s || actor.issued.ID == "" || actor.Session != actor.issued {
 		return Session{}, ErrInvalidSession
 	}
+	if err := s.checkBindingTx(ctx, tx, actor); err != nil {
+		return Session{}, err
+	}
 	current, err := s.accessStateTx(ctx, tx, actor.secrets.Token, actor.issued.ClientType, false, false, revokedState)
 	if err != nil {
 		return Session{}, sessionError(err)
@@ -77,6 +80,10 @@ func (s *SessionStore) renewTx(ctx context.Context, tx *sql.Tx, actor AdminReque
 	current, err := s.accessTx(ctx, tx, actor.secrets.Token, actor.issued.ClientType, false, true)
 	if err != nil {
 		return Session{}, sessionError(err)
+	}
+	// 续期 UPDATE 也可能触发业务约束或代次变动，提交前最后复核。
+	if _, err := s.authorizeTx(ctx, tx, actor); err != nil {
+		return Session{}, err
 	}
 	return current, nil
 }

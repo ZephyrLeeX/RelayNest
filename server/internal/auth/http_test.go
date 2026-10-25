@@ -56,6 +56,7 @@ func TestHTTPLifecycle(t *testing.T) {
 		t.Helper()
 		req, _ := http.NewRequest(method, ts.URL+path, strings.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set(instanceHeader, testInstanceID(t, db))
 		if token != "" {
 			if client == "web" {
 				req.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
@@ -108,7 +109,14 @@ func TestHTTPLifecycle(t *testing.T) {
 		if resp.StatusCode != 200 {
 			t.Fatalf("login %d %v", resp.StatusCode, out)
 		}
-		if len(out["session"].(map[string]any)) != 7 {
+		count := 7
+		if client == "android" {
+			count = 8
+			if out["session"].(map[string]any)["instance_id"] != testInstanceID(t, db) {
+				t.Fatal("Android instance DTO")
+			}
+		}
+		if len(out["session"].(map[string]any)) != count {
 			t.Fatal("session DTO")
 		}
 		if client == "web" {
@@ -237,6 +245,7 @@ func TestHTTPSourceAndInput(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			req := httptest.NewRequest("POST", "https://nas.example/api/v1/auth/login", strings.NewReader(tc.body))
+			req.Header.Set(instanceHeader, testInstanceID(t, db))
 			req.RemoteAddr = "127.0.0.1:1234"
 			req.TLS = nil
 			if tc.tls {
@@ -280,15 +289,17 @@ func TestHTTPSourceAndInput(t *testing.T) {
 
 // HTTP 夹具只注入正式 handler 与真实 SQLite，不依赖进程 main 的未提交接线。
 type httpFixture struct {
-	t        *testing.T
-	db       *storage.Store
-	sessions *SessionStore
-	server   *httptest.Server
-	clock    atomic.Int64
+	instanceID string
+	t          *testing.T
+	db         *storage.Store
+	sessions   *SessionStore
+	server     *httptest.Server
+	clock      atomic.Int64
 }
 
 func newHTTPFixture(t *testing.T, initialized bool) *httpFixture {
 	f := &httpFixture{t: t, db: testStore(t, filepath.Join(t.TempDir(), "auth.sqlite"))}
+	f.instanceID = testInstanceID(t, f.db)
 	f.clock.Store(time.Now().UTC().UnixNano())
 	f.sessions = NewSessionStore(f.db)
 	f.sessions.now = func() time.Time { return time.Unix(0, f.clock.Load()).UTC() }
@@ -318,6 +329,7 @@ func (f *httpFixture) request(method, path, body string, headers http.Header) (*
 		req.Header = make(http.Header)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(instanceHeader, f.instanceID)
 	resp, err := f.server.Client().Do(req)
 	if err != nil {
 		f.t.Fatal(err)

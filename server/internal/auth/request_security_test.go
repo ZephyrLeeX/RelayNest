@@ -220,6 +220,7 @@ func TestRequestSecurityActorBinding(t *testing.T) {
 func securityRequest(f *httpFixture, headers http.Header) *http.Request {
 	r := httptest.NewRequest("POST", f.server.URL+"/admin/resource", nil)
 	r.RemoteAddr = "192.0.2.10:1234"
+	r.Header.Set(instanceHeader, f.instanceID)
 	for name, values := range headers {
 		for _, value := range values {
 			r.Header.Add(name, value)
