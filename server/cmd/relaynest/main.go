@@ -24,6 +24,9 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "instance" {
+		os.Exit(runInstance(context.Background(), os.Args[2:], os.Stderr))
+	}
 	if len(os.Args) > 1 && os.Args[1] == "admin" {
 		if err := runAdmin(context.Background(), os.Args[2:], os.Stdin, os.Stderr); err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -61,6 +64,19 @@ func runServer(ctx context.Context, args []string) (result error) {
 	}
 	if flags.NArg() != 0 {
 		return errors.New("configuration_failed")
+	}
+	if *db == "" || *db == ":memory:" {
+		return errors.New("configuration_failed")
+	}
+	// 正常启动可新建文件；在迁移/读取身份之前持共享锁，并晚于 Store 释放。
+	// 该锁仅协调本版 HTTP 进程，人工停止旧版本和其他写者仍是维护前置。
+	lockFile, err := os.OpenFile(*db, os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		return errors.New("database_process_lock_failed")
+	}
+	defer lockFile.Close()
+	if err := syscall.Flock(int(lockFile.Fd()), syscall.LOCK_SH|syscall.LOCK_NB); err != nil {
+		return errors.New("database_process_lock_failed")
 	}
 	store, authentication, err := authenticationDependencies(ctx, *db, *externalOrigin, proxies)
 	if err != nil {
