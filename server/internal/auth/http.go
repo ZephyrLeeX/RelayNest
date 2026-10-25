@@ -2,6 +2,7 @@ package auth
 
 import (
 	"crypto/rand"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"io"
@@ -32,7 +33,7 @@ func NewHandler(store *storage.Store, sessions *SessionStore, origin *httpapi.Or
 
 type loginRequest struct {
 	Username   string          `json:"username"`
-	Password   string          `json:"password"`
+	Password   json.RawMessage `json:"password"`
 	ClientType string          `json:"client_type"`
 	DeviceName string          `json:"device_name"`
 	DeviceID   json.RawMessage `json:"device_id,omitempty"`
@@ -67,10 +68,17 @@ type sessionDTO struct {
 	AbsoluteExpiresAt time.Time `json:"absolute_expires_at"`
 }
 
-func respondSession(w http.ResponseWriter, s Session, secrets SessionSecrets, login bool) {
+func respondSession(w http.ResponseWriter, s Session, secrets SessionSecrets, login bool, instanceID string) {
 	dto := sessionDTO{ID: s.ID, ClientType: s.ClientType, DeviceID: s.DeviceID, DeviceName: s.DeviceName, IdleExpiresAt: s.IdleExpiresAt, AbsoluteExpiresAt: s.AbsoluteExpiresAt}
 	dto.Administrator.Username = s.Username
 	result := map[string]any{"session": dto}
+	if s.ClientType == "android" {
+		// Android 使用独立封闭投影，公共 Session/设备列表字段不扩展。
+		result["session"] = struct {
+			sessionDTO
+			InstanceID string `json:"instance_id"`
+		}{dto, instanceID}
+	}
 	if s.ClientType == "web" {
 		result["csrf_token"] = secrets.CSRFToken
 	} else if login {
@@ -84,8 +92,20 @@ func respondSession(w http.ResponseWriter, s Session, secrets SessionSecrets, lo
 func authError(w http.ResponseWriter, status int, code string) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]any{"code": code, "message": http.StatusText(status), "request_id": rand.Text(), "retryable": status == 503}})
+	message := http.StatusText(status)
+	switch code {
+	case "INSTANCE_REQUIRED":
+		message = "需要实例标识"
+	case "INSTANCE_MISMATCH":
+		message = "实例不匹配"
+	case "INSTANCE_UNAVAILABLE":
+		message = "实例暂不可用"
+	case "INVALID_REQUEST":
+		message = "请求无效"
+	}
+	_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]any{"code": code, "message": message, "request_id": rand.Text(), "retryable": status == 503}})
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
@@ -127,7 +147,27 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if in.Username == "" || in.Password == "" || in.DeviceName == "" || (in.ClientType != "web" && in.ClientType != "android") || (in.ClientType == "web" && len(in.DeviceID) > 0) || (in.ClientType == "android" && (len(in.DeviceID) == 0 || !uuidPattern.MatchString(deviceID))) {
+	if in.Username == "" || in.DeviceName == "" || (in.ClientType != "web" && in.ClientType != "android") || (in.ClientType == "web" && len(in.DeviceID) > 0) || (in.ClientType == "android" && (len(in.DeviceID) == 0 || !uuidPattern.MatchString(deviceID))) {
+		authError(w, 422, "VALIDATION_FAILED")
+		return
+	}
+	expected := ""
+	if in.ClientType == "android" {
+		expected, err = h.sessions.expectedInstance(r.Context(), r)
+		if err != nil {
+			WriteSessionError(w, err)
+			return
+		}
+	}
+	// 第一阶段只缓冲原始 JSON，不将密码解码为认证输入；实例预校验后才提取。
+	var password string
+	if len(in.Password) > 0 {
+		if err := json.Unmarshal(in.Password, &password); err != nil {
+			authError(w, 400, "INVALID_REQUEST")
+			return
+		}
+	}
+	if password == "" {
 		authError(w, 422, "VALIDATION_FAILED")
 		return
 	}
@@ -154,7 +194,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// 保留密码校验读取的代次，重置抢先提交时 Create 必须失败。
-	valid, available := tryVerifyPassword([]byte(in.Password), admin.PasswordHash)
+	valid, available := tryVerifyPassword([]byte(password), admin.PasswordHash)
 	if !available {
 		loginLimited(w, time.Second)
 		return
@@ -168,7 +208,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	if len(in.DeviceID) > 0 {
 		input.DeviceID = deviceID
 	}
-	s, secrets, err := h.sessions.Create(r.Context(), admin.AuthGeneration, input)
+	s, secrets, err := h.sessions.create(r.Context(), admin.AuthGeneration, input, expected)
 	if err != nil {
 		WriteSessionError(w, err)
 		return
@@ -176,7 +216,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	if in.ClientType == "web" {
 		writeCookie(w, secrets.Token, source.Secure, false)
 	}
-	respondSession(w, s, secrets, true)
+	respondSession(w, s, secrets, true, expected)
 }
 
 func (h *Handler) current(w http.ResponseWriter, r *http.Request, logout bool) {
@@ -190,7 +230,7 @@ func (h *Handler) current(w http.ResponseWriter, r *http.Request, logout bool) {
 		return
 	}
 	if logout {
-		if err := h.sessions.Revoke(r.Context(), actor.secrets.Token, actor.Session.ClientType); err != nil {
+		if err := h.sessions.revokeBound(r.Context(), actor); err != nil {
 			WriteSessionError(w, err)
 			return
 		}
@@ -198,12 +238,12 @@ func (h *Handler) current(w http.ResponseWriter, r *http.Request, logout bool) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	s, err := security.RenewRead(r.Context(), actor)
+	s, instanceID, err := h.sessions.WithAuthorizedRead(r.Context(), actor, func(*sql.Tx) error { return nil })
 	if err != nil {
 		WriteSessionError(w, err)
 		return
 	}
-	respondSession(w, s, actor.secrets, false)
+	respondSession(w, s, actor.secrets, false, instanceID)
 }
 
 func (h *Handler) GetSession(w http.ResponseWriter, r *http.Request) { h.current(w, r, false) }

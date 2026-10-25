@@ -3,11 +3,13 @@ package auth
 import (
 	"context"
 	"crypto/subtle"
+	"database/sql"
 	"errors"
 	"net/http"
 	"strings"
 
 	"relaynest/server/internal/httpapi"
+	"relaynest/server/internal/storage"
 )
 
 // RequestMode 由路由按操作语义明确指定，不能依据客户端声明推断。
@@ -28,6 +30,7 @@ type AdminRequest struct {
 	issuer  *RequestSecurity
 	store   *SessionStore
 	issued  Session
+	binding *instanceBinding
 }
 
 // ClearCookie 供成功自撤会话后清除 Web Cookie，沿用已解析的外部 Secure 信息。
@@ -54,17 +57,7 @@ func (s *RequestSecurity) RenewRead(ctx context.Context, actor AdminRequest) (Se
 	if s == nil || s.sessions == nil || actor.issuer != s || actor.store != s.sessions || actor.issued.ID == "" || actor.Session != actor.issued {
 		return Session{}, ErrInvalidSession
 	}
-	current, _, err := s.sessions.Inspect(ctx, actor.secrets.Token, actor.issued.ClientType)
-	if err != nil {
-		return Session{}, err
-	}
-	// Inspect 不续期；只有原身份匹配后才能调用会写库的 Authenticate。
-	// idle 期限可由其他成功读取推进，其余身份及绝对期限必须保持一致。
-	current.IdleExpiresAt = actor.issued.IdleExpiresAt
-	if current != actor.issued {
-		return Session{}, ErrInvalidSession
-	}
-	session, _, err := s.sessions.Authenticate(ctx, actor.secrets.Token, actor.issued.ClientType)
+	session, _, err := s.sessions.WithAuthorizedRead(ctx, actor, func(*sql.Tx) error { return nil })
 	return session, err
 }
 
@@ -85,6 +78,26 @@ func (s *RequestSecurity) authorize(w http.ResponseWriter, r *http.Request, mode
 		authError(w, 503, "SERVICE_UNAVAILABLE")
 		return AdminRequest{}, false
 	}
+	// 先判别凭据通道及重复/混合格式；实例通过后才提取 Bearer。
+	headers, cookies := r.Header.Values("Authorization"), r.CookiesNamed(sessionCookie)
+	if len(headers) > 1 || len(cookies) > 1 || (len(headers) > 0 && len(cookies) > 0) {
+		authError(w, 401, unauthorizedCode)
+		return AdminRequest{}, false
+	}
+	expected := ""
+	if len(headers) == 1 {
+		// 仅识别方案和分隔格式；不提取、不认证 Bearer，不能将非法通道降级。
+		if len(headers[0]) <= 7 || !strings.EqualFold(headers[0][:7], "Bearer ") || strings.Count(headers[0], " ") != 1 {
+			authError(w, 401, unauthorizedCode)
+			return AdminRequest{}, false
+		}
+		var err error
+		expected, err = s.sessions.expectedInstance(r.Context(), r)
+		if err != nil {
+			writeSessionError(w, err, unauthorizedCode)
+			return AdminRequest{}, false
+		}
+	}
 	token, client, ok := credential(r)
 	if !ok {
 		authError(w, 401, unauthorizedCode)
@@ -101,19 +114,20 @@ func (s *RequestSecurity) authorize(w http.ResponseWriter, r *http.Request, mode
 		authError(w, 403, "FORBIDDEN")
 		return AdminRequest{}, false
 	}
-	actor, secrets, err := s.sessions.Inspect(r.Context(), token, client)
+	actor, err := s.sessions.inspectBound(r.Context(), token, client, expected, s)
 	if err != nil {
 		writeSessionError(w, err, unauthorizedCode)
 		return AdminRequest{}, false
 	}
 	if mode == RequestWrite && client == "web" {
 		values := r.Header.Values("X-CSRF-Token")
-		if len(values) != 1 || subtle.ConstantTimeCompare([]byte(values[0]), []byte(secrets.CSRFToken)) != 1 {
+		if len(values) != 1 || subtle.ConstantTimeCompare([]byte(values[0]), []byte(actor.secrets.CSRFToken)) != 1 {
 			authError(w, 403, "FORBIDDEN")
 			return AdminRequest{}, false
 		}
 	}
-	return AdminRequest{Session: actor, Source: source, secrets: secrets, issuer: s, store: s.sessions, issued: actor}, true
+	actor.Source = source
+	return actor, true
 }
 
 // WriteSessionError 统一映射请求检查及业务提交前会话复核的错误；不清 Cookie。
@@ -127,6 +141,20 @@ func WriteSessionErrorRequired(w http.ResponseWriter, err error) {
 }
 
 func writeSessionError(w http.ResponseWriter, err error, unauthorizedCode string) {
+	switch {
+	case errors.Is(err, errInstanceRequired):
+		authError(w, 400, "INSTANCE_REQUIRED")
+		return
+	case errors.Is(err, errInstanceInvalid):
+		authError(w, 400, "INVALID_REQUEST")
+		return
+	case errors.Is(err, storage.ErrInstanceMismatch):
+		authError(w, 409, "INSTANCE_MISMATCH")
+		return
+	case errors.Is(err, storage.ErrInstanceUnavailable):
+		authError(w, 503, "INSTANCE_UNAVAILABLE")
+		return
+	}
 	if errors.Is(err, ErrInvalidSession) || errors.Is(err, ErrNotInitialized) {
 		authError(w, 401, unauthorizedCode)
 		return

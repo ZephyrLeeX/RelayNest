@@ -80,6 +80,11 @@ func (s *SessionStore) uuid() (string, error) {
 
 // Create 必须传入此次凭据校验所观察的 AuthGeneration；不能在校验后重新读取代次替代它。
 func (s *SessionStore) Create(ctx context.Context, observedGeneration int64, in SessionInput) (Session, SessionSecrets, error) {
+	return s.create(ctx, observedGeneration, in, "")
+}
+
+// create 的 expected 由 HTTP 预校验签发，必须在创建事务首尾再次核对。
+func (s *SessionStore) create(ctx context.Context, observedGeneration int64, in SessionInput, expected string) (Session, SessionSecrets, error) {
 	if (in.ClientType != "web" && in.ClientType != "android") || in.DeviceName == "" || (in.ClientType == "android" && !uuidPattern.MatchString(in.DeviceID)) || (in.ClientType == "web" && in.DeviceID != "") {
 		return Session{}, SessionSecrets{}, ErrInvalidSessionInput
 	}
@@ -101,6 +106,19 @@ func (s *SessionStore) Create(ctx context.Context, observedGeneration int64, in 
 	hash := sha256.Sum256([]byte(token))
 	var result Session
 	err = s.store.Write(ctx, func(tx *sql.Tx) error {
+		// 非 HTTP 的可信调用也捕获事务内身份，禁止触发器在创建期间换 ID。
+		if expected == "" {
+			var err error
+			expected, err = storage.ReadInstanceIDTx(ctx, tx)
+			if err != nil {
+				return err
+			}
+		}
+		if expected != "" {
+			if err := checkInstanceTx(ctx, tx, expected); err != nil {
+				return err
+			}
+		}
 		var generation int64
 		var username string
 		if err := tx.QueryRowContext(ctx, "SELECT username,auth_generation FROM administrator WHERE id=1").Scan(&username, &generation); err != nil {
@@ -116,7 +134,25 @@ func (s *SessionStore) Create(ctx context.Context, observedGeneration int64, in 
 		idle, absolute := sessionTTL(in.ClientType)
 		result = Session{id, username, in.ClientType, in.DeviceID, in.DeviceName, now.Add(idle), now.Add(absolute)}
 		_, err := tx.ExecContext(ctx, "INSERT INTO sessions(id,token_hash,auth_generation,client_type,device_id,device_name,idle_expires_at,absolute_expires_at) VALUES(?,?,?,?,?,?,?,?)", id, hash[:], generation, in.ClientType, in.DeviceID, in.DeviceName, result.IdleExpiresAt.UnixNano(), result.AbsoluteExpiresAt.UnixNano())
-		return err
+		if err != nil {
+			return err
+		}
+		if expected != "" {
+			if err := checkInstanceTx(ctx, tx, expected); err != nil {
+				return err
+			}
+		}
+		var finalGeneration int64
+		if err := tx.QueryRowContext(ctx, "SELECT auth_generation FROM administrator WHERE id=1").Scan(&finalGeneration); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return ErrInvalidSession
+			}
+			return err
+		}
+		if finalGeneration != observedGeneration {
+			return ErrInvalidSession
+		}
+		return nil
 	})
 	if err != nil {
 		return Session{}, SessionSecrets{}, sessionError(err)
@@ -156,8 +192,39 @@ func (s *SessionStore) Revoke(ctx context.Context, token, expectedClient string)
 func (s *SessionStore) access(ctx context.Context, token, client string, revoke, renew bool) (Session, SessionSecrets, error) {
 	var result Session
 	err := s.store.Write(ctx, func(tx *sql.Tx) error {
-		var err error
+		id, err := storage.ReadInstanceIDTx(ctx, tx)
+		if err != nil {
+			return err
+		}
+		var generation int64
+		if err := tx.QueryRowContext(ctx, "SELECT auth_generation FROM administrator WHERE id=1").Scan(&generation); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return ErrInvalidSession
+			}
+			return err
+		}
 		result, err = s.accessTx(ctx, tx, token, client, revoke, renew)
+		if err != nil {
+			return err
+		}
+		if err := checkInstanceTx(ctx, tx, id); err != nil {
+			return err
+		}
+		var finalGeneration int64
+		if err := tx.QueryRowContext(ctx, "SELECT auth_generation FROM administrator WHERE id=1").Scan(&finalGeneration); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return ErrInvalidSession
+			}
+			return err
+		}
+		if finalGeneration != generation {
+			return ErrInvalidSession
+		}
+		state := 0
+		if revoke {
+			state = 1
+		}
+		_, err = s.accessStateTx(ctx, tx, token, client, false, false, state)
 		return err
 	})
 	if err != nil {
@@ -214,6 +281,16 @@ func (s *SessionStore) accessStateTx(ctx context.Context, tx *sql.Tx, token, cli
 }
 
 func sessionError(err error) error {
+	// 请求取消属于既有事务失败；不可因身份读取包装而改变原存储错误分类。
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return ErrStorage
+	}
+	if errors.Is(err, storage.ErrInstanceMismatch) {
+		return storage.ErrInstanceMismatch
+	}
+	if errors.Is(err, storage.ErrInstanceUnavailable) {
+		return storage.ErrInstanceUnavailable
+	}
 	if errors.Is(err, ErrInvalidSession) {
 		return ErrInvalidSession
 	}
