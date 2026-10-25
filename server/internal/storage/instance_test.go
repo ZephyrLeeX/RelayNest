@@ -39,7 +39,12 @@ func TestInstancePersistenceUpgradeAndMove(t *testing.T) {
 		t.Fatal(err)
 	}
 	source := migrationFixture(t)
-	delete(source, instanceMigration)
+	// 旧库起点只保留实例身份迁移之前的真实 SQL；Open 仍跑全部迁移。
+	for name := range source {
+		if name >= instanceMigration {
+			delete(source, name)
+		}
+	}
 	if err := migrate(ctx, db, source); err != nil {
 		t.Fatal(err)
 	}
@@ -275,7 +280,7 @@ func TestInstanceMigrationCommitAndLockFailures(t *testing.T) {
 	}
 	held.Rollback()
 	source := migrationFixture(t)
-	source["0006_commit_failure.sql"] = &fstest.MapFile{Data: []byte("CREATE TABLE parent(id PRIMARY KEY); CREATE TABLE child(id REFERENCES parent(id) DEFERRABLE INITIALLY DEFERRED); INSERT INTO child VALUES(1);")}
+	source[fmt.Sprintf("%04d_commit_failure.sql", len(source)+1)] = &fstest.MapFile{Data: []byte("CREATE TABLE parent(id PRIMARY KEY); CREATE TABLE child(id REFERENCES parent(id) DEFERRABLE INITIALLY DEFERRED); INSERT INTO child VALUES(1);")}
 	if err := migrate(ctx, db, source); err == nil || !strings.Contains(err.Error(), "migration commit") {
 		t.Fatal("expected real deferred FK commit failure", err)
 	}

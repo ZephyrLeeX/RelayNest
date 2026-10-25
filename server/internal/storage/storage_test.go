@@ -306,6 +306,7 @@ func TestMigrationUpgradeFailureAndLock(t *testing.T) {
 		old := migrationFixture(t)
 		delete(old, "0004_bots.sql")
 		delete(old, instanceMigration)
+		delete(old, "0006_messages.sql")
 		if err := migrate(context.Background(), db, old); err != nil {
 			t.Fatal(err)
 		}
@@ -494,4 +495,128 @@ func migrationFixture(t *testing.T) fstest.MapFS {
 		source[entry.Name()] = &fstest.MapFile{Data: data}
 	}
 	return source
+}
+
+// 消息升级只新增结构；已有身份、epoch 与认证/Bot 数据必须逐值保留。
+func TestMessagesUpgradeAndFailureBoundaries(t *testing.T) {
+	ctx := context.Background()
+	for _, mode := range []string{"upgrade", "ddl failure", "missing identity", "corrupt identity"} {
+		t.Run(mode, func(t *testing.T) {
+			cfg := Config{Path: filepath.Join(t.TempDir(), "instance-v5.sqlite"), BusyTimeout: time.Second}
+			db, err := openPool(cfg.Path, cfg, false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer db.Close()
+			old := migrationFixture(t)
+			delete(old, "0006_messages.sql")
+			if err := migrate(ctx, db, old); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := db.Exec(`INSERT INTO administrator VALUES(1,'original','fixture',7);
+                INSERT INTO sessions VALUES('session',zeroblob(32),7,'android','device','name',100,200,0);
+                INSERT INTO bots VALUES('bot','original bot',1,1,1,1,31);`); err != nil {
+				t.Fatal(err)
+			}
+			// 保存旧业务表与台账的全部列，不只比较行数。
+			snapshot := func(db *sql.DB) string {
+				t.Helper()
+				var result string
+				for _, table := range []string{"system_state", "instance_identity", "administrator", "sessions", "bots", "schema_migrations"} {
+					rows, err := db.Query("SELECT * FROM " + table + " ORDER BY 1")
+					if err != nil {
+						t.Fatal(err)
+					}
+					columns, err := rows.Columns()
+					if err != nil {
+						t.Fatal(err)
+					}
+					for rows.Next() {
+						values := make([]any, len(columns))
+						targets := make([]any, len(columns))
+						for i := range values {
+							targets[i] = &values[i]
+						}
+						if err := rows.Scan(targets...); err != nil {
+							t.Fatal(err)
+						}
+						if table == "schema_migrations" && values[0] == int64(6) {
+							continue
+						}
+						result += fmt.Sprintf("%s:%#v\n", table, values)
+					}
+					if err := rows.Err(); err != nil {
+						t.Fatal(err)
+					}
+					rows.Close()
+				}
+				return result
+			}
+			before := snapshot(db)
+			switch mode {
+			case "ddl failure":
+				_, err = db.Exec("CREATE TABLE push_jobs(original INTEGER)")
+			case "missing identity":
+				_, err = db.Exec("DELETE FROM instance_identity")
+			case "corrupt identity":
+				_, err = db.Exec("PRAGMA ignore_check_constraints=ON; UPDATE instance_identity SET instance_id='corrupt'; PRAGMA ignore_check_constraints=OFF")
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			damaged := snapshot(db)
+			err = migrate(ctx, db, migrations.Files)
+			if mode != "upgrade" {
+				if err == nil {
+					t.Fatal("invalid upgrade accepted")
+				}
+				var count int
+				if err := db.QueryRow("SELECT count(*) FROM sqlite_master WHERE name IN ('messages','deliveries','messages_created_at','sessions_id_device')").Scan(&count); err != nil || count != 0 {
+					t.Fatal("partial message schema", count, err)
+				}
+				if err := db.QueryRow("SELECT max(version) FROM schema_migrations").Scan(&count); err != nil || count != 5 {
+					t.Fatal("failed upgrade changed ledger", count, err)
+				}
+				if after := snapshot(db); after != damaged {
+					t.Fatal("failed upgrade changed existing data/identity/ledger")
+				}
+				db.Close()
+				if opened, err := Open(ctx, cfg); err == nil {
+					opened.Close()
+					t.Fatal("Open accepted invalid upgrade")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			// 台账只新增真实 0006，比较旧台账时暂时限定前五个版本。
+			db.Close()
+			for i := 0; i < 2; i++ {
+				s, err := Open(ctx, cfg)
+				if err != nil {
+					t.Fatal(err)
+				}
+				after := snapshot(s.reader)
+				if after != before {
+					t.Fatal("upgrade/reopen changed existing data")
+				}
+				var count int
+				if err := s.reader.QueryRow("SELECT count(*) FROM schema_migrations WHERE version=6 AND name='0006_messages.sql'").Scan(&count); err != nil || count != 1 {
+					t.Fatal("missing message migration", err)
+				}
+				if err := s.Close(); err != nil {
+					t.Fatal(err)
+				}
+			}
+			checkDB, err := openPool(cfg.Path, cfg, false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer checkDB.Close()
+			if err := migrate(ctx, checkDB, old); err == nil || !strings.Contains(err.Error(), "incompatible migration version 6") {
+				t.Fatal("v5 binary did not reject message schema version", err)
+			}
+		})
+	}
 }
