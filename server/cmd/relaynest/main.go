@@ -20,6 +20,7 @@ import (
 	"relaynest/server/internal/devices"
 	"relaynest/server/internal/health"
 	"relaynest/server/internal/httpapi"
+	"relaynest/server/internal/messages"
 	"relaynest/server/internal/storage"
 )
 
@@ -147,9 +148,10 @@ func authenticationDependencies(ctx context.Context, path, externalOrigin string
 	sessions := auth.NewSessionStore(store)
 	security := auth.NewRequestSecurity(sessions, policy)
 	return store, &managementHandlers{
-		Handler:       auth.NewHandler(store, sessions, policy),
-		BotHandler:    httpapi.NewBotHandler(bots.New(store), botAuthorization(sessions, security)),
-		DeviceHandler: devices.NewHandler(sessions, security),
+		Handler:        auth.NewHandler(store, sessions, policy),
+		BotHandler:     httpapi.NewBotHandler(bots.New(store), botAuthorization(sessions, security)),
+		DeviceHandler:  devices.NewHandler(sessions, security),
+		MessageHandler: httpapi.NewMessageHandler(bots.New(store), messages.New(store)),
 	}, nil
 }
 
@@ -179,6 +181,7 @@ func botAuthorization(sessions *auth.SessionStore, security *auth.RequestSecurit
 type managementHandlers struct {
 	*auth.Handler
 	*httpapi.BotHandler
+	*httpapi.MessageHandler
 	DeviceHandler *devices.Handler
 }
 

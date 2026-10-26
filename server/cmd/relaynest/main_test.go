@@ -1318,3 +1318,41 @@ func TestDeviceHTTPProductionAssembly(t *testing.T) {
 		request(200, "GET", "/api/v1/devices", who)
 	}
 }
+
+// 使用生产装配与真实路由，防止仅直接调用 handler 的验证遗漏接线。
+func TestAssembledBotMessageHTTP(t *testing.T) {
+	store, handlers, err := authenticationDependencies(context.Background(), filepath.Join(t.TempDir(), "bot-message.sqlite"), "https://relay.example", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	created, _, err := bots.New(store).Create(context.Background(), bots.CreateRequest{Name: "HTTP bot", Enabled: true, Capabilities: bots.Capabilities{Send: true}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(httpapi.New(health.New(nil), handlers))
+	defer server.Close()
+	request, err := http.NewRequest("POST", server.URL+"/api/v1/bot/messages", strings.NewReader(`{"format":"plain","text":"production wiring"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	request.Header.Set("Authorization", "Bearer "+created.APIToken.Token)
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Idempotency-Key", "abcdefff-1234-4567-89ab-123456789abc")
+	response, err := server.Client().Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	data, err := io.ReadAll(response.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if response.StatusCode != 201 || response.Header.Get("Cache-Control") != "no-store" {
+		t.Fatalf("%d %s", response.StatusCode, data)
+	}
+	var out map[string]any
+	if json.Unmarshal(data, &out) != nil || out["bot_id"] != created.Bot.ID || out["bot_seq"] != "1" || out["sender"] != "application" {
+		t.Fatalf("invalid receipt %s", data)
+	}
+}
