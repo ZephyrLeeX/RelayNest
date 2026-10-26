@@ -59,6 +59,15 @@ func TestLifecycleAuthorizedSessionTransaction(t *testing.T) {
 				}
 				guard := auth.NewRequestSecurity(sessions, policy)
 				req := httptest.NewRequest("POST", "https://relay.test/api/v1/admin/bots/fixture", nil)
+				var instanceID string
+				if err := s.Read(c, func(tx *sql.Tx) error {
+					var err error
+					instanceID, err = storage.ReadInstanceIDTx(c, tx)
+					return err
+				}); err != nil {
+					t.Fatal(err)
+				}
+				req.Header.Set("X-RelayNest-Instance-ID", instanceID)
 				req.Header.Set("Authorization", "Bearer "+secret.Token)
 				response := httptest.NewRecorder()
 				actor, ok := guard.Authorize(response, req, auth.RequestWrite)
