@@ -1,7 +1,7 @@
 # RelayNest 项目进度
 
-- 更新日期：2026-10-26（UTC+8）。
-- 后端本轮恢复基线：`bde0193a5e1f561cb0b3d30a08bea691fcd499a8`；独立本地集成仓库 `.worktrees/backend-local` / `resume/backend-20261026` 的推送源码组合为 `af84503f62083b3d3bfe704694a8807d3928d678`，I01 受环境阻塞；ADMIN checkpoint `c937602…` 尚未集成。原仓库 `.git` 只读，原 `main@01c74a7` 未更新。详见 [后端恢复证据](tasks/BACKEND.md)，其他模块保留原核对范围，不表示部署或发布。
+- 更新日期：2026-10-27（UTC+8）。
+- 后端本轮恢复基线：`bde0193a5e1f561cb0b3d30a08bea691fcd499a8`；独立本地集成仓库 `.worktrees/backend-local` / `resume/backend-20261026` 的推送源码组合为 `af84503f62083b3d3bfe704694a8807d3928d678`，权限解除后 I01 必检已 PASS、STORAGE 已完成；ADMIN checkpoint `c937602…` 尚未集成。原仓库 `.git` 的只读限制属此前环境记录，原 `main@01c74a7` 仍未更新。详见 [后端恢复证据](tasks/BACKEND.md)，其他模块保留原核对范围，不表示部署或发布。
 - 状态来源：[模块任务入口](tasks/README.md)中七个模块的条目是未完成任务唯一状态源；已完成结果见 [COMPLETED](tasks/COMPLETED.md)，执行与独审／精确集成规则见 [WORKFLOW](tasks/WORKFLOW.md)。本页只作模块摘要，证据仍须核对实际提交。
 - **已完成**：限定范围已完成实现、独立审计和精确集成；用户批准的 PoC 验收例外单列说明，不等于整阶段或正式端到端通过。
 - **开发中**：已有实现但父功能尚未闭环；**未开始**：尚未启动功能实现；**待验收**：实际环境验证未完成；**受阻**：缺少相关外部条件；**后置**：尚未满足启动门槛。
@@ -35,7 +35,7 @@
 
 Bot Hub 只负责消息传输、存储和路由，不执行业务命令或 MCP 工具。
 
-Debian 恢复：已核准确恢复入口并从已有代码接续。推送 STORAGE 保留 integrating／I01 BLOCKED，ADMIN 保留 running／ADMIN-A01 BLOCKED（`ADMIN-A01-B01`）；本地 socket 监听被拒绝，真实 HTTP＋SQLite 验收未通过。锁版 Web 与可运行的存储普通／race、全服静态／构建检查通过，失败与 NOT_RUN 详见 [后端唯一任务状态](tasks/BACKEND.md)。未 push、部署、发布或创建完成标记。
+Debian 恢复：已从准确快照与已有代码接续；权限解除后新 Agent 真实监听及推送 I01 全部必检 PASS，[注册与通知偏好 STORAGE](tasks/COMPLETED.md#g5-be10-storage) 已完成。ADMIN 保留 running，固定 `c937602…` 正待补齐真实 HTTP＋SQLite、续独审与集成；历史 `ADMIN-A01-B01` 与 socket FAIL 保留，不能当作本轮通过。父 BE-10-01／HTTP 及跨端门槛仍未完成，详见 [后端唯一任务状态](tasks/BACKEND.md)。未 push、部署、发布或创建完成标记。
 
 ### 已完成
 
@@ -63,7 +63,7 @@ Debian 恢复：已核准确恢复入口并从已有代码接续。推送 STORAG
 - **开发中｜附件功能**：流式持久化准备已完成；真实上传 HTTP／Bot-first／Android／设置路由仍待派发接线及本端点 G1 验收，父 BE-05-01 未完成；关联权限与保护引用、下载／Range、安全响应、启动恢复及孤儿回收仍未开始。
 - **未开始｜投递与清理（P6）**：原子领取、Long Polling、ACK／续约、退避重试、失败管理、历史／墓碑清理、队列生命周期、全局配置及健康投影。
 - **未开始｜Hub 同步运行时**：增量同步、bootstrap 重建、WS 提示及连接撤销。
-- **开发中／环境受阻｜正式推送服务端（P9）**：注册／偏好 STORAGE 源链已 A02 PASS，已精确重放至独立本地集成组合 `af84503…`，但 auth／全服 HTTP 检查受 socket 限制，I01 BLOCKED，原 main 未更新，不算完成；真实 HTTP、待办调度和 FCM／OPPO Adapter 仍未完成。Android FCM PoC 不代表这些服务已实现；失效 token 仅按发送快照条件解绑对应注册，不删除设备会话。
+- **开发中｜正式推送服务端（P9）**：[注册／偏好 STORAGE](tasks/COMPLETED.md#g5-be10-storage) 已 A02 PASS，精确本地集成组合 `af84503…` 经权限解除后 I01 全部必检 PASS，存储叶完成；原 main 未更新，父功能的真实 HTTP、待办调度和 FCM／OPPO Adapter 仍未完成。Android FCM PoC 不代表这些服务已实现；失效 token 仅按发送快照条件解绑对应注册，不删除设备会话。
 
 ## 3. Web 管理端
 
