@@ -148,10 +148,11 @@ func authenticationDependencies(ctx context.Context, path, externalOrigin string
 	sessions := auth.NewSessionStore(store)
 	security := auth.NewRequestSecurity(sessions, policy)
 	return store, &managementHandlers{
-		Handler:        auth.NewHandler(store, sessions, policy),
-		BotHandler:     httpapi.NewBotHandler(bots.New(store), botAuthorization(sessions, security)),
-		DeviceHandler:  devices.NewHandler(sessions, security),
-		MessageHandler: httpapi.NewMessageHandler(bots.New(store), messages.New(store)),
+		Handler:         auth.NewHandler(store, sessions, policy),
+		InstanceHandler: httpapi.NewInstanceHandler(store),
+		BotHandler:      httpapi.NewBotHandler(bots.New(store), botAuthorization(sessions, security)),
+		DeviceHandler:   devices.NewHandler(sessions, security),
+		MessageHandler:  httpapi.NewMessageHandler(bots.New(store), messages.New(store)),
 	}, nil
 }
 
@@ -168,7 +169,10 @@ func botAuthorization(sessions *auth.SessionStore, security *auth.RequestSecurit
 		}
 		// 闭包保留私有 actor；业务只能使用会话存储创建的 Tx，不能自行嵌套 Write。
 		return httpapi.BotAccess{
-			RenewRead: func(ctx context.Context) error { _, err := security.RenewRead(ctx, actor); return err },
+			Read: func(ctx context.Context, fn func(*sql.Tx) error) error {
+				_, _, err := sessions.WithAuthorizedRead(ctx, actor, fn)
+				return err
+			},
 			Write: func(ctx context.Context, fn func(*sql.Tx) error) error {
 				return sessions.WithAuthorizedWrite(ctx, actor, fn)
 			},
@@ -180,6 +184,7 @@ func botAuthorization(sessions *auth.SessionStore, security *auth.RequestSecurit
 // 合并路由能力，认证与 Bot handler 使用同一会话仓储和来源政策。
 type managementHandlers struct {
 	*auth.Handler
+	*httpapi.InstanceHandler
 	*httpapi.BotHandler
 	*httpapi.MessageHandler
 	DeviceHandler *devices.Handler
