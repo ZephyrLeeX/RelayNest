@@ -1,7 +1,6 @@
 package httpapi
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
@@ -17,9 +16,9 @@ import (
 )
 
 // BotAccess 的闭包绑定本次真实管理员身份；依赖方向保持 auth -> httpapi。
-// 写闭包必须调用 SessionStore.WithAuthorizedWrite，读闭包必须调用 RenewRead。
+// 写闭包必须调用 WithAuthorizedWrite，读闭包必须调用 WithAuthorizedRead。
 type BotAccess struct {
-	RenewRead    func(context.Context) error
+	Read         bots.ReadFunc
 	Write        bots.WriteFunc
 	SessionError func(http.ResponseWriter, error)
 }
@@ -241,7 +240,7 @@ func (h *BotHandler) ListBots(w http.ResponseWriter, r *http.Request) {
 		}
 		after = string(b[5:])
 	}
-	items, err := h.repo.ListPage(r.Context(), after, limit+1)
+	items, err := h.repo.ListPageWithRead(r.Context(), after, limit+1, access.Read)
 	if err != nil {
 		botBusinessError(w, access, err)
 		return
@@ -252,11 +251,6 @@ func (h *BotHandler) ListBots(w http.ResponseWriter, r *http.Request) {
 		items = items[:limit]
 		s := base64.RawURLEncoding.EncodeToString([]byte("bots:" + items[len(items)-1].ID))
 		next = &s
-	}
-	// 成功读取后重新核对原身份；在确认前不输出任何成功响应字节。
-	if err = access.RenewRead(r.Context()); err != nil {
-		access.SessionError(w, err)
-		return
 	}
 	botJSON(w, 200, struct {
 		Items []bots.Bot `json:"items"`

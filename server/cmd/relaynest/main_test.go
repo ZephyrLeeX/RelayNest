@@ -330,7 +330,7 @@ type botHTTPFixture struct {
 	webID, androidID string
 	authorize        httpapi.BotAuthorize
 	afterAuthorize   func()
-	beforeRenew      func()
+	beforeRead       func()
 }
 
 // 使用实际服务库的身份，并在故障注入前保存，避免夹具读库遮蔽原断言。
@@ -392,12 +392,12 @@ func botHTTP(t *testing.T, proxies []string) *botHTTPFixture {
 			f.afterAuthorize()
 		}
 		if ok {
-			renew := access.RenewRead
-			access.RenewRead = func(ctx context.Context) error {
-				if f.beforeRenew != nil {
-					f.beforeRenew()
+			read := access.Read
+			access.Read = func(ctx context.Context, fn func(*sql.Tx) error) error {
+				if f.beforeRead != nil {
+					f.beforeRead()
 				}
-				return renew(ctx)
+				return read(ctx, fn)
 			}
 		}
 		return access, ok
@@ -708,7 +708,7 @@ func TestBotHTTPActorRecheckAndRollback(t *testing.T) {
 					before = f.snapshot()
 				}
 				if method == "GET" {
-					f.beforeRenew = mutate
+					f.beforeRead = mutate
 				} else {
 					f.afterAuthorize = mutate
 				}
@@ -1374,5 +1374,329 @@ func TestAssembledBotMessageHTTP(t *testing.T) {
 	var out map[string]any
 	if json.Unmarshal(data, &out) != nil || out["bot_id"] != created.Bot.ID || out["bot_seq"] != "1" || out["sender"] != "application" {
 		t.Fatalf("invalid receipt %s", data)
+	}
+}
+
+// 八条真实生产路由逐项核对实例门禁；无效凭据不能盖过实例错误。
+func TestInstanceBindingEightProductionRoutes(t *testing.T) {
+	f := botHTTP(t, nil)
+	routes := []struct{ method, path, body string }{
+		{"POST", "/api/v1/auth/login", `{"username":"Admin","password":"wrong","client_type":"android","device_name":"门禁","device_id":"00000000-0000-4000-8000-000000000009"}`},
+		{"GET", "/api/v1/auth/session", ""},
+		{"POST", "/api/v1/auth/logout", ""},
+		{"GET", "/api/v1/devices", ""},
+		{"DELETE", "/api/v1/devices/" + f.androidID + "/session", ""},
+		{"GET", "/api/v1/admin/bots", ""},
+		{"POST", "/api/v1/admin/bots", botCreateBody},
+		{"PATCH", "/api/v1/admin/bots/00000000-0000-4000-8000-000000000001", `{"expected_version":1,"enabled":false}`},
+	}
+	for _, route := range routes {
+		t.Run(route.method+route.path, func(t *testing.T) {
+			for _, tc := range []struct {
+				id, code string
+				status   int
+			}{
+				{"", "INSTANCE_REQUIRED", 400},
+				{"invalid", "INVALID_REQUEST", 400},
+				{"11111111-1111-4111-8111-111111111111", "INSTANCE_MISMATCH", 409},
+				{f.instanceID, "", 401},
+			} {
+				req, err := http.NewRequest(route.method, f.server.URL+route.path, strings.NewReader(route.body))
+				if err != nil {
+					t.Fatal(err)
+				}
+				req.Header.Set("Content-Type", "application/json")
+				req.Header.Set("Authorization", "Bearer invalid")
+				if tc.id != "" {
+					req.Header.Set("X-RelayNest-Instance-ID", tc.id)
+				}
+				res, err := f.server.Client().Do(req)
+				if err != nil {
+					t.Fatal(err)
+				}
+				raw, err := io.ReadAll(res.Body)
+				res.Body.Close()
+				if err != nil {
+					t.Fatal(err)
+				}
+				if res.StatusCode != tc.status || res.Header.Get("Cache-Control") != "no-store" || (tc.code != "" && !strings.Contains(string(raw), `"code":"`+tc.code+`"`)) {
+					t.Fatalf("%s: %d %s", tc.code, res.StatusCode, raw)
+				}
+				if strings.Contains(string(raw), f.instanceID) || strings.Contains(string(raw), "invalid\"") {
+					t.Fatal("门禁泄漏请求值")
+				}
+			}
+		})
+	}
+	// 真实库故障必须在读取 Bearer 前失败关闭；逐路由验证而不是替身中间件。
+	if err := f.store.Close(); err != nil {
+		t.Fatal(err)
+	}
+	for _, route := range routes {
+		status, raw, _ := f.request(route.method, route.path, route.body, "android", "invalid", nil)
+		if status != 503 || !strings.Contains(raw, `"code":"INSTANCE_UNAVAILABLE"`) {
+			t.Fatalf("%s %s: %d %s", route.method, route.path, status, raw)
+		}
+	}
+}
+
+func TestInstanceProbeAndHonestDatabaseSwitch(t *testing.T) {
+	f := botHTTP(t, nil)
+	// 公开 probe 走实际装配，不携带夹具默认的实例头或 Bearer。
+	probe := func() string {
+		t.Helper()
+		res, err := f.server.Client().Get(f.server.URL + "/api/v1/instance")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		var out map[string]string
+		if err := json.NewDecoder(res.Body).Decode(&out); err != nil {
+			t.Fatal(err)
+		}
+		if res.StatusCode != 200 || len(out) != 1 || res.Header.Get("Cache-Control") != "no-store" || res.Header.Get("X-Content-Type-Options") != "nosniff" {
+			t.Fatal("probe assembly failed")
+		}
+		return out["instance_id"]
+	}
+	for _, check := range []struct {
+		method, path string
+		status       int
+	}{
+		{"HEAD", "/api/v1/instance", 405}, {"POST", "/api/v1/instance", 405},
+		{"GET", "/api/v1/instance/", 404}, {"GET", "/api/v1/instance/extra", 404},
+	} {
+		req, _ := http.NewRequest(check.method, f.server.URL+check.path, nil)
+		res, err := f.server.Client().Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		res.Body.Close()
+		if res.StatusCode != check.status || res.Header.Get("Location") != "" || res.Request.URL.Path != check.path {
+			t.Fatalf("probe route redirected or fell back: %s %d", check.path, res.StatusCode)
+		}
+	}
+	idA := probe()
+	if idA != f.instanceID {
+		t.Fatal("probe did not identify A")
+	}
+	b, handlers, err := authenticationDependencies(context.Background(), filepath.Join(t.TempDir(), "b.sqlite"), f.server.URL, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer b.Close()
+	if err := auth.InitAdministrator(context.Background(), b, "Admin", []byte("correct")); err != nil {
+		t.Fatal(err)
+	}
+	idB := fixtureInstanceID(t, b)
+	if idB == idA {
+		t.Fatal("independent database identity reused")
+	}
+	f.server.Config.Handler = httpapi.New(health.New(nil), handlers)
+	if probe() != idB {
+		t.Fatal("probe remained on A")
+	}
+	for _, route := range []struct{ method, path, body string }{
+		{"GET", "/api/v1/auth/session", ""}, {"POST", "/api/v1/auth/logout", ""}, {"GET", "/api/v1/devices", ""},
+		{"DELETE", "/api/v1/devices/" + f.androidID + "/session", ""}, {"GET", "/api/v1/admin/bots", ""},
+		{"POST", "/api/v1/admin/bots", botCreateBody}, {"PATCH", "/api/v1/admin/bots/00000000-0000-4000-8000-000000000001", `{"expected_version":1,"enabled":false}`},
+		{"POST", "/api/v1/auth/login", `{"username":"Admin","password":"correct","client_type":"android","device_name":"switch","device_id":"00000000-0000-4000-8000-000000000009"}`},
+	} {
+		status, raw, _ := f.admin(route.method, route.path, route.body)
+		if status != 409 || !strings.Contains(raw, `"code":"INSTANCE_MISMATCH"`) {
+			t.Fatalf("switch %s %s: %d %s", route.method, route.path, status, raw)
+		}
+	}
+	// 换成 B 身份后旧 A 会话仍不能获权，显式新登录才获得 B 的 Android 投影。
+	f.instanceID = idB
+	status, raw, _ := f.admin("GET", "/api/v1/auth/session", "")
+	if status != 401 {
+		t.Fatalf("A session accepted in B: %d %s", status, raw)
+	}
+	status, raw, _ = f.request("POST", "/api/v1/auth/login", `{"username":"Admin","password":"correct","client_type":"android","device_name":"switch","device_id":"00000000-0000-4000-8000-000000000009"}`, "", "", nil)
+	if status != 200 || !strings.Contains(raw, `"instance_id":"`+idB+`"`) {
+		t.Fatalf("explicit B login: %d %s", status, raw)
+	}
+}
+
+func TestBotHTTPReadProjectionRollback(t *testing.T) {
+	for _, mutation := range []struct {
+		name, query, code string
+		status            int
+	}{
+		{"identity", "UPDATE instance_identity SET instance_id='22222222-2222-4222-8222-222222222222'", "INSTANCE_MISMATCH", 409},
+		{"generation", "UPDATE administrator SET auth_generation=auth_generation+1", "AUTHENTICATION_FAILED", 401},
+		{"revoke", "UPDATE sessions SET revoked=1", "AUTHENTICATION_FAILED", 401},
+	} {
+		t.Run(mutation.name, func(t *testing.T) {
+			f := botHTTP(t, nil)
+			status, raw, h := f.admin("POST", "/api/v1/admin/bots", botCreateBody)
+			assertBotResponse(t, status, 201, raw, h)
+			before := f.snapshot()
+			real := f.authorize
+			f.authorize = func(w http.ResponseWriter, r *http.Request, write bool) (httpapi.BotAccess, bool) {
+				access, ok := real(w, r, write)
+				read := access.Read
+				access.Read = func(ctx context.Context, fn func(*sql.Tx) error) error {
+					return read(ctx, func(tx *sql.Tx) error {
+						if err := fn(tx); err != nil {
+							return err
+						}
+						_, err := tx.ExecContext(ctx, mutation.query)
+						return err
+					})
+				}
+				return access, ok
+			}
+			status, raw, h = f.admin("GET", "/api/v1/admin/bots", "")
+			assertBotResponse(t, status, mutation.status, raw, h)
+			if !strings.Contains(raw, `"code":"`+mutation.code+`"`) || strings.Contains(raw, "items") || f.snapshot() != before || fixtureInstanceID(t, f.store) != f.instanceID {
+				t.Fatalf("projection or partial transaction escaped: %s", raw)
+			}
+		})
+	}
+}
+
+func TestBotHTTPReadSnapshotConcurrentReset(t *testing.T) {
+	f := botHTTP(t, nil)
+	status, raw, h := f.admin("POST", "/api/v1/admin/bots", botCreateBody)
+	assertBotResponse(t, status, 201, raw, h)
+	created := decodeBotCreated(t, raw)
+	entered, release, started := make(chan struct{}), make(chan struct{}), make(chan struct{})
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	defer func() {
+		select {
+		case <-release:
+		default:
+			close(release)
+		}
+	}()
+	real := f.authorize
+	f.authorize = func(w http.ResponseWriter, r *http.Request, write bool) (httpapi.BotAccess, bool) {
+		access, ok := real(w, r, write)
+		read := access.Read
+		access.Read = func(ctx context.Context, fn func(*sql.Tx) error) error {
+			return read(ctx, func(tx *sql.Tx) error {
+				close(entered)
+				select {
+				case <-release:
+				case <-ctx.Done():
+					return ctx.Err()
+				}
+				return fn(tx)
+			})
+		}
+		return access, ok
+	}
+	type response struct {
+		status int
+		raw    string
+	}
+	responseDone := make(chan response, 1)
+	go func() {
+		status, raw, _ := f.admin("GET", "/api/v1/admin/bots", "")
+		responseDone <- response{status, raw}
+	}()
+	select {
+	case <-entered:
+	case <-ctx.Done():
+		t.Fatal(ctx.Err())
+	}
+	writeDone := make(chan error, 1)
+	go func() {
+		close(started)
+		writeDone <- f.store.Write(ctx, func(tx *sql.Tx) error {
+			if _, err := tx.ExecContext(ctx, "UPDATE bots SET name='new projection' WHERE id=?", created.Bot.ID); err != nil {
+				return err
+			}
+			_, err := tx.ExecContext(ctx, "UPDATE administrator SET auth_generation=auth_generation+1")
+			return err
+		})
+	}()
+	<-started
+	select {
+	case err := <-writeDone:
+		t.Fatalf("writer crossed authorized snapshot: %v", err)
+	default:
+	}
+	close(release)
+	var result response
+	select {
+	case result = <-responseDone:
+	case <-ctx.Done():
+		t.Fatal(ctx.Err())
+	}
+	if result.status != 200 || !strings.Contains(result.raw, `"name":"测试Bot"`) || strings.Contains(result.raw, "new projection") {
+		t.Fatalf("stitched projection: %d %s", result.status, result.raw)
+	}
+	if err := <-writeDone; err != nil {
+		t.Fatal(err)
+	}
+	// 并发事务提交后旧 actor 不能再次获得任何投影。
+	status, raw, _ = f.admin("GET", "/api/v1/admin/bots", "")
+	if status != 401 || strings.Contains(raw, "items") {
+		t.Fatalf("stale actor accepted: %d %s", status, raw)
+	}
+}
+
+func TestInstanceBindingWebAndGlobalRevocation(t *testing.T) {
+	f := botHTTP(t, nil)
+	headers := map[string]string{"Origin": f.server.URL, "X-CSRF-Token": f.web.CSRFToken, "X-RelayNest-Instance-ID": "invalid"}
+	for _, method := range []string{"GET", "POST"} {
+		body, want := "", 200
+		if method == "POST" {
+			body, want = botCreateBody, 201
+		}
+		status, raw, h := f.request(method, "/api/v1/admin/bots", body, "web", f.web.Token, headers)
+		assertBotResponse(t, status, want, raw, h)
+	}
+	delete(headers, "X-CSRF-Token")
+	status, raw, h := f.request("POST", "/api/v1/admin/bots", botCreateBody, "web", f.web.Token, headers)
+	assertBotResponse(t, status, 403, raw, h)
+	if err := auth.ResetPassword(context.Background(), f.store, []byte("replacement")); err != nil {
+		t.Fatal(err)
+	}
+	for _, client := range []string{"android", "web"} {
+		token := f.android.Token
+		if client == "web" {
+			token = f.web.Token
+		}
+		for _, route := range []struct{ method, path string }{{"GET", "/api/v1/auth/session"}, {"GET", "/api/v1/devices"}, {"GET", "/api/v1/admin/bots"}, {"POST", "/api/v1/auth/logout"}} {
+			status, raw, h = f.request(route.method, route.path, "", client, token, map[string]string{"Origin": f.server.URL, "X-CSRF-Token": f.web.CSRFToken})
+			assertBotResponse(t, status, 401, raw, h)
+		}
+	}
+}
+
+func TestBotHTTPWriteBindingMutationRollback(t *testing.T) {
+	for _, method := range []string{"POST", "PATCH"} {
+		for _, mutation := range []struct {
+			name, sql, code string
+			status          int
+		}{
+			{"identity", "UPDATE instance_identity SET instance_id='22222222-2222-4222-8222-222222222222'", "INSTANCE_MISMATCH", 409},
+			{"generation", "UPDATE administrator SET auth_generation=auth_generation+1", "AUTHENTICATION_FAILED", 401},
+		} {
+			t.Run(method+"/"+mutation.name, func(t *testing.T) {
+				f := botHTTP(t, nil)
+				status, raw, h := f.admin("POST", "/api/v1/admin/bots", botCreateBody)
+				assertBotResponse(t, status, 201, raw, h)
+				created := decodeBotCreated(t, raw)
+				verb, path, body := "INSERT", "/api/v1/admin/bots", botCreateBody
+				if method == "PATCH" {
+					verb = "UPDATE"
+					path += "/" + created.Bot.ID
+					body = `{"expected_version":1,"name":"transaction mutation"}`
+				}
+				f.sql("CREATE TRIGGER binding_change AFTER " + verb + " ON bots BEGIN " + mutation.sql + "; END")
+				before := f.snapshot()
+				status, raw, h = f.admin(method, path, body)
+				assertBotResponse(t, status, mutation.status, raw, h)
+				if !strings.Contains(raw, `"code":"`+mutation.code+`"`) || strings.Contains(raw, "api_token") || f.snapshot() != before || fixtureInstanceID(t, f.store) != f.instanceID {
+					t.Fatalf("partial write escaped binding transaction: %s", raw)
+				}
+			})
+		}
 	}
 }

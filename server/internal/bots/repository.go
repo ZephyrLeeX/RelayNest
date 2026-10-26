@@ -44,6 +44,9 @@ func issue() (CredentialMetadata, string, []byte, error) {
 	return CredentialMetadata{id, 1}, token, digest[:], nil
 }
 
+// ReadFunc 将业务读取放入调用方拥有的同一授权事务。
+type ReadFunc func(context.Context, func(*sql.Tx) error) error
+
 // WriteFunc 同步运行受信业务回调，只在整个事务成功提交后返回 nil。
 type WriteFunc func(context.Context, func(*sql.Tx) error) error
 
@@ -231,11 +234,16 @@ func newBotID() (string, error) {
 
 // ListPage 在短读事务内按稳定 ID 顺序读取有界公开投影；不携带消息历史或秘密。
 func (r *Repository) ListPage(ctx context.Context, after string, limit int) ([]Bot, error) {
-	if limit < 1 || limit > 101 {
+	return r.ListPageWithRead(ctx, after, limit, r.store.Read)
+}
+
+// ListPageWithRead 的投影和授权续期共享同一事务；失败时不返回候选投影。
+func (r *Repository) ListPageWithRead(ctx context.Context, after string, limit int, read ReadFunc) ([]Bot, error) {
+	if read == nil || limit < 1 || limit > 101 {
 		return nil, ErrInvalid
 	}
 	out := []Bot{}
-	err := r.store.Read(ctx, func(tx *sql.Tx) error {
+	err := read(ctx, func(tx *sql.Tx) error {
 		rows, err := tx.QueryContext(ctx, "SELECT id FROM bots WHERE id>? ORDER BY id LIMIT ?", after, limit)
 		if err != nil {
 			return err
