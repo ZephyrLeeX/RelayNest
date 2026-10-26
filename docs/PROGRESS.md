@@ -1,11 +1,11 @@
 # RelayNest 项目进度
 
 - 更新日期：2026-10-26（UTC+8）。
-- 后端本轮核对基线：本地 `work`，`064807f9e5e126f48c9360d4d02a40fc209f790e`；其他模块保留原核对范围，不表示部署或发布。未集成分支另行注明。
+- 后端本轮核对基线：本地 `work`，`cf2c8b49b4b5338e58e4b9d6e9698e5e648bdc31`；其他模块保留原核对范围，不表示部署或发布。未集成分支另行注明。
 - 状态来源：[模块任务入口](tasks/README.md)中七个模块的条目是未完成任务唯一状态源；已完成结果见 [COMPLETED](tasks/COMPLETED.md)，执行与独审／精确集成规则见 [WORKFLOW](tasks/WORKFLOW.md)。本页只作模块摘要，证据仍须核对实际提交。
 - **已完成**：限定范围已完成实现、独立审计和精确集成；用户批准的 PoC 验收例外单列说明，不等于整阶段或正式端到端通过。
 - **开发中**：已有实现但父功能尚未闭环；**未开始**：尚未启动功能实现；**待验收**：实际环境验证未完成；**受阻**：缺少相关外部条件；**后置**：尚未满足启动门槛。
-- 当前后端调度证据见 [BACKEND](tasks/BACKEND.md)：2026-10-26 AUTH、BE-02-BOT 与 [附件 STORAGE 准备](tasks/COMPLETED.md#g5-be05-storage) 已完成独审和本地精确集成；HTTP01 仍 changes_requested，F01 由 `/root/http_fix_resume` 接管未提交修复；父 BE-01／BE-02／BE-05-01 仍未闭环；其他模块运行状态不在本轮核实范围。会话结束后不承诺后台运行；契约、任务卡或准备报告存在，不计作运行时功能完成。
+- 当前后端调度证据见 [BACKEND](tasks/BACKEND.md)：2026-10-26 AUTH、BE-02-BOT 与 [附件 STORAGE 准备](tasks/COMPLETED.md#g5-be05-storage) 已完成独审和本地精确集成；[HTTP01 叶](tasks/COMPLETED.md#g5-be01-http) 也已完成 A02 PASS 与本地精确集成；父 BE-01／BE-02／BE-05-01 仍未闭环；其他模块运行状态不在本轮核实范围。会话结束后不承诺后台运行；契约、任务卡或准备报告存在，不计作运行时功能完成。
 
 ## 1. Android 程序
 
@@ -50,11 +50,11 @@ Bot Hub 只负责消息传输、存储和路由，不执行业务命令或 MCP �
 - **已完成｜认证入口与实例事务绑定（AUTH01）**：A02 固定修复 SHA 独审 PASS，A01-001／002 关闭；已精确集成目标 `work` 至 `1aa0aa9e0c390a46a7293cae56410e0baae8ce71`。仅 AUTH 子范围完成，完整 G1 仍 pending。见[完成证据](tasks/COMPLETED.md#g5-be01-auth)。
 - **已完成｜Bot 正式创建 HTTP（BE-02-BOT）**：当前有限 plain/markdown 文本入口已独审并精确集成 `907c2a4dbf3a8774bcd438fb22b2381def7394a5`；保留并行 race 夹具 SQLITE_BUSY 首轮失败及串行复验 PASS，404／Webhook 限制见[完成证据](tasks/COMPLETED.md#g5-be02-bot)。
 - **已完成｜附件流式持久化准备（BE-05-01-STORAGE）**：staging/ready、稳定身份去重及活动尝试 fencing 已独审并精确集成 `064807f9e5e126f48c9360d4d02a40fc209f790e`；仅存储准备，真实上传未接线。见[完成证据](tasks/COMPLETED.md#g5-be05-storage)。
+- **已完成｜公开探测与真实路由 HTTP 子范围（HTTP01）**：A02 固定 `d8706747…` PASS，A01-001 关闭；实现／修复精确集成至 `cf2c8b49b4b5338e58e4b9d6e9698e5e648bdc31`。历史 HTTP/2 自测与并发超时 FAIL、串行 PASS 和未测限制见[完成证据](tasks/COMPLETED.md#g5-be01-http)；父完整 G1 仍待独立组合验收。
 
 ### 未完成
 
-- **开发中｜完整实例绑定（B01）**：存储、离线维护和 Bot 身份发现已完成；AUTH01 子范围已完成，HTTP01 仍 changes_requested／F01 修复未提交，G-INSTANCE-RUNTIME 与 G-INSTANCE-COMPOSITION 均 pending，不能宣称完整 G1 已完成。
-- **开发中｜公开探测与路由组合（HTTP01）**：实现 `891287cf…` 经 A01 要求修复非规范 probe 重定向（A01-001）；F01 `/root/http_fix_resume` 接管三文件未提交修改，尚无修复 SHA，仍 changes_requested，待验证、独审和精确集成。
+- **开发中｜完整实例绑定（B01）**：存储、离线维护和 Bot 身份发现已完成；AUTH01 与 HTTP01 子范围已完成，父功能仍待同一组合 SHA 独立验收，G-INSTANCE-RUNTIME 与 G-INSTANCE-COMPOSITION 均 pending，不能宣称完整 G1 已完成。
 - **开发中｜正式幂等创建父功能（P05-02）**：存储基础及 BE-02-BOT 有限文本入口已完成独审和精确集成；父组合验收未闭环。Android 管理员入口尚未开始，依赖完整 B01，不以协议桩替代。
 - **未开始｜Bot 生命周期与权限收口**：重置／删除正式 HTTP、领取租约／等待请求／投递队列完整联动，以及身份权限整体矩阵（P04-08）。
 - **未开始｜其余消息功能**：历史分页、引用和共享已读、CAS 编辑、标准 JSON Webhook、按钮回调独立事件及综合故障回归。

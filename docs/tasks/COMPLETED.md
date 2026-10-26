@@ -85,6 +85,35 @@
 
 检查：真实 auth HTTP+SQLite 验证缺头400 INSTANCE_REQUIRED、畸形/空/多值400 INVALID_REQUEST、错ID409 INSTANCE_MISMATCH、身份/DB故障503 INSTANCE_UNAVAILABLE，代次失效401；错误no-store且不泄实际ID。Create、读取/续期、logout、WithAuthorizedWrite、设备列表/撤销同快照/提交复核，revoked自撤、Session.id与提交后通知保持；登录校验后切库和事务中变化无部分结果，Web/CSRF不回归。运行 auth/storage 定向及 race/静态检查；交付真实内部接口后才允许 HTTP 包接入。
 
+<a id="g5-be01-http"></a>
+
+### G5 BE-01-HTTP 实例探测与真实路由同快照组合
+
+- 历史调度（2026-10-26，UTC+8）：owner Backend Orchestrator，基线 `388dd8ae1f3641bdfd26a7a421e4171b8da16971` / 目标 `work`；AUTH 最终 `1aa0aa9e0c390a46a7293cae56410e0baae8ce71` 已 A02 PASS 与 I01 精确集成，BOT01／PLAN02 依赖已由 R01 验证。由“未开始”转 `ready` 后派发 Backend Implementer `/root/http_implement`，隔离 `/workspace/RelayNest-be01-http` / `codex/be01-http-20261026`；独占 router/main、httpapi/bots、bots/repository 及本树/index，auth/devices 只读；准确五主文件与必要相关测试，不改迁移／契约／其他模块。
+- 历史 实施交接：`891287cf143e4d300c353e24233979077e84e64b`，基线 `388dd8ae…`，五主文件＋三测试（共八文件），隔离树 clean 并释放写权。Implementer 报最终全服普通、六包 race、全服 vet/build/gofmt/diff、锁版 Web ci/build PASS。自测曾发现 HTTP/2 无正文误拒绝，已修正、补回归并完整重跑；原失败保留。A01 准备固定此 SHA 只读独审，完整父 BE-01 不自动完成。
+- A01 结果：Agent `/root/http_audit_a01` `CHANGES_REQUIRED`，`BE-01-HTTP-A01-001`：ServeMux 清理非规范 probe 路径在处理器前产生 307／Location／HTML，无 no-store/nosniff，query 原值会复制到响应。独立真实 SQLite＋生产路由＋TLS `/tmp` overlay 复现；全服普通、六包 race、vet/build/gofmt、锁版 Web 均 PASS。F01 只允许 router.go／instance.go 及 instance_test.go／router_test.go，提前固定拒绝会规范化为 probe 的别名路径，保持冻结 JSON／安全响应、不扩大其他路由。
+- 历史 F01 派发准备：Backend Fixer，以 `891287cf143e4d300c353e24233979077e84e64b` 创建 `/workspace/RelayNest-be01-http-fix` / `codex/be01-http-f01-20261026`；独占上述精确路径及本树/index，仅修 A01-001，新提交后固定 SHA 重审。
+- 历史 F01 Agent `/root/http_fix_f01` 已派发，原 A01 仍只读完成证据交接；父 BE-01 保持未完成。
+- 历史 恢复 R03（2026-10-26）：Agent `/root/resume_checkpoint` 核主树 `work` / `064807f9e5e126f48c9360d4d02a40fc209f790e`，无在途测试／Git／文档写入进程。F01 树 HEAD 仍 `891287cf…`，已有 instance.go／router.go／router_test.go 三文件未提交修改（146 插入／2 删除），不可覆盖重做；六包 race 与串行全服日志含 PASS，但未留精确命令／退出码，尚无修复 SHA。重新派 Fixer `/root/http_fix_resume` 接管现有修改完成验证与本地提交，仍仅处理 A01-001；父项未完成。
+
+- F01 收尾交接：新提交 `d8706747be5dbd98e91fe4892ab2f3f260e3b35c`（parent `891287cf143e4d300c353e24233979077e84e64b`），保留三文件 146+/2-，未扩围；树 clean，进程已结束并释放写锁。精确命令与退出码记录 `/tmp/be01-http-f01/resume/`：原审计 overlay、httpapi/cmd 普通、六包串行 race、全服普通／vet/build/gofmt/diff 与锁版 Web build 均 PASS；旧并发 cmd 1 秒进程超时 FAIL 保留，修正执行调度后串行 PASS，未改超时断言。A02 准备固定新 SHA 独审，未据 Fixer 报告直接放行。
+- A02 结果：Agent `/root/http_audit_a02` `PASS`，固定 `d8706747be5dbd98e91fe4892ab2f3f260e3b35c`，关闭 A01-001，无新发现；原失败 overlay 及三协议生产 SQLite/router 540 次别名／query／方法响应矩阵 PASS，全服普通、六包串行 race、vet/build/gofmt/diff 与锁版 Web 副本构建 PASS。本轮无 FAIL，历史失败保留，受审树 clean、重型检查资源已释放。
+- 历史 I01 派发准备：Backend Integrator，目标 `work` / `571dc5dca696d4dfb446a868ca58169cf488579b`，精确组合原实现 `891287cf143e4d300c353e24233979077e84e64b` 与修复 `d8706747be5dbd98e91fe4892ab2f3f260e3b35c`；在隔离集成树核双补丁与已集成附件／0008 组合后再移动目标。主调度 BACKEND 未提交元数据须保护不 stage，父 BE-01 独立收口仍未进行。
+- 历史 I01 Agent `/root/http_integrate_i01` 已派发，目标业务 Git/index 与公共接线／重型检查独占至回交；主调度文档自本记录后冻结至 I01 释放。
+- I01 结果：Agent `/root/http_integrate_i01` `PASS`，目标 `work` 无冲突快进 `571dc5dca696d4dfb446a868ca58169cf488579b` → `cf2c8b49b4b5338e58e4b9d6e9698e5e648bdc31`；映射 `891287cf143e4d300c353e24233979077e84e64b` → `cbbbb6e172d52391680279ebfbf163dfbc380d4c`、`d8706747be5dbd98e91fe4892ab2f3f260e3b35c` → `cf2c8b49b4b5338e58e4b9d6e9698e5e648bdc31`，range-diff 两项 `=`。锁版 Node 22.23.2／npm 10.9.8 Web／全服普通／六包串行 race／vet/build/gofmt/diff／原 A01+A02 三协议 540 矩阵及目标 build／关键路由均 PASS；BACKEND patch 逐字节保留，index 空，0001～0008 checksum 不变。业务与重型锁已释放，父 G1 与 Android 完整 call 仍 NOT_RUN；HTTP 叶验收、独审与精确集成证据齐全，父 BE-01 仍待独立组合收口。
+
+- 旧ID：`P08-04-D01-B01-HTTP01`；类型：有限 leaf；状态：`done`（2026-10-26，主调度依据 A02 PASS 与 I01 精确组合从 integrating 归档）。
+- 依赖：[已完成 BE-01-AUTH](COMPLETED.md#g5-be01-auth)、[已完成基线 P08-04-D01-B01-BOT01](COMPLETED.md#g4)、[已完成基线 P08-04-D01-B01-PLAN02](COMPLETED.md#g4)。
+- 门槛：`G-GIT`、`G-API`、`G-INSTANCE-CONTRACT`；条件未实证不记通过。
+
+允许 router.go、instance.go、httpapi/bots.go、bots/repository.go、cmd/relaynest/main.go 五个主文件及测试；auth/devices只读消费最终接口，main只接线。Bot ListPage 与 RenewRead 不得分离快照；仓储读取放入 AUTH 授权读闭包，Bot写继续同事务授权写，devices只验证共享安全入口。
+
+公开 GET /api/v1/instance 无 query/body，拒绝 Authorization/Cookie/X-CSRF-Token/X-RelayNest-Instance-ID 的存在（含空值/大小写），不解析记录值。非法优先于限流，限流优先于读库；全局常量内存20rps/burst40，429 Retry-After:1。每次严格读取持久化ID，200仅小写UUIDv4单字段，缺失/损坏/读取失败503。成功/错误no-store、nosniff，禁止ETag/Last-Modified/Location/304/redirect；固定Error/request_id/code/message/retryable。
+
+检查：真实HTTP+SQLite验证探测格式/错误顺序/限流/缓存/503，逐项列八个现有auth/device/admin-bot路由的绑定证据；切A→B、事务ID/代次变化、读投影不拼接。包含Web/CSRF、设备全撤/自撤、Bot内部发现、health/static非回归。运行httpapi/auth/devices/bots/storage测试及race、vet/build/必要全包检查；Web embed按锁版构建。客户端完整call5秒/1024字节由Android任务验收，不冒充本卡结果。
+
+- 归档与限制：BE-DOC-S03 `/root/storage_archive_resume` 仅转录主调度完成决定与既有证据；完整父 G1、G-INSTANCE-RUNTIME／G-INSTANCE-COMPOSITION 仍 pending，Android 完整 call 5 秒／1024 字节及未来附件／WS 等未实现路由 NOT_RUN，不以 HTTP 叶完成替代父组合或跨模块验收。
+
 <a id="g5-be02-bot"></a>
 
 ### G5 BE-02-BOT Bot 正式创建 HTTP
