@@ -111,6 +111,9 @@ func (r *Repository) CreateIdempotentAdministratorTx(ctx context.Context, tx *sq
 	}
 	var enabled, receive bool
 	if err := tx.QueryRowContext(ctx, `SELECT enabled,can_receive FROM bots WHERE id=?`, botID).Scan(&enabled, &receive); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return Created{}, bots.ErrNotFound
+		}
 		return Created{}, err
 	}
 	if !enabled || !receive {

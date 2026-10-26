@@ -152,8 +152,29 @@ func authenticationDependencies(ctx context.Context, path, externalOrigin string
 		InstanceHandler: httpapi.NewInstanceHandler(store),
 		BotHandler:      httpapi.NewBotHandler(bots.New(store), botAuthorization(sessions, security)),
 		DeviceHandler:   devices.NewHandler(sessions, security),
-		MessageHandler:  httpapi.NewMessageHandler(bots.New(store), messages.New(store)),
+		MessageHandler:  httpapi.NewMessageHandler(bots.New(store), messages.New(store), clientMessageAuthorization(sessions, security)),
 	}, nil
+}
+
+// clientMessageAuthorization 仅允许 Android Bearer，实例门禁及会话复核沿用公共安全入口。
+func clientMessageAuthorization(sessions *auth.SessionStore, security *auth.RequestSecurity) httpapi.BotAuthorize {
+	return func(w http.ResponseWriter, r *http.Request, _ bool) (httpapi.BotAccess, bool) {
+		if len(r.Header.Values("Authorization")) == 0 || len(r.CookiesNamed("relaynest_session")) > 0 {
+			auth.WriteSessionErrorRequired(w, auth.ErrInvalidSession)
+			return httpapi.BotAccess{}, false
+		}
+		actor, ok := security.AuthorizeRequired(w, r, auth.RequestWrite)
+		if !ok {
+			return httpapi.BotAccess{}, false
+		}
+		if actor.Session.ClientType != "android" {
+			auth.WriteSessionErrorRequired(w, auth.ErrInvalidSession)
+			return httpapi.BotAccess{}, false
+		}
+		return httpapi.BotAccess{Write: func(ctx context.Context, fn func(*sql.Tx) error) error {
+			return sessions.WithAuthorizedWrite(ctx, actor, fn)
+		}, SessionError: auth.WriteSessionErrorRequired}, true
+	}
 }
 
 // botAuthorization 只将经公共入口签发的身份绑定至受控事务能力。

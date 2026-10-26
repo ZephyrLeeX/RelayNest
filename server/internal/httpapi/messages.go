@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"io"
@@ -16,14 +17,68 @@ import (
 	"relaynest/server/internal/messages"
 )
 
-// MessageHandler 只接受 BOT01 发现的 API 身份，不读取实例头或管理员会话。
+// MessageHandler 分别消费 Bot 身份与装配层绑定的 Android 受控事务能力。
 type MessageHandler struct {
-	bots     *bots.Repository
-	messages *messages.Repository
+	bots      *bots.Repository
+	messages  *messages.Repository
+	authorize BotAuthorize
 }
 
-func NewMessageHandler(b *bots.Repository, m *messages.Repository) *MessageHandler {
-	return &MessageHandler{b, m}
+func NewMessageHandler(b *bots.Repository, m *messages.Repository, authorize ...BotAuthorize) *MessageHandler {
+	h := &MessageHandler{bots: b, messages: m}
+	if len(authorize) > 0 {
+		h.authorize = authorize[0]
+	}
+	return h
+}
+
+// CreateClientMessage 在同一会话事务中查重及持久化；候选回执只能在提交成功后发布。
+func (h *MessageHandler) CreateClientMessage(w http.ResponseWriter, r *http.Request) {
+	if h.authorize == nil {
+		botError(w, 503, "SERVICE_UNAVAILABLE")
+		return
+	}
+	access, ok := h.authorize(w, r, true)
+	if !ok {
+		return
+	}
+	if !botID(r.PathValue("id")) {
+		botError(w, 422, "VALIDATION_FAILED")
+		return
+	}
+	keys := r.Header.Values("Idempotency-Key")
+	if len(keys) != 1 || !idempotency.ValidKey(keys[0]) {
+		botError(w, 400, "INVALID_REQUEST")
+		return
+	}
+	in, ok := decodeMessage(w, r)
+	if !ok {
+		return
+	}
+	var out messages.Created
+	err := access.Write(r.Context(), func(tx *sql.Tx) error {
+		var err error
+		out, err = h.messages.CreateIdempotentAdministratorTx(r.Context(), tx, r.PathValue("id"), keys[0], in, nil)
+		return err
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, bots.ErrForbidden), errors.Is(err, bots.ErrNotFound), errors.Is(err, idempotency.ErrConflict), errors.Is(err, idempotency.ErrExpired), errors.Is(err, messages.ErrTooLarge), errors.Is(err, messages.ErrInvalid), errors.Is(err, messages.ErrUnsupported):
+			messageError(w, err)
+		default:
+			access.SessionError(w, err)
+		}
+		return
+	}
+	if out.Delivery == nil {
+		botError(w, 503, "SERVICE_UNAVAILABLE")
+		return
+	}
+	m := out.Message
+	botJSON(w, 201, struct {
+		Message    messageResponse `json:"message"`
+		DeliveryID string          `json:"delivery_id"`
+	}{messageResponse{m.ID, m.BotID, strconv.FormatInt(m.BotSeq, 10), m.Revision, m.Sender, m.Format, m.Text, []messages.AttachmentReference{}, m.OriginalReplyToMessageID, [][]messages.Button{}, m.CreatedAt, m.UpdatedAt}, out.Delivery.DeliveryID})
 }
 
 func (h *MessageHandler) CreateBotMessage(w http.ResponseWriter, r *http.Request) {
