@@ -2,6 +2,9 @@ package httpapi
 
 import (
 	"net/http"
+	"net/url"
+	"path"
+	"strings"
 
 	"relaynest/server/internal/health"
 	"relaynest/server/internal/webui"
@@ -64,5 +67,35 @@ func New(h *health.Handler, authentication ...AuthHandlers) http.Handler {
 	static := webui.New()
 	mux.Handle("GET /{$}", static)
 	mux.Handle("GET /assets/", static)
-	return mux
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 在 ServeMux 清理路径前拒绝探测别名，避免重定向复制 query 到响应。
+		if redirectsToInstanceProbe(r.URL.EscapedPath()) {
+			probeHeaders(w)
+			probeError(w, 400, "INVALID_REQUEST", "请求无效", false)
+			return
+		}
+		mux.ServeHTTP(w, r)
+	})
+}
+
+func redirectsToInstanceProbe(escapedPath string) bool {
+	cleaned := path.Clean(escapedPath)
+	// ServeMux 保留尾斜杠，且按段解码匹配；编码斜杠不能成为路由分隔符。
+	if strings.HasSuffix(escapedPath, "/") && cleaned != "/" {
+		cleaned += "/"
+	}
+	if cleaned == escapedPath {
+		return false
+	}
+	segments := strings.Split(cleaned, "/")
+	if len(segments) != 4 || segments[0] != "" {
+		return false
+	}
+	for i, want := range []string{"api", "v1", "instance"} {
+		segment, err := url.PathUnescape(segments[i+1])
+		if err != nil || segment != want {
+			return false
+		}
+	}
+	return true
 }

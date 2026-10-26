@@ -52,13 +52,17 @@ func probeError(w http.ResponseWriter, status int, code, message string, retryab
 	}{detail{code, message, rand.Text(), retryable}})
 }
 
-func (h *InstanceHandler) GetInstance(w http.ResponseWriter, r *http.Request) {
+func probeHeaders(w http.ResponseWriter) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	for _, header := range []string{"ETag", "Last-Modified", "Location"} {
 		w.Header().Del(header)
 	}
+}
+
+func (h *InstanceHandler) GetInstance(w http.ResponseWriter, r *http.Request) {
+	probeHeaders(w)
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", "GET")
 		probeError(w, 405, "INVALID_REQUEST", "请求无效", false)
