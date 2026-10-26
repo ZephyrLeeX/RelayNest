@@ -67,6 +67,43 @@
 - 未测移交：摘要匹配后读事务 COMMIT 故障定点注入；真实附件 HTTP 顺序、状态/no-store、send/receive 资源域及文件打开顺序。已有写事务 COMMIT 失败不能冒称覆盖上述读事务分支。
 - AUTH 子范围现已独审并集成实际目标 work，见 [BE-01-AUTH](#g5-be01-auth)；完整 `B01`、HTTP01、G-INSTANCE-RUNTIME/COMPOSITION、Android 新 G1/S04 仍未闭环。
 
+<a id="g5-be01"></a>
+
+### G5 BE-01 现有后端实例绑定父范围
+
+- 子项完成引用：[AUTH 已完成独审与精确集成](COMPLETED.md#g5-be01-auth)；[HTTP01 已完成独审与精确集成](COMPLETED.md#g5-be01-http)。以最终代码组合 `cf2c8b49b4b5338e58e4b9d6e9698e5e648bdc31`／元数据快照 `373cc241317410a8b8aa0755f9a41bb2ca676499` 完成 [COMPOSE 独立组合验收](#g5-be01-compose)。本父范围仅公开 probe＋八个现有后端 auth／device／admin-bot 路由；Android 客户端、真机及跨端全局门槛仍未完成。
+
+- 旧ID：`P08-04-D01-B01`；类型：父收口，不整组派发；状态：`done`（2026-10-26，主调度依据 AUTH／HTTP 完成及 COMPOSE R01／A01／I01 齐全证据归档既定现有后端父范围）。
+- 依赖：[已完成基线 P08-04-D01-M01](COMPLETED.md#g4)、[已完成基线 P04-05-S03](COMPLETED.md#g1)、[已完成基线 P04-06](COMPLETED.md#g1)、[已完成基线 P08-04-D01-B01-SCOPE01](COMPLETED.md#g4)、[已完成基线 P08-04-D01-B01-BOT01](COMPLETED.md#g4)、[已完成基线 P08-04-D01-B01-PLAN02](COMPLETED.md#g4)、[已完成 BE-01-AUTH](COMPLETED.md#g5-be01-auth)、[已完成 BE-01-HTTP](COMPLETED.md#g5-be01-http)。
+- 门槛：`G-GIT`、`G-API`、`G-INSTANCE-CONTRACT`；条件未实证不记通过。
+
+原父收口验收：公开 probe 与 Android 登录/会话/设备/Bot 管理真实路由完整 G1 组合；依赖中的 M01/SCOPE01/BOT01/PLAN02 仅是已完成局部基线。AUTH 和 HTTP 两包及 BOT01 最终集成后，在同一组合 SHA 逐项验收；不以 AUTH 局部通过放行消费者。当前 G-INSTANCE-RUNTIME、G-INSTANCE-COMPOSITION 均 pending。
+
+G1 已批准生命周期：Android 先验证实例 ID 再读取密码/Bearer，授权读同一事务快照，写提交前复核 ID/auth_generation；ID/会话/代次变化不得提交部分结果。probe 后诚实切库仍可能使旧凭据字节抵达 B，这是已接受的有限窗口，不宣称 G2。未来未实现业务/附件/WS 路由保留强门禁及 NOT_RUN。
+
+附件仅 uploadAttachment/downloadAttachment 是 Bot-first 例外：格式校验后可先读 Bearer 用于真实 API 凭据发现，不能提前读上传流/Range/附件资源；NoMatch 才进入 Android ID 校验，Matched 后拒绝不回退管理员，Unavailable 失败关闭503。下载不能先查附件求 BotID；send/receive 必须按资源域授权。有效 Bot 忽略实例头；未来真实两附件路由、授权及文件打开顺序由 BE-05 验收，不能拿内部发现已完成替代。Web Origin/CSRF、设备精确撤销/自撤、Bot 与 health 非回归，日志禁头/正文/实例ID。
+
+- 最终收口：受测元数据 `373cc241317410a8b8aa0755f9a41bb2ca676499`／业务 `cf2c8b49b4b5338e58e4b9d6e9698e5e648bdc31`，研究快照与准确组合核实均为 `7d2fcec4a534d32816dfa49aff288d04a4c49dfe`；[COMPOSE R01／不同 A01／I01](#g5-be01-compose) PASS。当前现有后端范围完成；全局 G-INSTANCE-RUNTIME／G-INSTANCE-COMPOSITION 仍 pending，Android 完整 call 5 秒／1024 字节、真机、未来附件／WS 路由及反向代理缓存策略均 NOT_RUN，不宣称 G2。未来真实路由仍须逐项接入门禁并验收。
+
+<a id="g5-be01-compose"></a>
+
+### G5 BE-01-COMPOSE 最终实例绑定组合验收
+
+- 类型：有限验证 leaf；状态：`done`（2026-10-26，主调度依据 R01 PASS、研究快照、不同 A01 PASS 与 I01 准确组合核实归档）；owner Backend Orchestrator；Researcher `/root/instance_compose_verify`；固定基线 `373cc241317410a8b8aa0755f9a41bb2ca676499` / `work`，其业务代码最终组合为 `cf2c8b49…`。不以父 BE-01 done 为前置，避免验收依赖环。
+- 历史派发准备：Backend Researcher，仅验证上述父完整 G1 标准和八个真实 auth／device／admin-bot 路由、公开 probe 与 Web／Bot／health 非回归；源码只读，允许 `/tmp` 固定 SHA 归档／临时验证 overlay，不改业务／任务文档／契约／迁移。真实当前组合逐项收口，不用子卡报告替代新组合证据；不重复已由 I01 同代码验证通过的无关全服矩阵。
+- 验收：真实生产装配＋SQLite 证明 ID 先于密码／Bearer、同快照读和写前代次复核、错误优先／安全响应、A→B／事务中变化无部分结果；公开 probe 格式／限流／缓存／非规范路径安全；设备精确撤销／自撤与全撤、Web Origin/CSRF、Bot 发现与文本创建、日志无头／正文／实例 ID。接受既定 G1 瞬切窗口，不声称 G2。
+- 未来附件／WS 路由、Android 完整 call 5秒／1024字节、真机与跨模块完整验收仍逐项 NOT_RUN，不修改其他模块状态。研究返回固定 SHA／真实命令／逐项 PASS/FAIL/NOT_RUN；结果由主调度写回原条目并本地快照后交不同 Auditor 固定 SHA 审查，再由 Integrator 核实准确组合；全部齐全才关闭父任务。
+- R01 结果：`PASS`，仅现有后端 G1 范围；固定 `373cc241…` 归档 `/tmp/be01-compose-373cc241/src`，server/web 与业务组合 `cf2c8b49…` 无差异，锁版离线 Web ci/build PASS。独立真实生产装配＋TLS＋SQLite 补测八路由严格实例头／非法密码优先、A→B、读快照不拼接、auth/device 五路由及 Bot POST/PATCH 事务 ID／代次／撤销／延迟 FK COMMIT 故障无部分结果，probe 格式／限流优先／安全头／别名拒绝，设备精确撤销／自撤／全撤、Web/CSRF、Bot 发现／文本创建、health/static 与生产日志敏感标记均 PASS。
+- R01 实测：针对生产 cmd 组合及 httpapi/auth/devices/bots 的普通测试、五包定向串行 race、补充 devices HTTP race、相关 vet 均退出 0；未重复无关全服矩阵。五包首条 devices 无匹配项已单独补实测；临时 overlay 初次撤销机器码预期写错而 FAIL，按冻结 REQUIRED 修正 `/tmp` 断言后重跑 PASS，无产品缺陷，原日志保留。命令及日志 `/tmp/be01-compose-373cc241/{production-rerun.log,targeted.log,race.log,devices-race.log,vet.log}`，补测源码同目录 `src/server/cmd/relaynest/compose_independent_test.go`。
+- 门槛范围核对：ENGINEERING 第 13～14 行与 ANDROID 第 26～27 行的全局 G-INSTANCE-RUNTIME／COMPOSITION 包含 Android 专项及跨端组合，本结果仅支持 BE-01 现有后端父范围，不将两全局门槛置为通过。Android完整call／真机、未来附件HTTP／WS、反向代理缓存策略等 NOT_RUN；既定 G1 瞬切窗口保留，不宣称 G2。研究快照、独立 A01 及准确组合 I01 证据现已齐全。
+- 研究结果本地快照：`7d2fcec4a534d32816dfa49aff288d04a4c49dfe`（BE-DOC-S04，仅原 BACKEND 元数据）；不同 A01 `/root/instance_compose_audit` 固定此快照核代码与受测 `373cc241…` 相同及 R01 证据真实性，最终 PASS 见下文。
+- A01 结果：Auditor `/root/instance_compose_audit` `PASS`，仅既定现有后端 G1 父范围，无新增产品问题；固定 `7d2fcec4…`，核 120 个受控源码与 R01 归档逐字节一致，server/web 与 `373cc241…`／`cf2c8b49…` 无差异。独立生产普通／定向 race、probe 三协议安全矩阵、进程装配、Bot 写 COMMIT 故障、vet 与锁版 Web 均 PASS，命令与退出码 `/tmp/be01-compose-a01-7d2f/commands.txt`。
+- A01 证据补齐：R01 原生产日志可能空缓冲，Auditor 已独立强制非空真实登录日志且敏感值不入日志；原严格头普通 rerun 未覆盖新增项，A01 普通与 race 已覆盖；R01 退出码源于实际工具记录而非独立文件，不虚称存在。全局两实例门槛及跨端／未来路由等仍 pending／NOT_RUN，既定 G1 窗口不变。
+- 历史 I01 派发：Agent `/root/http_integrate_i01` 执行有限 BE-01-COMPOSE-I01，只核准确受审组合已在目标 `work` / `7d2fcec4a534d32816dfa49aff288d04a4c49dfe`，不重复 cherry-pick／不改业务；校验基线、祖先、代码／构建输入同版本和已运行必检证据、未提交 BACKEND 保护。当前源码无新增变更，无需重复无关矩阵；主调度自本记录后冻结文档至其释放，父任务尚不标 done。
+- I01 结果：Integrator `/root/http_integrate_i01`（BE-01-COMPOSE-I01）`PASS`，准确组合已在目标，前后均 `7d2fcec4a534d32816dfa49aff288d04a4c49dfe`，no-op 无新提交／冲突；AUTH／HTTP 映射 range-diff 全部 `=`，120 受控源码与 R01／A01 归档逐字节相同，embed 输入产物亦同，无业务／依赖／构建漂移。同版既有必检证据逐项复核，本轮不重复运行时矩阵；BACKEND patch 完整保留，index 空，锁已释放。R01／A01／I01 与本地证据快照齐全，主调度据此归档 COMPOSE 及 BE-01 既定现有后端父范围，全局跨端两 gate 仍 pending。
+
+- 归档：BE-DOC-S05 `/root/storage_archive_resume` 仅转录主调度完成决定与既有证据；没有新增业务实现或重新运行运行时矩阵。
+
 <a id="g5-be01-auth"></a>
 
 ### G5 BE-01-AUTH Android 实例入口与事务绑定
