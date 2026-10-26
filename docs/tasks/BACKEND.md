@@ -58,6 +58,16 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 历史 AUTH `d894f14175249bbd17609a0eb3521462577151c8` 同时由 AUTH F01 的祖先链保留；其余所有 detached 代码均由上述提交或恢复入口可达。只保存源码、必要测试和版本化文档；不上传依赖、构建产物、临时数据库、密钥或原始敏感日志。
 
 
+## Debian 本轮恢复（2026-10-26）
+
+- Recovery `/root/backend_recovery` 核实真实 origin 为 `ZephyrLeeX/RelayNest`，原工作树 `/home/codex/projects/RelayNest` 为干净的 `main@01c74a776b0b76fcc6616f60ae637a5a53f18384`，三个恢复 refs 与交接 SHA 一致；准确恢复基线为 `bde0193a5e1f561cb0b3d30a08bea691fcd499a8`，未从 main 重做。
+- 原仓库 `.git` 被执行环境限制为只读，创建 worktree 时无法写 ref。总调度批准在允许写入目录建立完整独立本地克隆 `/home/codex/projects/RelayNest/.worktrees/backend-local`（`--no-hardlinks`，无 alternates），目标分支 `resume/backend-20261026`；ADMIN 隔离树为 `/home/codex/projects/RelayNest/.worktrees/backend-admin` / `work/backend-admin-resume`。下述本地合入仅发生在该独立仓库，原 main 未更新，原受控文件未改，仅出现未跟踪 `.worktrees/`；不得将其整体 stage。
+- 无人值守下一次恢复优先复用既有 `.worktrees/backend-local` / `resume/backend-20261026` 及 `.worktrees/backend-admin` / `work/backend-admin-resume@c937602975c232c62a20808f3a376a86b2d84795`，先核真实 HEAD、dirty 与 worktree/index owner，再读取本节和对应条目；不再从 main 复制、不重复克隆或 cherry-pick 已合入提交。原主树文档保持原样，本轮恢复证据仅提交在独立本地集成仓库。
+- 实测工具版本 Go **1.27.3**、Node **22.23.2**、npm **10.9.8**。旧 `/tmp` 证据仍仅作历史；本轮日志为下列实际新运行结果。mise 默认缓存／信任目录只读失败后使用可写临时缓存或已安装锁版二进制，未升级版本。
+- 锁版 Web 初次离线 `npm ci` 因 Node `spawnSync EPERM` 失败（独立 `/bin/true` 也复现）；`npm ci --offline --ignore-scripts` 后原 `npm run build`（typecheck＋Vite）PASS，未改锁文件或源码。ADMIN 核对 Web 受控输入同版后复用该真实 dist；生成物与依赖未提交。
+- 当前硬阻塞为本地 IPv4／IPv6 loopback socket 监听均 `operation not permitted`；不删除断言、不改超时，不以编译／静态检查替代真实 HTTP＋SQLite。BE-02 父组合等待 ADMIN 通过并精确集成；BE-05-01-HTTP、BE-10-01-HTTP 的真实组合同受 socket 门槛限制，后者还等待 STORAGE I01。暂不新增更多未验证 HTTP WIP，其他下游仍按原依赖与外部门槛执行。
+- 恢复条件：运行环境允许 loopback 监听后，针对各固定 SHA 重跑真实 HTTP＋SQLite、相关普通／race 与必跑组合；取得独立审计 PASS 后才精确集成 ADMIN，STORAGE I01 全部检查通过后才可完成。若要更新原主仓库，仍须其 `.git` 可写；本轮未 push、部署或发布，未创建 `.codex-task-done`。
+
 推送分支依赖说明：原 BE-10-03 父依赖字段保留；下游只做框架／FCM 的准备或验证时，执行包必须明确消费 [BE-10-03-FCM](BACKEND.md#be-10-03-fcm) 精确独审已集成子结果，OPPO 外部阻塞不传播至 FCM。全范围最终验收仍须两通道分别有证据，OPPO 缺条件保留 blocked／NOT_RUN，不能以 FCM 代验或将父项标完成。
 
 本文件是后端唯一剩余任务入口；BE-01～BE-10 是功能导航，其中 BE-01、BE-02 和 BE-10-03 同时承担旧父任务收口，不能整组派给一次 worker。仅下列 leaf 可独立实施；依赖须完成独立审计和精确集成后才满足。未更新条目保留重组基线 `086fa51d79d7726545a9abbab8feebb25770034e` 的快照；已恢复任务以各条目最新调度证据为准，不从旧快照推定活跃 worker。
@@ -98,7 +108,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 ### BE-02 消息幂等创建和接收回执
 
-- 子项证据：[Bot 有限文本 HTTP 已完成独审与精确集成](COMPLETED.md#g5-be02-bot)；ADMIN 尚未开始，父项原组合验收仍未闭环。
+- 子项证据：[Bot 有限文本 HTTP 已完成独审与精确集成](COMPLETED.md#g5-be02-bot)；ADMIN 已恢复至未验收 checkpoint，父项原组合验收仍未闭环。
 
 - 旧ID：`P05-02`；类型：父收口，不整组派发；状态：进行中（父收口未完成）。
 - 依赖：[已完成基线 P05-01](COMPLETED.md#g2)、[已完成基线 P05-02-PLAN01](COMPLETED.md#g3)、[已完成基线 P05-02-S01](COMPLETED.md#g3)、[已完成 BE-02-BOT](COMPLETED.md#g5-be02-bot)、`BE-02-ADMIN`。
@@ -122,7 +132,10 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - Agent `/root/admin_message_implement` 已派发，开始隔离准备及实施，尚无新增独审／集成结论。
 - 环境迁移备份：用户已授权保存代码，现有五文件已独立 WIP 提交 `8ab66c847bf1a6e0c86592f90994679b6685c7e5`，远端入口 `recovery/backend-20261026-admin-wip`；不是功能完成提交，无新测试／审计结果。原 worker 不再运行，从现有代码继续，见本文件开头交接。
 
-- 旧ID：`P05-02-S03`；类型：有限 leaf；状态：`blocked`（环境迁移暂停，原 running；WIP 已保存但未完整验证／独审／集成，恢复后接续 running）。
+- Debian 恢复实施：Implementer `/root/admin_implementer` 从 `8ab66c847bf1a6e0c86592f90994679b6685c7e5` 接续，在上述 ADMIN 隔离树提交 checkpoint `c937602975c232c62a20808f3a376a86b2d84795`，树 clean 并释放写权；未重写生产 WIP，仅修正 TLS 丢响应夹具、204 空响应断言并补八项授权失效回归。完整待验收链为 `a97cfcee014298c64e8468a7b9eb1d007b635e37 → 8ab66c8… → c937602…`，五文件整体纳入审计，不能只审尾提交。
+- 本轮检查：`go test -p 1 -run '^$' ./...`、全服 vet/build、gofmt/diff、messages/idempotency 普通 PASS；真实 cmd ADMIN 定向测试 FAIL，`go test -p 1 -race -count=1 ./...` 退出 1（240.8 秒），cmd/auth/httpapi 因 socket 权限失败，attachments/bots/changes/devices/health/idempotency/messages/storage/webui race PASS，未见 DATA RACE 报告但不等于全服 race PASS。新增 ADMIN 业务断言及完整真实 HTTP＋SQLite验收 NOT_RUN；尚无正式实施验收交接／精确集成。实际命令与退出码见 `/tmp/relaynest-admin-implementation/final-commands.txt`、`cmd-http.log`、`race-all.log`，这些为本轮临时证据，不冒称随 Git 保存。
+- ADMIN-A01：独立 Auditor `/root/admin_auditor` 固定 `c937602975c232c62a20808f3a376a86b2d84795`，审查上述完整五文件链，结论 **BLOCKED**。稳定阻塞 **ADMIN-A01-B01**：`server/cmd/relaynest/main_test.go:354、1757` 的真实 TLS 服务监听报 `operation not permitted`，业务断言未运行；静态未发现确定业务缺陷不等于 PASS。复验要求：同一固定 SHA 在可监听环境运行全部 ADMIN HTTP＋SQLite、相关普通／race及全服必检，再续独审、必要编号修复／重审和精确集成。
+- 旧ID：`P05-02-S03`；类型：有限 leaf；状态：`running`（2026-10-26，总调度由迁移 blocked 恢复接续；当前 checkpoint 的实施验收及 ADMIN-A01 均受环境阻塞，未进入已通过审计的 integrating，不标 done）。
 - 依赖：[已完成 BE-02-BOT](COMPLETED.md#g5-be02-bot)、[已完成基线 P05-02-PLAN01](COMPLETED.md#g3)、[已完成 BE-01 现有后端父范围](COMPLETED.md#g5-be01)。
 - 门槛：`G-GIT`、`G-API`；条件未实证不记通过。
 
@@ -526,7 +539,7 @@ commit后201 ClientMessageReceipt含原message/delivery_id，no-store；同有�
 
 ### BE-10-01-STORAGE 注册与通知偏好存储准备
 
-- 类型：有限 leaf；状态：`blocked`（2026-10-26，环境迁移中断 I01，恢复后回 integrating）；owner Backend Orchestrator；Implementer `/root/push_storage_implement`；固定基线 `571dc5dca696d4dfb446a868ca58169cf488579b` / 目标 `work`。只消费已集成 AUTH／设备／契约基础，不消费尚在独审的 HTTP；父项完整完成门槛不作本准备包前置。
+- 类型：有限 leaf；状态：`integrating`（2026-10-26，总调度由迁移 blocked 恢复；I01 当前 **BLOCKED（环境）**，不标 done）；owner Backend Orchestrator；Implementer `/root/push_storage_implement`；固定基线 `571dc5dca696d4dfb446a868ca58169cf488579b` / 目标 `work`。只消费已集成 AUTH／设备／契约基础，不消费尚在独审的 HTTP；父项完整完成门槛不作本准备包前置。
 - 派发准备：Backend Implementer，隔离 `/workspace/RelayNest-be10-registration` / `codex/be10-registration-20261026`；独占本树/index、三个 devices 新文件与迁移编号 **0009**。仅允许四主文件 `server/internal/devices/{push.go,push_repository.go,notifications.go}`、`server/migrations/0009_device_push.sql`，以及同包 `{push_test.go,push_repository_test.go,notifications_test.go}`；auth／changes／storage／router／main／旧迁移均只读。
 - 注册按 Session.id＋provider，偏好按 device_id 共享，独立 int64 版本按冻结 schema；公开状态不含 token，内部发送目标与公开 DTO 分离。两 provider 共存，缺失／墓碑、同版同值重放先于 CAS、异值冲突、删除／明确失效推进屏障及耗尽，迟到结果必须匹配设备／会话／provider／发送版本，绝不删会话／新 token／其他通道／偏好。
 - 偏好默认读不落库，不同会话同设备共享 CAS；完整替换校验按冻结合同，同值也推进版本／服务端时间，与 typed `DeviceNotificationsUpdated` change 同事务；失败／COMMIT 故障无部分结果。vendor 激活只能消费可信服务端资格状态及当前会话有效 opush 注册，默认未就绪；普通 FCM 准备不等待 OPPO 资格。
@@ -543,6 +556,10 @@ commit后201 ClientMessageReceipt含原message/delivery_id，no-store；同有�
 - I01 派发准备：Backend Integrator，目标 `work` / `a97cfcee014298c64e8468a7b9eb1d007b635e37`，精确组合 `20b9fffbe8063e25cee60456dc96e53f594866cb`＋`003c990c08ef606b838ae2715bf1d33d19e7fa00`；仅推送七文件／0009 与已编号附件单测，保护 BACKEND 元数据，不消费并行实施的 ADMIN。受影响检查／精确集成后才释放 0009 排他锁，父 BE-10-01 真实接线仍未完成。
 - I01 Agent `/root/push_storage_integrate` 已派发，独占目标业务 Git/index、推送与 0009 写锁及重型检查；主调度自本行记录后冻结文档至其释放，ADMIN 只实施／轻量定向等待。
 - 迁移断点实核：目标仍 `a97cfcee014298c64e8468a7b9eb1d007b635e37`，候选 `47c08a7a3fd7712379d2ef4ba6e86ad897daacb4`／父 `77025cfe0a3317a0d0df5a2b97ff1be786a3104b`，两提交已在隔离树但未快进目标；所有仓库测试／Git 进程已退出。旧 I01 冻结随会话中断解除，本次仅备份不补造 I01 PASS；0009 编号仍为此包预留，恢复入口 `recovery/backend-20261026-push-i01`。
+
+- Debian I01 恢复：Integrator `/root/push_integrator` 在上述独立本地集成仓库核共同父 `a97cfcee…` 与恢复快照 `bde0193a…` 仅差 BACKEND／PROGRESS 元数据；无冲突精确重放候选，`bde0193a5e1f561cb0b3d30a08bea691fcd499a8 → 17aefdc7ad0a328356ebbbc1ebe326ef807ead76 → af84503f62083b3d3bfe704694a8807d3928d678`。映射 `20b9fff… → 77025cf… → 17aefdc…`、`003c990c… → 47c08a7… → af84503…`，两轮 range-diff 均 `=`；server 与原候选逐字节一致、docs 与恢复快照逐字节一致，0001～0008 未改，无新业务逻辑或冲突需重审，历史 A02 PASS 仍有效。
+- 本轮 I01 检查：`go test ./internal/devices ./internal/auth ./internal/storage ./internal/changes ./internal/attachments` 及相同五包 `go test -race -p 1` 实际运行；devices/storage/changes/attachments 普通与 race PASS（含真实 SQLite 旧八迁移升级及 checksum／并发／回滚），auth 普通与 race FAIL（`TestHTTPLifecycle` socket 禁止）。`go test ./...` 实际 FAIL，cmd/auth/httpapi 均受 IPv4／IPv6 socket 限制，其余包 PASS；全服 `go vet ./...`、`go build ./...`、gofmt/diff、锁版 Web build PASS。Go 使用 `GOTOOLCHAIN=local GOCACHE=/tmp/relaynest-i01/go-cache GOPROXY=off`；实际新日志 `/tmp/relaynest-i01/logs/{affected-test,affected-race,full-test,vet,build,web-ci,web-ci-ignore-scripts,web-build}.log`。首次 npm／旧历史失败均保留，不将未执行 HTTP／平台发送／跨端 gate 视为通过。
+- I01 最终 **BLOCKED（环境）**：源码精确合入只存在本地独立仓库 `resume/backend-20261026@af84503…`，原主树未更新；工作树 clean、检查进程已结束并释放业务／重型锁。迁移 **0009** 已实际存在并永久占用，I01 验收闭环前仍保留其排他分配，后续编号须重新实核；不得重复分配 0009、重复 cherry-pick 或将候选存在视为完成。环境解除后补齐失败的真实组合检查，再由总调度决定完成归档。
 
 <a id="be-10-01-http"></a>
 
