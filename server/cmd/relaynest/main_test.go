@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"crypto/tls"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -19,6 +20,7 @@ import (
 	"relaynest/server/internal/auth"
 	"relaynest/server/internal/bots"
 	"relaynest/server/internal/httpapi"
+	"relaynest/server/internal/messages"
 	"relaynest/server/internal/storage"
 	"strings"
 	"syscall"
@@ -1754,14 +1756,13 @@ func clientMessageRequest(f *botHTTPFixture, id, key, body string) (int, string,
 func TestAssembledClientMessageRecovery(t *testing.T) {
 	f := botHTTP(t, nil)
 	c := clientMessageBot(t, f)
-	// 通过实际 TCP 发送首请求；观察已提交的业务行后关闭连接，完全不读取响应。
-	plain := httptest.NewServer(httpapi.New(health.New(nil), f.handler))
-	defer plain.Close()
-	conn, err := net.Dial("tcp", strings.TrimPrefix(plain.URL, "http://"))
+	// 沿真实 TLS 来源策略发送首请求；提交后关闭连接，完全不读取响应。
+	transport := f.server.Client().Transport.(*http.Transport)
+	conn, err := tls.DialWithDialer(&net.Dialer{Timeout: 5 * time.Second}, "tcp", strings.TrimPrefix(f.server.URL, "https://"), transport.TLSClientConfig.Clone())
 	if err != nil {
 		t.Fatal(err)
 	}
-	request, _ := http.NewRequest("POST", plain.URL+"/api/v1/client/bots/"+c.Bot.ID+"/messages", strings.NewReader(clientMessageBody))
+	request, _ := http.NewRequest("POST", f.server.URL+"/api/v1/client/bots/"+c.Bot.ID+"/messages", strings.NewReader(clientMessageBody))
 	request.Header.Set("Authorization", "Bearer "+f.android.Token)
 	request.Header.Set("X-RelayNest-Instance-ID", f.instanceID)
 	request.Header.Set("Idempotency-Key", clientMessageKey)
@@ -1802,7 +1803,9 @@ func TestAssembledClientMessageRecovery(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		if i == 1 {
 			status, out, h := f.admin("POST", "/api/v1/auth/logout", "")
-			assertBotResponse(t, status, 204, out, h)
+			if status != http.StatusNoContent || out != "" || h.Get("Cache-Control") != "no-store" {
+				t.Fatal("logout must return an empty no-store 204 response")
+			}
 			status, out, h = f.request("POST", "/api/v1/auth/login", `{"username":"Admin","password":"correct","client_type":"android","device_name":"relogin","device_id":"00000000-0000-4000-8000-000000000002"}`, "", "", nil)
 			assertBotResponse(t, status, 200, out, h)
 			var login struct {
@@ -1982,5 +1985,74 @@ func TestClientMessageInstanceHeadersAndDatabaseSwitch(t *testing.T) {
 	assertBotResponse(t, status, 409, raw, headers)
 	if !strings.Contains(raw, "INSTANCE_MISMATCH") || before != clientMessageState(t, b) {
 		t.Fatal("switched instance executed")
+	}
+}
+
+// 已持久化的回执仍须检查当前权限，不能以幂等命中绕过撤销或 Bot 降权。
+func TestAssembledClientMessageReplayAuthorization(t *testing.T) {
+	for _, tc := range []struct {
+		name, change, code string
+		status             int
+	}{
+		{"disabled", "UPDATE bots SET enabled=0", "FORBIDDEN", 403},
+		{"receive", "UPDATE bots SET can_receive=0", "FORBIDDEN", 403},
+		{"revoked", "UPDATE sessions SET revoked=1 WHERE client_type='android'", "AUTHENTICATION_REQUIRED", 401},
+		{"expired", "UPDATE sessions SET idle_expires_at=1 WHERE client_type='android'", "AUTHENTICATION_REQUIRED", 401},
+		{"generation", "UPDATE administrator SET auth_generation=auth_generation+1", "AUTHENTICATION_REQUIRED", 401},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := botHTTP(t, nil)
+			c := clientMessageBot(t, f)
+			status, raw, h := clientMessageRequest(f, c.Bot.ID, clientMessageKey, clientMessageBody)
+			assertBotResponse(t, status, 201, raw, h)
+			f.sql(tc.change)
+			before, sessions := clientMessageState(t, f.store), f.snapshot()
+			status, raw, h = clientMessageRequest(f, c.Bot.ID, clientMessageKey, clientMessageBody)
+			assertBotResponse(t, status, tc.status, raw, h)
+			if !strings.Contains(raw, `"code":"`+tc.code+`"`) || strings.Contains(raw, "delivery_id") || before != clientMessageState(t, f.store) || sessions != f.snapshot() {
+				t.Fatal("rejected replay exposed receipt or changed state")
+			}
+		})
+	}
+}
+
+// 真实入口签发的身份在排队进入业务事务前失效，仍不得靠旧授权创建消息。
+func TestAssembledClientMessageWriteBinding(t *testing.T) {
+	for _, tc := range []struct {
+		name, change, code string
+		status             int
+	}{
+		{"instance", "UPDATE instance_identity SET instance_id='22222222-2222-4222-8222-222222222222'", "INSTANCE_MISMATCH", 409},
+		{"session", "UPDATE sessions SET revoked=1 WHERE client_type='android'", "AUTHENTICATION_REQUIRED", 401},
+		{"generation", "UPDATE administrator SET auth_generation=auth_generation+1", "AUTHENTICATION_REQUIRED", 401},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := botHTTP(t, nil)
+			c := clientMessageBot(t, f)
+			policy, err := httpapi.NewOriginPolicy(f.server.URL, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			authorize := clientMessageAuthorization(f.sessions, auth.NewRequestSecurity(f.sessions, policy))
+			states := make(chan [2][32]byte, 1)
+			f.handler.MessageHandler = httpapi.NewMessageHandler(bots.New(f.store), messages.New(f.store), func(w http.ResponseWriter, r *http.Request, write bool) (httpapi.BotAccess, bool) {
+				access, ok := authorize(w, r, write)
+				if ok {
+					f.sql(tc.change)
+					states <- [2][32]byte{clientMessageState(t, f.store), f.snapshot()}
+				}
+				return access, ok
+			})
+			status, raw, h := clientMessageRequest(f, c.Bot.ID, clientMessageKey, clientMessageBody)
+			assertBotResponse(t, status, tc.status, raw, h)
+			select {
+			case state := <-states:
+				if !strings.Contains(raw, `"code":"`+tc.code+`"`) || strings.Contains(raw, "delivery_id") || state[0] != clientMessageState(t, f.store) || state[1] != f.snapshot() {
+					t.Fatal("stale authorization created or exposed a message")
+				}
+			default:
+				t.Fatal("request did not reach the authorization boundary")
+			}
+		})
 	}
 }
