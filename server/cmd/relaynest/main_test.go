@@ -324,6 +324,7 @@ const botCreateBody = `{"name":"测试Bot","enabled":true,"capabilities":{"send"
 type botHTTPFixture struct {
 	t                *testing.T
 	store            *storage.Store
+	databasePath     string
 	instanceID       string
 	sessions         *auth.SessionStore
 	server           *httptest.Server
@@ -352,11 +353,12 @@ func fixtureInstanceID(t *testing.T, store *storage.Store) string {
 func botHTTP(t *testing.T, proxies []string) *botHTTPFixture {
 	t.Helper()
 	ts := httptest.NewTLSServer(http.NotFoundHandler())
-	store, h, err := authenticationDependencies(context.Background(), filepath.Join(t.TempDir(), "bots.sqlite"), ts.URL, proxies)
+	databasePath := filepath.Join(t.TempDir(), "bots.sqlite")
+	store, h, err := authenticationDependencies(context.Background(), databasePath, ts.URL, proxies)
 	if err != nil {
 		t.Fatal(err)
 	}
-	f := &botHTTPFixture{t: t, store: store, instanceID: fixtureInstanceID(t, store), server: ts, handler: h, sessions: auth.NewSessionStore(store)}
+	f := &botHTTPFixture{t: t, store: store, databasePath: databasePath, instanceID: fixtureInstanceID(t, store), server: ts, handler: h, sessions: auth.NewSessionStore(store)}
 	t.Cleanup(func() { ts.Close(); store.Close() })
 	if err := auth.InitAdministrator(context.Background(), store, "Admin", []byte("correct")); err != nil {
 		t.Fatal(err)
@@ -2022,7 +2024,7 @@ func TestAssembledClientMessageWriteBinding(t *testing.T) {
 		name, change, code string
 		status             int
 	}{
-		{"instance", "UPDATE instance_identity SET instance_id='22222222-2222-4222-8222-222222222222'", "INSTANCE_MISMATCH", 409},
+		{"instance", "UPDATE instance_identity SET instance_id='22222222-2222-4222-8222-222222222222'", "INSTANCE_UNAVAILABLE", 503},
 		{"session", "UPDATE sessions SET revoked=1 WHERE client_type='android'", "AUTHENTICATION_REQUIRED", 401},
 		{"generation", "UPDATE administrator SET auth_generation=auth_generation+1", "AUTHENTICATION_REQUIRED", 401},
 	} {
@@ -2034,12 +2036,26 @@ func TestAssembledClientMessageWriteBinding(t *testing.T) {
 				t.Fatal(err)
 			}
 			authorize := clientMessageAuthorization(f.sessions, auth.NewRequestSecurity(f.sessions, policy))
-			states := make(chan [2][32]byte, 1)
+			type observation struct {
+				store             *storage.Store
+				messages, session [32]byte
+			}
+			states := make(chan observation, 1)
 			f.handler.MessageHandler = httpapi.NewMessageHandler(bots.New(f.store), messages.New(f.store), func(w http.ResponseWriter, r *http.Request, write bool) (httpapi.BotAccess, bool) {
 				access, ok := authorize(w, r, write)
 				if ok {
 					f.sql(tc.change)
-					states <- [2][32]byte{clientMessageState(t, f.store), f.snapshot()}
+					observed := *f
+					if tc.name == "instance" {
+						// 外部换 ID 后旧 Store 必须失败关闭；新 Store 只观测副作用，不替换生产绑定。
+						observer, err := storage.Open(context.Background(), storage.Config{Path: f.databasePath})
+						if err != nil {
+							t.Fatal(err)
+						}
+						observed.store = observer
+						t.Cleanup(func() { observer.Close() })
+					}
+					states <- observation{observed.store, clientMessageState(t, observed.store), observed.snapshot()}
 				}
 				return access, ok
 			})
@@ -2047,7 +2063,9 @@ func TestAssembledClientMessageWriteBinding(t *testing.T) {
 			assertBotResponse(t, status, tc.status, raw, h)
 			select {
 			case state := <-states:
-				if !strings.Contains(raw, `"code":"`+tc.code+`"`) || strings.Contains(raw, "delivery_id") || state[0] != clientMessageState(t, f.store) || state[1] != f.snapshot() {
+				observed := *f
+				observed.store = state.store
+				if !strings.Contains(raw, `"code":"`+tc.code+`"`) || strings.Contains(raw, "delivery_id") || state.messages != clientMessageState(t, observed.store) || state.session != observed.snapshot() {
 					t.Fatal("stale authorization created or exposed a message")
 				}
 			default:
