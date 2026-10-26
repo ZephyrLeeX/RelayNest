@@ -103,6 +103,22 @@
 
 请求≤256KiB、UUIDv4幂等头；未知/结构400、语义422、超限413、未授权401、能力403、资源域404、异摘要409 IDEMPOTENCY_CONFLICT、墓碑410 RESOURCE_EXPIRED、存储503，遵循冻结Error/request_id/retryable及默认值摘要；日志不含凭据/正文。检查真实路由+SQLite丢首响应/重启同键仍同ID且不增序号/changes/job，并发同键/异内容、commit失败全回滚、API reset新Token同作用域旧Token拒绝、跨Bot不泄漏；当前授权/能力先于查重，实例头缺失/畸形/错误不影响Bot身份。必跑httpapi/messages/idempotency/bots/cmd测试、相关race、go vet ./...；Webhook未接线须记NOT_RUN。
 
+<a id="g5-be05-storage"></a>
+
+### G5 BE-05-01-STORAGE 流式持久化状态机准备
+
+- 原任务：`BE-05-01-STORAGE`；类型：有限 leaf；状态：`done`（2026-10-26，由主调度依据 A01 PASS 与 I01 精确集成证据从 integrating 归档）；owner Backend Orchestrator；Implementer `/root/attachment_storage_implement`；依赖 P05-01 已集成 `ed488e543d892f2353fbc95f72a2f0af98ba9a8d`；固定基线 `388dd8ae1f3641bdfd26a7a421e4171b8da16971` / 目标 `work`。
+- 历史派发准备：Backend Implementer，隔离 `/workspace/RelayNest-be05-storage` / `codex/be05-storage-20261026`；独占 attachments 包、本树/index 与迁移编号 **0008**，直到本包精确集成释放。其他任务不得预占或写该编号；不占 HTTP/auth/router/main 锁。
+- 只允许五主文件：`server/internal/attachments/{models.go,repository.go,files.go,upload.go}`、`server/migrations/0008_attachments.sql`；测试只允许同包 `{repository_test.go,files_test.go,upload_test.go,schema_test.go}`。不修改通用消息幂等接口／旧迁移／消息关联／投递保护／恢复扫描／HTTP／配置路由。
+- 目标：真实 SQLite＋附件卷的 staging/ready、稳定身份作用域上传去重、活动尝试 fencing；短事务接口可消费 Bot／Android 真实授权闭包，流式过程不持写事务，ready 结果仅提交成功后发布。ready 查询仅返回 ready；原名只显示、安全随机物理键、拒绝路径越界／symlink、不抓 URL。
+- 验收：有界缓冲及实际字节限制、正 int64 可配置大小及最大值无溢出，hash/fsync/同卷 rename/目录 fsync；同键重试必须实际有界读流核字节摘要，同元数据不能直接重放，异内容冲突；重开/并发/取消/过期租约/迟到旧尝试/半文件/rename后DB失败/真实COMMIT失败无虚假成功。保留 staging/文件恢复证据，不越界实施 BE-05-04。
+- 必跑附件／storage 普通与 race、vet/gofmt、旧库升级及旧迁移 checksum 验证；结果区分 PASS/FAIL/NOT_RUN。真实 HTTP 授权、实例门禁、Bot-first 读流顺序及全局设置路由尚未接线，全部明确 NOT_RUN；本包独审集成不等于 BE-05-01 完成。
+- 历史实施交接：固定 `064807f9e5e126f48c9360d4d02a40fc209f790e`，准确五主文件＋四测试，树 clean、实施停止；迁移锁 0008 保留。Implementer 报附件/storage 普通、race、vet/build/gofmt、旧库升级及 0001～0007 字节/checksum PASS；额外全服务 build 因缺生成 Web dist FAIL，真实 HTTP 等范围仍 NOT_RUN。交独立 A01 固定 SHA 审查，不据局部结果标父任务完成。
+- A01 结果：Agent `/root/attachment_audit_a01` `PASS`，固定 `064807f9e5e126f48c9360d4d02a40fc209f790e` 准确九文件，无需修复编号。独立附件/storage 普通／race／vet/build、gofmt/diff、旧库升级及旧迁移校验 PASS；临时归档补证续租 SQL 失败关闭 pipe、过期流／新 ready 后旧流 fencing race PASS。全服务 build 再现缺 Web dist FAIL；真实 HTTP／G1 等范围继续 NOT_RUN。
+- 历史 I01 派发准备：Backend Integrator，准确受审提交由目标 `work` / `388dd8ae…` 可快进时保留 SHA；仅附件九文件／0008 迁移，迁移锁保持至组合检查通过。主树未提交 BACKEND 调度元数据由主调度所有，须保存并保护、不 stage；HTTP F01 在另一树只改 router/instance，不消费其未审代码。
+- I01 结果：Agent `/root/attachment_integrate_i01` `PASS`，目标 `work` 无冲突快进 `388dd8ae1f3641bdfd26a7a421e4171b8da16971` → 原受审 `064807f9e5e126f48c9360d4d02a40fc209f790e`，准确九文件、无额外业务修改。附件/storage 普通／race、旧库升级、旧迁移字节/hash、全服普通／vet/build/gofmt 与两树锁版 Node 22.23.2／npm 10.9.8 Web 构建 PASS；目标回归/build PASS。原 BACKEND patch 哈希前后一致，index 空。Git/index/附件/0008 写锁释放，0008 永久占用；HTTP／G1／恢复扫描等 NOT_RUN。生成 Web dist 后全服 build PASS，关闭原缺 dist 构建失败，保留上述历史 FAIL。验收与精确集成证据齐全，仅本 STORAGE 子包完成，父 BE-05-01 不完成。
+- 归档与限制：BE-DOC-S02 `/root/storage_archive_resume` 仅转录主调度完成决定及既有证据。HTTP 授权／Bot-first 实际读流顺序／Android／完整 G1／设置路由／恢复扫描均 NOT_RUN；准备完成不等于真实上传完成。0008 永久占用、写锁已释放；下一迁移 0009 派发前须另核编号及排他锁。
+
 ## Web 管理端
 
 <a id="w1"></a>

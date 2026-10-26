@@ -2,7 +2,7 @@
 
 推送分支依赖说明：原 BE-10-03 父依赖字段保留；下游只做框架／FCM 的准备或验证时，执行包必须明确消费 [BE-10-03-FCM](BACKEND.md#be-10-03-fcm) 精确独审已集成子结果，OPPO 外部阻塞不传播至 FCM。全范围最终验收仍须两通道分别有证据，OPPO 缺条件保留 blocked／NOT_RUN，不能以 FCM 代验或将父项标完成。
 
-本文件是后端唯一剩余任务入口；BE-01～BE-10 是功能导航，其中 BE-01、BE-02 和 BE-10-03 同时承担旧父任务收口，不能整组派给一次 worker。仅下列 leaf 可独立实施；依赖须完成独立审计和精确集成后才满足。状态为重组基线 `086fa51d79d7726545a9abbab8feebb25770034e` 的快照，不代表已启动新 worker。
+本文件是后端唯一剩余任务入口；BE-01～BE-10 是功能导航，其中 BE-01、BE-02 和 BE-10-03 同时承担旧父任务收口，不能整组派给一次 worker。仅下列 leaf 可独立实施；依赖须完成独立审计和精确集成后才满足。未更新条目保留重组基线 `086fa51d79d7726545a9abbab8feebb25770034e` 的快照；已恢复任务以各条目最新调度证据为准，不从旧快照推定活跃 worker。
 
 需求与接口以 [PRD](../PRD.md)、[架构](../ARCHITECTURE.md)、[技术设计](../TECHNICAL_DESIGN.md) 和 [OpenAPI](../../server/api/openapi.yaml) 为准；这里只保留实施范围和验收，不建立新合同。工程检查、独立提交与 Git 规则见 [CONTRIBUTING](../CONTRIBUTING.md)。Bot Hub 只传输、存储和路由，不执行业务命令/MCP，不增加 Web 聊天/历史或正文推送，不修改 RelayShelf 后端/数据库。
 
@@ -20,7 +20,7 @@
 
 ### BE-01 服务实例绑定
 
-- 子项证据：[AUTH 已完成独审与精确集成](COMPLETED.md#g5-be01-auth)；HTTP01 尚未开始，父项仍待同一组合 SHA 完整验收。
+- 子项证据：[AUTH 已完成独审与精确集成](COMPLETED.md#g5-be01-auth)；HTTP01 已满足派发门槛，父项仍待同一组合 SHA 完整验收。
 
 - 旧ID：`P08-04-D01-B01`；类型：父收口，不整组派发；状态：进行中（父收口未完成）。
 - 依赖：[已完成基线 P08-04-D01-M01](COMPLETED.md#g4)、[已完成基线 P04-05-S03](COMPLETED.md#g1)、[已完成基线 P04-06](COMPLETED.md#g1)、[已完成基线 P08-04-D01-B01-SCOPE01](COMPLETED.md#g4)、[已完成基线 P08-04-D01-B01-BOT01](COMPLETED.md#g4)、[已完成基线 P08-04-D01-B01-PLAN02](COMPLETED.md#g4)、[已完成 BE-01-AUTH](COMPLETED.md#g5-be01-auth)、`BE-01-HTTP`。
@@ -40,9 +40,16 @@ G1 已批准生命周期：Android 先验证实例 ID 再读取密码/Bearer，�
 
 ### BE-01-HTTP 实例探测与真实路由同快照组合
 
-- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+- 调度（2026-10-26，UTC+8）：owner Backend Orchestrator，基线 `388dd8ae1f3641bdfd26a7a421e4171b8da16971` / 目标 `work`；AUTH 最终 `1aa0aa9e0c390a46a7293cae56410e0baae8ce71` 已 A02 PASS 与 I01 精确集成，BOT01／PLAN02 依赖已由 R01 验证。由“未开始”转 `ready` 后派发 Backend Implementer，隔离 `/workspace/RelayNest-be01-http` / `codex/be01-http-20261026`；独占 router/main、httpapi/bots、bots/repository 及本树/index，auth/devices 只读；准确五主文件与必要相关测试，不改迁移／契约／其他模块。
+- 已派发 Agent `/root/http_implement`，`ready → running`，开始隔离准备及实施；无新增审计／集成结果。
+- 实施交接：`891287cf143e4d300c353e24233979077e84e64b`，基线 `388dd8ae…`，五主文件＋三测试（共八文件），隔离树 clean 并释放写权。Implementer 报最终全服普通、六包 race、全服 vet/build/gofmt/diff、锁版 Web ci/build PASS。自测曾发现 HTTP/2 无正文误拒绝，已修正、补回归并完整重跑；原失败保留。A01 准备固定此 SHA 只读独审，完整父 BE-01 不自动完成。
+- A01 已派发：Agent `/root/http_audit_a01`，只读固定 `891287cf143e4d300c353e24233979077e84e64b`，尚无结论。
+- A01 结果：`CHANGES_REQUIRED`，`BE-01-HTTP-A01-001`：ServeMux 清理非规范 probe 路径在处理器前产生 307／Location／HTML，无 no-store/nosniff，query 原值会复制到响应。独立真实 SQLite＋生产路由＋TLS `/tmp` overlay 复现；全服普通、六包 race、vet/build/gofmt、锁版 Web 均 PASS。F01 只允许 router.go／instance.go 及 instance_test.go／router_test.go，提前固定拒绝会规范化为 probe 的别名路径，保持冻结 JSON／安全响应、不扩大其他路由。
+- F01 派发准备：Backend Fixer，以 `891287cf143e4d300c353e24233979077e84e64b` 创建 `/workspace/RelayNest-be01-http-fix` / `codex/be01-http-f01-20261026`；独占上述精确路径及本树/index，仅修 A01-001，新提交后固定 SHA 重审。
+- F01 Agent `/root/http_fix_f01` 已派发，原 A01 仍只读完成证据交接；父 BE-01 保持未完成。
+- 恢复 R03（2026-10-26）：Agent `/root/resume_checkpoint` 核主树 `work` / `064807f9e5e126f48c9360d4d02a40fc209f790e`，无在途测试／Git／文档写入进程。F01 树 HEAD 仍 `891287cf…`，已有 instance.go／router.go／router_test.go 三文件未提交修改（146 插入／2 删除），不可覆盖重做；六包 race 与串行全服日志含 PASS，但未留精确命令／退出码，尚无修复 SHA。重新派 Fixer `/root/http_fix_resume` 接管现有修改完成验证与本地提交，仍仅处理 A01-001；父项未完成。
 
-- 旧ID：`P08-04-D01-B01-HTTP01`；类型：有限 leaf；状态：未开始。
+- 旧ID：`P08-04-D01-B01-HTTP01`；类型：有限 leaf；状态：`changes_requested`（A01-001 非规范 probe 重定向待修复）。
 - 依赖：[已完成 BE-01-AUTH](COMPLETED.md#g5-be01-auth)、[已完成基线 P08-04-D01-B01-BOT01](COMPLETED.md#g4)、[已完成基线 P08-04-D01-B01-PLAN02](COMPLETED.md#g4)。
 - 门槛：`G-GIT`、`G-API`、`G-INSTANCE-CONTRACT`；条件未实证不记通过。
 
@@ -217,14 +224,31 @@ commit后201 ClientMessageReceipt含原message/delivery_id，no-store；同有�
 
 - 完成追加依赖（不改变上述开工依赖）：[BE-01](BACKEND.md#be-01)；基础准备可先进行，真实全范围收口必须满足。
 
-- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+- P01 有限规划（2026-10-26）：owner Backend Orchestrator，Agent `/root/backend_dependency_plan`，基线 `388dd8ae1f3641bdfd26a7a421e4171b8da16971` / `work` 只读；只细化本 leaf 的准确 3～5 主文件工作包及迁移／接口边界，不写文件或预占迁移号。状态仍未开始；BE-01 完整完成追加门槛未满足，不据准备规划放行真实上传验收。
+- P01 已返回有限拆分；R02 `/root/backend_recovery` 验证 P05-01 最终 `ed488e543d892f2353fbc95f72a2f0af98ba9a8d` 为基线祖先，六个 worktree 均无 0008 文件或迁移改动，唯一 HTTP 写入者不改迁移。由调度拆成下列两个执行子包，原完整验收不变；状态转准备中，只有两包和完整 BE-01 门槛全部满足才可收口。
 
-- 旧ID：`P05-05`；类型：有限 leaf；状态：未开始。
+- 子项证据：[STORAGE 已完成独审与精确集成](COMPLETED.md#g5-be05-storage)，源与最终 `064807f9e5e126f48c9360d4d02a40fc209f790e`；[HTTP 真实上传接线](#be-05-01-http) 尚未开始，完整 BE-01 门槛及父原上传验收仍待满足。
+
+- 旧ID：`P05-05`；类型：有限分拆收口（不整组派发）；状态：准备中（STORAGE 已完成，HTTP／完整 BE-01 及父验收待闭环）。
 - 依赖：[已完成基线 P05-01](COMPLETED.md#g2)。
 - 允许范围：`server/internal/attachments/**`、`server/migrations/**`，及对应测试。
 - 门槛：`G-GIT`；条件未实证不记通过。
 
 补充检查：ready前不能关联；流式内存有界，随机物理路径、字节限制/hash/fsync/rename及幂等一致，URL仅保存不抓取。默认图片10MiB/文件50MiB按已确认配置；不能把默认值当不可配置硬上限。真实上传接线必须依BE-01 runtime及Bot-first附件矩阵，上传流在正确授权后才读取。
+
+<a id="be-05-01-storage"></a>
+
+### BE-05-01-STORAGE 流式持久化状态机准备
+
+已完成子项：[范围、完整验收与独审／精确集成证据](COMPLETED.md#g5-be05-storage)。仅存储准备完成，父 BE-05-01 仍未完成；0008 永久占用、写锁已释放，下一编号 0009 须另核。
+
+<a id="be-05-01-http"></a>
+
+### BE-05-01-HTTP 真实上传接线与组合验收
+
+- 类型：有限 leaf；状态：`todo`；依赖 [已完成 BE-05-01-STORAGE](COMPLETED.md#g5-be05-storage)、完整 [BE-01](#be-01)，必须分别独审和集成。准备路径为 `server/internal/httpapi/attachments.go`、`router.go`、`server/cmd/relaynest/main.go` 及相关测试，派发前固定真实基线及排他锁。
+- 沿用原上传完整验收及冻结 query＋原始二进制流／201/no-store／错误合同；真实 Bot-first 格式及身份发现先于读流，Matched 拒绝不回退、Unavailable 失败关闭、仅 NoMatch 进入 Android 同快照门禁，最终提交重验代次／会话。Web Cookie／Webhook／receive-only 无上传权。
+- 必须真实 HTTP＋SQLite＋文件组合，配置使用实际可注入正 int64 接口，不能默认值写死或宣称未实现的设置路由已生效；STORAGE 测试不能替代真实读流顺序、事务和安全错误验收。完成后父 BE-05-01 仍须核原完整验收，无范围丢失。
 
 <a id="be-05-02"></a>
 
