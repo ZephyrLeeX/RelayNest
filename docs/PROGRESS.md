@@ -1,7 +1,7 @@
 # RelayNest 项目进度
 
 - 更新日期：2026-10-27（UTC+8）。
-- 后端本轮恢复基线：`bde0193a5e1f561cb0b3d30a08bea691fcd499a8`；独立本地集成仓库 `.worktrees/backend-local` / `resume/backend-20261026` 的推送源码组合为 `af84503f62083b3d3bfe704694a8807d3928d678`，权限解除后 I01 必检已 PASS、STORAGE 已完成；ADMIN 当前候选 `92404a1…` 的 A03 最终 BLOCKED，`ADMIN-A03-B01` 未关闭，基线 BEGIN 写锁问题 `STORAGE-BUSY-01` 修复提案待用户确认，尚未集成。原仓库 `.git` 的只读限制属此前环境记录，原 `main@01c74a7` 仍未更新。详见 [后端恢复证据](tasks/BACKEND.md)，其他模块保留原核对范围，不表示部署或发布。
+- 后端本轮恢复基线：`bde0193a5e1f561cb0b3d30a08bea691fcd499a8`；当前权威恢复目标已迁回项目根 `/home/codex/projects/RelayNest` / `resume/backend-20261026`，推送源码组合为 `af84503f62083b3d3bfe704694a8807d3928d678`，权限解除后 I01 必检已 PASS、STORAGE 已完成；ADMIN 当前候选 `92404a1…` 的 A03 最终 BLOCKED，`ADMIN-A03-B01` 未关闭，基线 BEGIN 写锁问题 `STORAGE-BUSY-01` 修复提案待用户确认，尚未集成。原 `.git` 只读限制已解除，本地 fetch／安全 switch 完成；`main@01c74a7` ref 未变，`.worktrees/backend-local` 仅保留作历史载体，不再双目标推进。详见 [后端恢复证据](tasks/BACKEND.md)，其他模块保留原核对范围，不表示部署或发布。
 - 状态来源：[模块任务入口](tasks/README.md)中七个模块的条目是未完成任务唯一状态源；已完成结果见 [COMPLETED](tasks/COMPLETED.md)，执行与独审／精确集成规则见 [WORKFLOW](tasks/WORKFLOW.md)。本页只作模块摘要，证据仍须核对实际提交。
 - **已完成**：限定范围已完成实现、独立审计和精确集成；用户批准的 PoC 验收例外单列说明，不等于整阶段或正式端到端通过。
 - **开发中**：已有实现但父功能尚未闭环；**未开始**：尚未启动功能实现；**待验收**：实际环境验证未完成；**受阻**：缺少相关外部条件；**后置**：尚未满足启动门槛。
@@ -35,7 +35,7 @@
 
 Bot Hub 只负责消息传输、存储和路由，不执行业务命令或 MCP 工具。
 
-Debian 恢复：已从准确快照与已有代码接续；权限解除后新 Agent 真实监听及推送 I01 全部必检 PASS，[注册与通知偏好 STORAGE](tasks/COMPLETED.md#g5-be10-storage) 已完成。ADMIN 保留 running，固定 `92404a1…` 的独立六组真实 HTTP＋SQLite PASS，旧监听阻塞及 A02 夹具问题已关闭；全服 race 因 `ADMIN-A03-B01`（同键并发 SQLITE_BUSY）FAIL，A03 最终 BLOCKED；基线对照定位 BEGIN 写锁准入，`STORAGE-BUSY-01` 跨 Store 调度提案待用户确认，当前未实施／集成。历史 FAIL 保留。父 BE-10-01／HTTP 及跨端门槛仍未完成，详见 [后端唯一任务状态](tasks/BACKEND.md)。未 push、部署、发布或创建完成标记。
+Debian 恢复：已从准确快照与已有代码接续，并将唯一权威目标安全迁回项目根 resume 分支（旧克隆仅历史载体、ADMIN 独立树保持）；权限解除后新 Agent 真实监听及推送 I01 全部必检 PASS，[注册与通知偏好 STORAGE](tasks/COMPLETED.md#g5-be10-storage) 已完成。ADMIN 保留 running，固定 `92404a1…` 的独立六组真实 HTTP＋SQLite PASS，旧监听阻塞及 A02 夹具问题已关闭；全服 race 因 `ADMIN-A03-B01`（同键并发 SQLITE_BUSY）FAIL，A03 最终 BLOCKED；基线对照定位 BEGIN 写锁准入，`STORAGE-BUSY-01` 跨 Store 调度提案待用户确认，当前未实施／集成。历史 FAIL 保留。父 BE-10-01／HTTP 及跨端门槛仍未完成，详见 [后端唯一任务状态](tasks/BACKEND.md)。未 push、部署、发布或创建完成标记。
 
 ### 已完成
 
