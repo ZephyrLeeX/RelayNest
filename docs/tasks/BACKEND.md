@@ -20,7 +20,7 @@
 
 ### BE-01 服务实例绑定
 
-- 子项证据：[AUTH 已完成独审与精确集成](COMPLETED.md#g5-be01-auth)；[HTTP01 已完成独审与精确集成](COMPLETED.md#g5-be01-http)，父项仍待同一组合 SHA 独立完整验收。
+- 子项证据：[AUTH 已完成独审与精确集成](COMPLETED.md#g5-be01-auth)；[HTTP01 已完成独审与精确集成](COMPLETED.md#g5-be01-http)。以最终代码组合 `cf2c8b49b4b5338e58e4b9d6e9698e5e648bdc31`／元数据快照 `373cc241317410a8b8aa0755f9a41bb2ca676499` 派发下列有限 COMPOSE 验收，不以子项完成自动放行 G1。
 
 - 旧ID：`P08-04-D01-B01`；类型：父收口，不整组派发；状态：进行中（父收口未完成）。
 - 依赖：[已完成基线 P08-04-D01-M01](COMPLETED.md#g4)、[已完成基线 P04-05-S03](COMPLETED.md#g1)、[已完成基线 P04-06](COMPLETED.md#g1)、[已完成基线 P08-04-D01-B01-SCOPE01](COMPLETED.md#g4)、[已完成基线 P08-04-D01-B01-BOT01](COMPLETED.md#g4)、[已完成基线 P08-04-D01-B01-PLAN02](COMPLETED.md#g4)、[已完成 BE-01-AUTH](COMPLETED.md#g5-be01-auth)、[已完成 BE-01-HTTP](COMPLETED.md#g5-be01-http)。
@@ -41,6 +41,18 @@ G1 已批准生命周期：Android 先验证实例 ID 再读取密码/Bearer，�
 ### BE-01-HTTP 实例探测与真实路由同快照组合
 
 已完成子项：[范围、完整验收、修复历史与独审／精确集成证据](COMPLETED.md#g5-be01-http)。仅 HTTP 叶完成，父 BE-01 完整 G1 仍 pending，待同一组合 SHA 独立验收。
+
+<a id="be-01-compose"></a>
+
+### BE-01-COMPOSE 最终实例绑定组合验收
+
+- 类型：有限验证 leaf；状态：`review`（2026-10-26，独立研究验证已返回，待元数据快照及不同 Auditor）；owner Backend Orchestrator；Researcher `/root/instance_compose_verify`；固定基线 `373cc241317410a8b8aa0755f9a41bb2ca676499` / `work`，其业务代码最终组合为 `cf2c8b49…`。不以父 BE-01 done 为前置，避免验收依赖环。
+- 派发准备：Backend Researcher，仅验证上述父完整 G1 标准和八个真实 auth／device／admin-bot 路由、公开 probe 与 Web／Bot／health 非回归；源码只读，允许 `/tmp` 固定 SHA 归档／临时验证 overlay，不改业务／任务文档／契约／迁移。真实当前组合逐项收口，不用子卡报告替代新组合证据；不重复已由 I01 同代码验证通过的无关全服矩阵。
+- 验收：真实生产装配＋SQLite 证明 ID 先于密码／Bearer、同快照读和写前代次复核、错误优先／安全响应、A→B／事务中变化无部分结果；公开 probe 格式／限流／缓存／非规范路径安全；设备精确撤销／自撤与全撤、Web Origin/CSRF、Bot 发现与文本创建、日志无头／正文／实例 ID。接受既定 G1 瞬切窗口，不声称 G2。
+- 未来附件／WS 路由、Android 完整 call 5秒／1024字节、真机与跨模块完整验收仍逐项 NOT_RUN，不修改其他模块状态。研究返回固定 SHA／真实命令／逐项 PASS/FAIL/NOT_RUN；结果由主调度写回原条目并本地快照后交不同 Auditor 固定 SHA 审查，再由 Integrator 核实准确组合；全部齐全才关闭父任务。
+- R01 结果：`PASS`，仅现有后端 G1 范围；固定 `373cc241…` 归档 `/tmp/be01-compose-373cc241/src`，server/web 与业务组合 `cf2c8b49…` 无差异，锁版离线 Web ci/build PASS。独立真实生产装配＋TLS＋SQLite 补测八路由严格实例头／非法密码优先、A→B、读快照不拼接、auth/device 五路由及 Bot POST/PATCH 事务 ID／代次／撤销／延迟 FK COMMIT 故障无部分结果，probe 格式／限流优先／安全头／别名拒绝，设备精确撤销／自撤／全撤、Web/CSRF、Bot 发现／文本创建、health/static 与生产日志敏感标记均 PASS。
+- R01 实测：针对生产 cmd 组合及 httpapi/auth/devices/bots 的普通测试、五包定向串行 race、补充 devices HTTP race、相关 vet 均退出 0；未重复无关全服矩阵。五包首条 devices 无匹配项已单独补实测；临时 overlay 初次撤销机器码预期写错而 FAIL，按冻结 REQUIRED 修正 `/tmp` 断言后重跑 PASS，无产品缺陷，原日志保留。命令及日志 `/tmp/be01-compose-373cc241/{production-rerun.log,targeted.log,race.log,devices-race.log,vet.log}`，补测源码同目录 `src/server/cmd/relaynest/compose_independent_test.go`。
+- 门槛范围核对：ENGINEERING 第 13～14 行与 ANDROID 第 26～27 行的全局 G-INSTANCE-RUNTIME／COMPOSITION 包含 Android 专项及跨端组合，本结果仅支持 BE-01 现有后端父范围，不将两全局门槛置为通过。Android完整call／真机、未来附件HTTP／WS、反向代理缓存策略等 NOT_RUN；既定 G1 瞬切窗口保留，不宣称 G2。等待研究证据本地快照、独立 A01 及准确集成核实。
 
 ## BE-02 正式幂等消息创建与回执
 
@@ -473,12 +485,14 @@ commit后201 ClientMessageReceipt含原message/delivery_id，no-store；同有�
 
 ### BE-10-01-STORAGE 注册与通知偏好存储准备
 
-- 类型：有限 leaf；状态：`running`（2026-10-26，R04 核实后 `todo → ready → running`）；owner Backend Orchestrator；Agent `/root/push_storage_implement`；固定基线 `571dc5dca696d4dfb446a868ca58169cf488579b` / 目标 `work`。只消费已集成 AUTH／设备／契约基础，不消费尚在独审的 HTTP；父项完整完成门槛不作本准备包前置。
+- 类型：有限 leaf；状态：`review`（2026-10-26，实现已提交）；owner Backend Orchestrator；Implementer `/root/push_storage_implement`；固定基线 `571dc5dca696d4dfb446a868ca58169cf488579b` / 目标 `work`。只消费已集成 AUTH／设备／契约基础，不消费尚在独审的 HTTP；父项完整完成门槛不作本准备包前置。
 - 派发准备：Backend Implementer，隔离 `/workspace/RelayNest-be10-registration` / `codex/be10-registration-20261026`；独占本树/index、三个 devices 新文件与迁移编号 **0009**。仅允许四主文件 `server/internal/devices/{push.go,push_repository.go,notifications.go}`、`server/migrations/0009_device_push.sql`，以及同包 `{push_test.go,push_repository_test.go,notifications_test.go}`；auth／changes／storage／router／main／旧迁移均只读。
 - 注册按 Session.id＋provider，偏好按 device_id 共享，独立 int64 版本按冻结 schema；公开状态不含 token，内部发送目标与公开 DTO 分离。两 provider 共存，缺失／墓碑、同版同值重放先于 CAS、异值冲突、删除／明确失效推进屏障及耗尽，迟到结果必须匹配设备／会话／provider／发送版本，绝不删会话／新 token／其他通道／偏好。
 - 偏好默认读不落库，不同会话同设备共享 CAS；完整替换校验按冻结合同，同值也推进版本／服务端时间，与 typed `DeviceNotificationsUpdated` change 同事务；失败／COMMIT 故障无部分结果。vendor 激活只能消费可信服务端资格状态及当前会话有效 opush 注册，默认未就绪；普通 FCM 准备不等待 OPPO 资格。
 - 撤销／退出／重置／离线删会话须持久化使所有该会话注册失效，目标读取仍核有效 Android 会话、期限和认证代次；不靠提交后 hook 或版本耗尽阻断安全撤销。迁移内受控清理及 FK 可作为内部方案，禁止改既定 auth 安全策略。
 - 验收：真实 SQLite 双 provider／双会话共享偏好、重开／并发 CAS／代次耗尽、迟到登记和 target_invalid 不删新注册、撤销／重置／离线删除、changes／语句／COMMIT 回滚及脱敏边界；devices/auth/storage/changes 普通与串行 race、vet/build/gofmt、旧库升级与 0001～0008 checksum 不变。真实 HTTP／实例错误顺序／完整 G1／推送发送为 NOT_RUN，不等于父 BE-10-01 完成。
+- 实施交接：固定 `20b9fffbe8063e25cee60456dc96e53f594866cb`，仅获配七路径，树 clean 并释放实施／重检查写权，0009 迁移锁保留。四包普通／串行 race、全服 vet/build/gofmt PASS；全服普通唯一 FAIL 为范围外 `attachments/schema_test.go` 固定要求迁移总数 8，实际新增后为 9。未越范围改断言，交独立 A01 编号审查，再有限修复；真实注册 HTTP 等仍 NOT_RUN。
+- A01 Agent `/root/push_storage_audit_a01`，固定 `20b9fff…` 只读审查；先轻量／静态，重型检查等待 BE-01-COMPOSE 释放，不并发跑 full／cmd／race。
 
 <a id="be-10-01-http"></a>
 
