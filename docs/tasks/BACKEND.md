@@ -1,5 +1,63 @@
 # Go 后端剩余任务
 
+## 环境迁移交接（2026-10-26）
+
+用户已明确授权将代码和状态文档备份到 GitHub，随后更换执行环境。本节记录恢复入口与断点；任务状态仍以下方条目及 COMPLETED 为准，不以备份提交代替实施、审计或集成验收。
+
+### 恢复入口
+
+仓库：`https://github.com/ZephyrLeeX/RelayNest`。只推送下列恢复命名空间，不覆盖远端 main/work、不 force、不部署或 Release。实际上传成功以会话最终逐 ref 远端 SHA 核验为准。
+
+| GitHub 恢复分支 | 保存内容／固定代码 |
+| --- | --- |
+| `recovery/backend-20261026-state` | 从原目标 `a97cfcee014298c64e8468a7b9eb1d007b635e37` 保存的本次交接快照；本提交含 BACKEND／PROGRESS 更新，分支远端 HEAD 即恢复入口 |
+| `recovery/backend-20261026-admin-wip` | `8ab66c847bf1a6e0c86592f90994679b6685c7e5`；管理员消息创建的五文件 WIP，未完成完整验证、独审和集成 |
+| `recovery/backend-20261026-push-i01` | `47c08a7a3fd7712379d2ef4ba6e86ad897daacb4`；推送存储隔离集成候选，尚未快进原目标或取得 I01 最终 PASS |
+
+原目标功能代码仍为已闭环的现有后端实例绑定等结果，新增迁移只到 0008。候选包含 `77025cfe0a3317a0d0df5a2b97ff1be786a3104b` 和 `47c08a7a3fd7712379d2ef4ba6e86ad897daacb4`；两者分别来自已 A02 PASS 的源 `20b9fffbe8063e25cee60456dc96e53f594866cb` 和 `003c990c08ef606b838ae2715bf1d33d19e7fa00`。源提交身份也由下表恢复分支保留，不能只保存 cherry-pick 后 SHA。
+
+### 新环境接续
+
+在干净的新克隆中获取恢复分支，切到交接快照，并分别恢复两个独立工作树；不要直接在远端默认 main 上重新开发。
+
+```sh
+git fetch origin 'refs/heads/recovery/*:refs/remotes/origin/recovery/*'
+git switch -c resume/backend-20261026 origin/recovery/backend-20261026-state
+git worktree add -b resume/admin-wip ../RelayNest-admin-wip origin/recovery/backend-20261026-admin-wip
+git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backend-20261026-push-i01
+```
+
+先读取 AGENTS、WORKFLOW 和本文件，核实真实 HEAD、工作树、源提交及排他锁。旧 Agent ID 只作历史证据，当前没有在途执行承诺。既有已完成范围见 COMPLETED，不能重复实现。
+
+1. 优先恢复 BE-10-01-STORAGE 的精确集成：源链已 A02 PASS；候选已无冲突应用两提交，但原目标仍在 a97cfcee014298c64e8468a7b9eb1d007b635e37。中断前仅明确报告锁版 Web 和受影响普通检查 PASS，race／后续组合及目标复核未取得最终结果；新环境必须完成实际必要检查，不得依据候选存在标 done。交接快照是新增元数据提交，与候选分叉；先核范围并保护交接文档，不盲目快进或重复 cherry-pick。
+2. BE-02-ADMIN 从已保存 WIP 继续补实现／验证，不从头重做。五文件为 `server/cmd/relaynest/{main.go,main_test.go}`、`server/internal/httpapi/{messages.go,router.go}`、`server/internal/messages/create.go`，合计 376 插入／6 删除；历史仅报告轻量 messages/idempotency PASS，httpapi 曾缺 embed 资源失败后补环境，完整检查无最终交接。全服 race、独立固定 SHA 审计、必要修复和精确集成都未完成。WIP 提交只为保存代码，不能因有提交直接标 review/done；后续审计须覆盖整个 WIP 到最终实现链。
+3. 0009 已排他分配给推送存储包，并在源及候选中存在；主恢复基线尚未合入它。恢复闭环前保留该编号，不给其他任务重复分配；后续 0010 仍须实际核号。公共 auth/router/main 和迁移继续串行协调。
+4. 固定 Go 1.27.3、Node 22.23.2／npm 10.9.8；旧 `/tmp` 工具、依赖缓存和 Web dist 不随 Git 备份。按仓库锁版要求重新准备，先构建 Web embed 再跑服务端检查。重型 full/cmd/race 同时只跑一项，保留历史超时／SQLite_BUSY 失败及复验事实，不改原断言规避。
+5. 全局 G-INSTANCE-RUNTIME／COMPOSITION 含 Android／跨端，仍 pending；BE-01 仅既定现有后端范围已完成。真实附件 HTTP／WS、真机、推送真实注册 HTTP／平台发送、部署等仍按各条目未完成边界处理。本次备份未新跑 Go 测试、不变更任何功能验收结论。
+
+历史 `/tmp` 日志及审计 overlay 未作为源码上传；历史检查摘要和精确源码 SHA 已在本文件／COMPLETED 保存。新环境需要的验证应针对恢复后的真实组合重现，不假称本地临时路径仍存在。
+
+### 原工作分支映射
+
+所有现有本地 codex 分支均以完整 SHA 显式备份到下列恢复 refs，便于按原独审／实施提交追溯：
+
+| 原本地分支 | 完整 SHA | GitHub 恢复分支 |
+| --- | --- | --- |
+| `codex/be01-auth-f01-20261026` | `39529d3d3f0f5b070af2237d6361025d436de20e` | `recovery/backend-20261026-local/codex/be01-auth-f01-20261026` |
+| `codex/be01-auth-i01-20261026` | `1aa0aa9e0c390a46a7293cae56410e0baae8ce71` | `recovery/backend-20261026-local/codex/be01-auth-i01-20261026` |
+| `codex/be01-http-20261026` | `891287cf143e4d300c353e24233979077e84e64b` | `recovery/backend-20261026-local/codex/be01-http-20261026` |
+| `codex/be01-http-f01-20261026` | `d8706747be5dbd98e91fe4892ab2f3f260e3b35c` | `recovery/backend-20261026-local/codex/be01-http-f01-20261026` |
+| `codex/be01-http-i01-20261026` | `cf2c8b49b4b5338e58e4b9d6e9698e5e648bdc31` | `recovery/backend-20261026-local/codex/be01-http-i01-20261026` |
+| `codex/be02-admin-20261026` | `8ab66c847bf1a6e0c86592f90994679b6685c7e5` | `recovery/backend-20261026-local/codex/be02-admin-20261026` |
+| `codex/be02-bot-20261026` | `907c2a4dbf3a8774bcd438fb22b2381def7394a5` | `recovery/backend-20261026-local/codex/be02-bot-20261026` |
+| `codex/be05-storage-20261026` | `064807f9e5e126f48c9360d4d02a40fc209f790e` | `recovery/backend-20261026-local/codex/be05-storage-20261026` |
+| `codex/be10-registration-20261026` | `20b9fffbe8063e25cee60456dc96e53f594866cb` | `recovery/backend-20261026-local/codex/be10-registration-20261026` |
+| `codex/be10-registration-f01-20261026` | `003c990c08ef606b838ae2715bf1d33d19e7fa00` | `recovery/backend-20261026-local/codex/be10-registration-f01-20261026` |
+| `codex/be10-storage-i01-20261026` | `47c08a7a3fd7712379d2ef4ba6e86ad897daacb4` | `recovery/backend-20261026-local/codex/be10-storage-i01-20261026` |
+
+历史 AUTH `d894f14175249bbd17609a0eb3521462577151c8` 同时由 AUTH F01 的祖先链保留；其余所有 detached 代码均由上述提交或恢复入口可达。只保存源码、必要测试和版本化文档；不上传依赖、构建产物、临时数据库、密钥或原始敏感日志。
+
+
 推送分支依赖说明：原 BE-10-03 父依赖字段保留；下游只做框架／FCM 的准备或验证时，执行包必须明确消费 [BE-10-03-FCM](BACKEND.md#be-10-03-fcm) 精确独审已集成子结果，OPPO 外部阻塞不传播至 FCM。全范围最终验收仍须两通道分别有证据，OPPO 缺条件保留 blocked／NOT_RUN，不能以 FCM 代验或将父项标完成。
 
 本文件是后端唯一剩余任务入口；BE-01～BE-10 是功能导航，其中 BE-01、BE-02 和 BE-10-03 同时承担旧父任务收口，不能整组派给一次 worker。仅下列 leaf 可独立实施；依赖须完成独立审计和精确集成后才满足。未更新条目保留重组基线 `086fa51d79d7726545a9abbab8feebb25770034e` 的快照；已恢复任务以各条目最新调度证据为准，不从旧快照推定活跃 worker。
@@ -59,9 +117,12 @@
 
 ### BE-02-ADMIN Android管理员正式创建HTTP
 
-- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+- 调度（2026-10-26）：owner Backend Orchestrator，固定基线 `a97cfcee014298c64e8468a7b9eb1d007b635e37` / 目标 `work`；BE-02-BOT `907c2a4dbf3a8774bcd438fb22b2381def7394a5` 与 PLAN01 精确集成 `50be58eaaba6c8918dbd7642d9ef06125f0dda07` 已验证祖先，完整 BE-01 既定现有后端父范围经 R01／A01／I01 归档，完成快照 `a97cfcee…`，业务组合 `cf2c8b49…`。
+- 派发准备：Backend Implementer，隔离 `/workspace/RelayNest-be02-admin` / `codex/be02-admin-20261026`；仅 httpapi/messages.go／router.go／cmd main.go／必要 messages/create.go 四主文件与相关指定测试，独占本树/index、messages HTTP/router/main 接线，不改 auth／SQL／API／Bot 分支。可与只改新 devices／0009 的推送集成并行；重型检查须等待推送 I01 释放。
+- Agent `/root/admin_message_implement` 已派发，开始隔离准备及实施，尚无新增独审／集成结论。
+- 环境迁移备份：用户已授权保存代码，现有五文件已独立 WIP 提交 `8ab66c847bf1a6e0c86592f90994679b6685c7e5`，远端入口 `recovery/backend-20261026-admin-wip`；不是功能完成提交，无新测试／审计结果。原 worker 不再运行，从现有代码继续，见本文件开头交接。
 
-- 旧ID：`P05-02-S03`；类型：有限 leaf；状态：未开始。
+- 旧ID：`P05-02-S03`；类型：有限 leaf；状态：`blocked`（环境迁移暂停，原 running；WIP 已保存但未完整验证／独审／集成，恢复后接续 running）。
 - 依赖：[已完成 BE-02-BOT](COMPLETED.md#g5-be02-bot)、[已完成基线 P05-02-PLAN01](COMPLETED.md#g3)、[已完成 BE-01 现有后端父范围](COMPLETED.md#g5-be01)。
 - 门槛：`G-GIT`、`G-API`；条件未实证不记通过。
 
@@ -465,7 +526,7 @@ commit后201 ClientMessageReceipt含原message/delivery_id，no-store；同有�
 
 ### BE-10-01-STORAGE 注册与通知偏好存储准备
 
-- 类型：有限 leaf；状态：`review`（2026-10-26，F01 已提交，待固定新 SHA A02）；owner Backend Orchestrator；Implementer `/root/push_storage_implement`；固定基线 `571dc5dca696d4dfb446a868ca58169cf488579b` / 目标 `work`。只消费已集成 AUTH／设备／契约基础，不消费尚在独审的 HTTP；父项完整完成门槛不作本准备包前置。
+- 类型：有限 leaf；状态：`blocked`（2026-10-26，环境迁移中断 I01，恢复后回 integrating）；owner Backend Orchestrator；Implementer `/root/push_storage_implement`；固定基线 `571dc5dca696d4dfb446a868ca58169cf488579b` / 目标 `work`。只消费已集成 AUTH／设备／契约基础，不消费尚在独审的 HTTP；父项完整完成门槛不作本准备包前置。
 - 派发准备：Backend Implementer，隔离 `/workspace/RelayNest-be10-registration` / `codex/be10-registration-20261026`；独占本树/index、三个 devices 新文件与迁移编号 **0009**。仅允许四主文件 `server/internal/devices/{push.go,push_repository.go,notifications.go}`、`server/migrations/0009_device_push.sql`，以及同包 `{push_test.go,push_repository_test.go,notifications_test.go}`；auth／changes／storage／router／main／旧迁移均只读。
 - 注册按 Session.id＋provider，偏好按 device_id 共享，独立 int64 版本按冻结 schema；公开状态不含 token，内部发送目标与公开 DTO 分离。两 provider 共存，缺失／墓碑、同版同值重放先于 CAS、异值冲突、删除／明确失效推进屏障及耗尽，迟到结果必须匹配设备／会话／provider／发送版本，绝不删会话／新 token／其他通道／偏好。
 - 偏好默认读不落库，不同会话同设备共享 CAS；完整替换校验按冻结合同，同值也推进版本／服务端时间，与 typed `DeviceNotificationsUpdated` change 同事务；失败／COMMIT 故障无部分结果。vendor 激活只能消费可信服务端资格状态及当前会话有效 opush 注册，默认未就绪；普通 FCM 准备不等待 OPPO 资格。
@@ -478,6 +539,10 @@ commit后201 ClientMessageReceipt含原message/delivery_id，no-store；同有�
 - F01 Agent `/root/push_storage_fix_f01` 已派发；只准备及轻量单测，full／cmd／race 等待资源释放，0009 排他迁移锁仍保留至本包精确集成。
 - F01 交接：`003c990c08ef606b838ae2715bf1d33d19e7fa00`（parent `20b9fffbe8063e25cee60456dc96e53f594866cb`），仅 `attachments/schema_test.go` 一行计数 8→9，旧七 checksum 和其他升级断言原样；源树 clean 并释放写权。定向升级、附件/storage 普通／race、全服普通、受影响 vet／全服 build／gofmt/diff PASS；基线计数 FAIL 和首次缺 Web dist FAIL 均保留，生成锁版产物后全服 PASS。A02 准备固定新 SHA 重审，不据 Fixer 报告放行。
 - A02 Agent `/root/push_storage_audit_a01` 已派发，固定 `003c990c…` 完整链重审，重型资源独占，尚无结论。
+- A02 结果：`PASS`，固定 `003c990c08ef606b838ae2715bf1d33d19e7fa00`，关闭 A01-01；仅数量一行变化，七推送文件／生产代码／旧迁移无差异。独立升级单测、全服普通、附件/storage race、锁版离线 Web 与 gofmt/diff PASS；A01 同生产代码四包 race／vet/build 证据明确复用，未冒称新跑，历史 FAIL 保留，源树 clean、重型锁已释放。
+- I01 派发准备：Backend Integrator，目标 `work` / `a97cfcee014298c64e8468a7b9eb1d007b635e37`，精确组合 `20b9fffbe8063e25cee60456dc96e53f594866cb`＋`003c990c08ef606b838ae2715bf1d33d19e7fa00`；仅推送七文件／0009 与已编号附件单测，保护 BACKEND 元数据，不消费并行实施的 ADMIN。受影响检查／精确集成后才释放 0009 排他锁，父 BE-10-01 真实接线仍未完成。
+- I01 Agent `/root/push_storage_integrate` 已派发，独占目标业务 Git/index、推送与 0009 写锁及重型检查；主调度自本行记录后冻结文档至其释放，ADMIN 只实施／轻量定向等待。
+- 迁移断点实核：目标仍 `a97cfcee014298c64e8468a7b9eb1d007b635e37`，候选 `47c08a7a3fd7712379d2ef4ba6e86ad897daacb4`／父 `77025cfe0a3317a0d0df5a2b97ff1be786a3104b`，两提交已在隔离树但未快进目标；所有仓库测试／Git 进程已退出。旧 I01 冻结随会话中断解除，本次仅备份不补造 I01 PASS；0009 编号仍为此包预留，恢复入口 `recovery/backend-20261026-push-i01`。
 
 <a id="be-10-01-http"></a>
 
