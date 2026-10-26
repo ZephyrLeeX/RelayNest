@@ -27,6 +27,7 @@ type management struct {
 }
 type fixture struct {
 	store            *storage.Store
+	instanceID       string
 	sessions         *auth.SessionStore
 	mux              http.Handler
 	web, android     auth.SessionSecrets
@@ -55,6 +56,14 @@ func setup(t *testing.T) *fixture {
 		t.Fatal(err)
 	}
 	f := &fixture{store: store, sessions: auth.NewSessionStore(store)}
+	// 故障测试可能关闭数据库，先保存真实身份以继续验证原授权路径。
+	if err := store.Read(ctx, func(tx *sql.Tx) error {
+		var err error
+		f.instanceID, err = storage.ReadInstanceIDTx(ctx, tx)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
 	for _, client := range []string{"web", "android"} {
 		in := auth.SessionInput{ClientType: client, DeviceName: "测试设备"}
 		if client == "android" {
@@ -93,6 +102,7 @@ func setup(t *testing.T) *fixture {
 }
 func (f *fixture) request(method, path, body, client, token string, headers map[string]string) *httptest.ResponseRecorder {
 	r := httptest.NewRequest(method, "https://example.com"+path, strings.NewReader(body))
+	r.Header.Set("X-RelayNest-Instance-ID", f.instanceID)
 	if token != "" {
 		if client == "web" {
 			r.AddCookie(&http.Cookie{Name: "relaynest_session", Value: token})
@@ -214,10 +224,40 @@ func TestDeviceHTTPCommittedHookAndUnavailable(t *testing.T) {
 	if err := f.store.Close(); err != nil {
 		t.Fatal(err)
 	}
-	w = f.request("GET", "/api/v1/devices", "", "android", f.android.Token, nil)
-	assertResponse(t, w, 503, "SERVICE_UNAVAILABLE")
-	w = f.request("DELETE", path, "", "android", f.android.Token, nil)
-	assertResponse(t, w, 503, "SERVICE_UNAVAILABLE")
+	// 关闭整个库时实例预检先失败，不能继续访问会话或发布撤销通知。
+	for _, method := range []string{"GET", "DELETE"} {
+		requestPath := path
+		if method == "GET" {
+			requestPath = "/api/v1/devices"
+		}
+		w = f.request(method, requestPath, "", "android", f.android.Token, nil)
+		assertResponse(t, w, 503, "INSTANCE_UNAVAILABLE")
+		if len(f.hooks) != 2 || strings.Contains(w.Body.String(), f.instanceID) {
+			t.Fatal("实例故障新增通知或泄露实例身份")
+		}
+	}
+}
+
+func TestDeviceHTTPSessionStoreUnavailable(t *testing.T) {
+	f := setup(t)
+	// 保留实例表可读，以覆盖实例预检之后的一般会话存储故障。
+	if err := f.store.Write(context.Background(), func(tx *sql.Tx) error {
+		_, err := tx.Exec("DROP TABLE sessions")
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, method := range []string{"GET", "DELETE"} {
+		path := "/api/v1/devices"
+		if method == "DELETE" {
+			path += "/" + f.androidID + "/session"
+		}
+		w := f.request(method, path, "", "android", f.android.Token, nil)
+		assertResponse(t, w, 503, "SERVICE_UNAVAILABLE")
+		if len(f.hooks) != 0 || strings.Contains(w.Body.String(), f.instanceID) {
+			t.Fatal("会话存储故障通知消费者或泄露实例身份")
+		}
+	}
 }
 
 func TestDeviceHTTPBoundedPagesAndExpiredTarget(t *testing.T) {
@@ -352,6 +392,7 @@ func TestDeviceHTTPRequiredCredentials(t *testing.T) {
 				}
 				r := httptest.NewRequest(method, "https://example.com"+path, nil)
 				r.Header = tc.headers.Clone()
+				r.Header.Set("X-RelayNest-Instance-ID", f.instanceID)
 				w := httptest.NewRecorder()
 				f.mux.ServeHTTP(w, r)
 				assertResponse(t, w, 401, code)

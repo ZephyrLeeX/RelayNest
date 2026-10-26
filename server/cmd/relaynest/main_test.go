@@ -322,6 +322,7 @@ const botCreateBody = `{"name":"测试Bot","enabled":true,"capabilities":{"send"
 type botHTTPFixture struct {
 	t                *testing.T
 	store            *storage.Store
+	instanceID       string
 	sessions         *auth.SessionStore
 	server           *httptest.Server
 	handler          *managementHandlers
@@ -332,6 +333,20 @@ type botHTTPFixture struct {
 	beforeRenew      func()
 }
 
+// 使用实际服务库的身份，并在故障注入前保存，避免夹具读库遮蔽原断言。
+func fixtureInstanceID(t *testing.T, store *storage.Store) string {
+	t.Helper()
+	var id string
+	if err := store.Read(context.Background(), func(tx *sql.Tx) error {
+		var err error
+		id, err = storage.ReadInstanceIDTx(context.Background(), tx)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return id
+}
+
 func botHTTP(t *testing.T, proxies []string) *botHTTPFixture {
 	t.Helper()
 	ts := httptest.NewTLSServer(http.NotFoundHandler())
@@ -339,7 +354,7 @@ func botHTTP(t *testing.T, proxies []string) *botHTTPFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f := &botHTTPFixture{t: t, store: store, server: ts, handler: h, sessions: auth.NewSessionStore(store)}
+	f := &botHTTPFixture{t: t, store: store, instanceID: fixtureInstanceID(t, store), server: ts, handler: h, sessions: auth.NewSessionStore(store)}
 	t.Cleanup(func() { ts.Close(); store.Close() })
 	if err := auth.InitAdministrator(context.Background(), store, "Admin", []byte("correct")); err != nil {
 		t.Fatal(err)
@@ -397,6 +412,7 @@ func (f *botHTTPFixture) request(method, path, body, kind, token string, headers
 		f.t.Fatal(err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-RelayNest-Instance-ID", f.instanceID)
 	if token != "" {
 		if kind == "web" {
 			req.AddCookie(&http.Cookie{Name: "relaynest_session", Value: token})
@@ -500,6 +516,8 @@ func TestBotHTTPProductionAssembly(t *testing.T) {
 	if err := auth.InitAdministrator(context.Background(), store, "Admin", []byte("correct")); err != nil {
 		t.Fatal(err)
 	}
+	// 生产装配更换了服务库，请求头必须对应这个库。
+	f.instanceID = fixtureInstanceID(t, store)
 	f.server.Config.Handler = httpapi.New(health.New(nil), h)
 	for _, client := range []string{"web", "android"} {
 		body := `{"username":"Admin","password":"correct","client_type":"` + client + `","device_name":"browser"`
@@ -1100,6 +1118,8 @@ func TestDeviceHTTPProductionAssembly(t *testing.T) {
 	if err := auth.InitAdministrator(context.Background(), store, "Admin", []byte("correct")); err != nil {
 		t.Fatal(err)
 	}
+	// 生产装配更换了服务库，请求头必须对应这个库。
+	f.instanceID = fixtureInstanceID(t, store)
 	f.server.Config.Handler = httpapi.New(health.New(nil), h)
 	type identity struct{ id, token, csrf, client string }
 	login := func(client, install string) identity {
