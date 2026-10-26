@@ -1700,3 +1700,287 @@ func TestBotHTTPWriteBindingMutationRollback(t *testing.T) {
 		}
 	}
 }
+
+const clientMessageKey = "abcdefff-1234-4567-89ab-123456789abc"
+const clientMessageBody = `{"format":"markdown","text":" 正文 α\n"}`
+
+// 序号、不可变投递事件、changes、幂等及待办均纳入失败与重放检查。
+func clientMessageState(t *testing.T, s *storage.Store) [32]byte {
+	t.Helper()
+	var all []any
+	if err := s.Read(context.Background(), func(tx *sql.Tx) error {
+		for _, table := range []string{"messages", "deliveries", "changes", "push_jobs", "idempotency", "bots", "system_state", "instance_identity"} {
+			rows, err := tx.Query("SELECT * FROM " + table + " ORDER BY 1")
+			if err != nil {
+				return err
+			}
+			cols, _ := rows.Columns()
+			for rows.Next() {
+				v := make([]any, len(cols))
+				p := make([]any, len(cols))
+				for i := range v {
+					p[i] = &v[i]
+				}
+				if err := rows.Scan(p...); err != nil {
+					rows.Close()
+					return err
+				}
+				all = append(all, v)
+			}
+			err = rows.Err()
+			rows.Close()
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := json.Marshal(all)
+	return sha256.Sum256(raw)
+}
+func clientMessageBot(t *testing.T, f *botHTTPFixture) bots.Created {
+	t.Helper()
+	c, _, err := bots.New(f.store).Create(context.Background(), bots.CreateRequest{Name: "client", Enabled: true, Capabilities: bots.Capabilities{Send: true, Receive: true}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return c
+}
+func clientMessageRequest(f *botHTTPFixture, id, key, body string) (int, string, http.Header) {
+	return f.request("POST", "/api/v1/client/bots/"+id+"/messages", body, "android", f.android.Token, map[string]string{"Idempotency-Key": key})
+}
+func TestAssembledClientMessageRecovery(t *testing.T) {
+	f := botHTTP(t, nil)
+	c := clientMessageBot(t, f)
+	// 通过实际 TCP 发送首请求；观察已提交的业务行后关闭连接，完全不读取响应。
+	plain := httptest.NewServer(httpapi.New(health.New(nil), f.handler))
+	defer plain.Close()
+	conn, err := net.Dial("tcp", strings.TrimPrefix(plain.URL, "http://"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	request, _ := http.NewRequest("POST", plain.URL+"/api/v1/client/bots/"+c.Bot.ID+"/messages", strings.NewReader(clientMessageBody))
+	request.Header.Set("Authorization", "Bearer "+f.android.Token)
+	request.Header.Set("X-RelayNest-Instance-ID", f.instanceID)
+	request.Header.Set("Idempotency-Key", clientMessageKey)
+	request.Header.Set("Content-Type", "application/json")
+	if err := request.Write(conn); err != nil {
+		conn.Close()
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		var n int
+		if err := f.store.Read(context.Background(), func(tx *sql.Tx) error { return tx.QueryRow("SELECT count(*) FROM idempotency").Scan(&n) }); err != nil {
+			conn.Close()
+			t.Fatal(err)
+		}
+		if n == 1 {
+			break
+		}
+		if time.Now().After(deadline) {
+			conn.Close()
+			t.Fatal("first request did not commit")
+		}
+		time.Sleep(time.Millisecond)
+	}
+	conn.Close()
+
+	status, raw, h := clientMessageRequest(f, c.Bot.ID, clientMessageKey, clientMessageBody)
+	assertBotResponse(t, status, 201, raw, h)
+	var receipt struct {
+		Message    map[string]any `json:"message"`
+		DeliveryID string         `json:"delivery_id"`
+	}
+	if json.Unmarshal([]byte(raw), &receipt) != nil || receipt.DeliveryID == "" || receipt.Message["sender"] != "administrator" || receipt.Message["bot_seq"] != "1" {
+		t.Fatal(raw)
+	}
+	before := clientMessageState(t, f.store)
+	// 首次响应视为丢失；重试及真实重登后均须返回原快照。
+	for i := 0; i < 2; i++ {
+		if i == 1 {
+			status, out, h := f.admin("POST", "/api/v1/auth/logout", "")
+			assertBotResponse(t, status, 204, out, h)
+			status, out, h = f.request("POST", "/api/v1/auth/login", `{"username":"Admin","password":"correct","client_type":"android","device_name":"relogin","device_id":"00000000-0000-4000-8000-000000000002"}`, "", "", nil)
+			assertBotResponse(t, status, 200, out, h)
+			var login struct {
+				AccessToken string `json:"access_token"`
+			}
+			if json.Unmarshal([]byte(out), &login) != nil || login.AccessToken == "" {
+				t.Fatal("missing token")
+			}
+			f.android.Token = login.AccessToken
+		}
+		status, replay, h := clientMessageRequest(f, c.Bot.ID, strings.ToUpper(clientMessageKey), `{"format":"markdown","text":" 正文 α\n","attachments":[],"buttons":[],"reply_to_message_id":null}`)
+		assertBotResponse(t, status, 201, replay, h)
+		if replay != raw || before != clientMessageState(t, f.store) {
+			t.Fatal("replay changed state")
+		}
+	}
+	status, out, h := clientMessageRequest(f, c.Bot.ID, clientMessageKey, `{"format":"plain","text":"changed"}`)
+	assertBotResponse(t, status, 409, out, h)
+	if before != clientMessageState(t, f.store) {
+		t.Fatal("conflict wrote state")
+	}
+}
+func TestAssembledClientMessageRollback(t *testing.T) {
+	tests := []struct {
+		name, sql string
+		status    int
+		code      string
+	}{
+		{"sequence", "CREATE TRIGGER fail BEFORE UPDATE OF bot_seq ON bots BEGIN SELECT RAISE(ABORT,'private'); END", 503, "SERVICE_UNAVAILABLE"},
+		{"message", "CREATE TRIGGER fail BEFORE INSERT ON messages BEGIN SELECT RAISE(ABORT,'private'); END", 503, "SERVICE_UNAVAILABLE"},
+		{"changes", "CREATE TRIGGER fail BEFORE INSERT ON changes BEGIN SELECT RAISE(ABORT,'private'); END", 503, "SERVICE_UNAVAILABLE"},
+		{"delivery", "CREATE TRIGGER fail BEFORE INSERT ON deliveries BEGIN SELECT RAISE(ABORT,'private'); END", 503, "SERVICE_UNAVAILABLE"},
+		{"idempotency", "CREATE TRIGGER fail BEFORE INSERT ON idempotency BEGIN SELECT RAISE(ABORT,'private'); END", 503, "SERVICE_UNAVAILABLE"},
+		{"renewal", "CREATE TRIGGER fail BEFORE UPDATE OF idle_expires_at ON sessions BEGIN SELECT RAISE(ABORT,'private'); END", 503, "SERVICE_UNAVAILABLE"},
+		{"identity", "CREATE TRIGGER fail AFTER INSERT ON messages BEGIN UPDATE instance_identity SET instance_id='22222222-2222-4222-8222-222222222222'; END", 409, "INSTANCE_MISMATCH"},
+		{"session", "CREATE TRIGGER fail AFTER INSERT ON messages BEGIN UPDATE sessions SET revoked=1; END", 401, "AUTHENTICATION_REQUIRED"},
+		{"generation", "CREATE TRIGGER fail AFTER INSERT ON messages BEGIN UPDATE administrator SET auth_generation=auth_generation+1; END", 401, "AUTHENTICATION_REQUIRED"},
+		{"commit", "CREATE TRIGGER fail AFTER INSERT ON messages BEGIN INSERT INTO deferred_check VALUES('missing'); END", 503, "SERVICE_UNAVAILABLE"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			f := botHTTP(t, nil)
+			c := clientMessageBot(t, f)
+			if tc.name == "commit" {
+				f.sql("CREATE TABLE deferred_check(id TEXT REFERENCES bots(id) DEFERRABLE INITIALLY DEFERRED)")
+			}
+			f.sql(tc.sql)
+			before, a := clientMessageState(t, f.store), f.snapshot()
+			status, raw, h := clientMessageRequest(f, c.Bot.ID, clientMessageKey, clientMessageBody)
+			assertBotResponse(t, status, tc.status, raw, h)
+			if !strings.Contains(raw, `"code":"`+tc.code+`"`) || strings.Contains(raw, "private") || strings.Contains(raw, "delivery_id") || before != clientMessageState(t, f.store) || a != f.snapshot() {
+				t.Fatal(raw)
+			}
+		})
+	}
+}
+func TestAssembledClientMessageRejections(t *testing.T) {
+	f := botHTTP(t, nil)
+	c := clientMessageBot(t, f)
+	cases := []struct {
+		name, id, key, body, kind, token, instance string
+		status                                     int
+	}{
+		{"empty instance", c.Bot.ID, clientMessageKey, clientMessageBody, "android", f.android.Token, "", 400},
+		{"wrong instance", c.Bot.ID, clientMessageKey, clientMessageBody, "android", "invalid", "22222222-2222-4222-8222-222222222222", 409},
+		{"malformed instance", c.Bot.ID, clientMessageKey, clientMessageBody, "android", "invalid", "bad", 400},
+		{"web", c.Bot.ID, clientMessageKey, clientMessageBody, "web", f.web.Token, f.instanceID, 401},
+		{"bot", c.Bot.ID, clientMessageKey, clientMessageBody, "android", c.APIToken.Token, f.instanceID, 401},
+		{"key", c.Bot.ID, "bad", clientMessageBody, "android", f.android.Token, f.instanceID, 400},
+		{"unknown bot", "00000000-0000-4000-8000-000000000001", clientMessageKey, clientMessageBody, "android", f.android.Token, f.instanceID, 404},
+		{"invalid bot", "invalid", clientMessageKey, clientMessageBody, "android", f.android.Token, f.instanceID, 422},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			before, a := clientMessageState(t, f.store), f.snapshot()
+			status, raw, h := f.request("POST", "/api/v1/client/bots/"+tc.id+"/messages", tc.body, tc.kind, tc.token, map[string]string{"Idempotency-Key": tc.key, "X-RelayNest-Instance-ID": tc.instance})
+			assertBotResponse(t, status, tc.status, raw, h)
+			if before != clientMessageState(t, f.store) || a != f.snapshot() {
+				t.Fatal("rejected request mutated state")
+			}
+		})
+	}
+	for _, body := range []string{`{"format":"plain","text":"a","sender":"application"}`, `{"format":"plain","text":"a","attachments":[{"id":"x","kind":"file"}]}`, `{"format":"plain","text":"a","reply_to_message_id":"x"}`, `{"format":"plain","text":"a","buttons":[[{"id":"x","label":"x","url":"https://example.com"}]]}`, `{"format":"html","text":"a"}`, `{"format":null,"text":"a"}`} {
+		want := 422
+		if strings.Contains(body, "sender") {
+			want = 400
+		}
+		before, a := clientMessageState(t, f.store), f.snapshot()
+		status, raw, h := clientMessageRequest(f, c.Bot.ID, clientMessageKey, body)
+		assertBotResponse(t, status, want, raw, h)
+		if before != clientMessageState(t, f.store) || a != f.snapshot() {
+			t.Fatal("invalid body wrote state")
+		}
+	}
+	for _, column := range []string{"enabled", "can_receive"} {
+		f.sql("UPDATE bots SET "+column+"=0 WHERE id=?", c.Bot.ID)
+		before := clientMessageState(t, f.store)
+		status, raw, h := clientMessageRequest(f, c.Bot.ID, clientMessageKey, clientMessageBody)
+		assertBotResponse(t, status, 403, raw, h)
+		if before != clientMessageState(t, f.store) {
+			t.Fatal("disabled bot wrote state")
+		}
+		f.sql("UPDATE bots SET "+column+"=1 WHERE id=?", c.Bot.ID)
+	}
+}
+
+func TestClientMessageInstanceHeadersAndDatabaseSwitch(t *testing.T) {
+	f := botHTTP(t, nil)
+	c := clientMessageBot(t, f)
+	path := "/api/v1/client/bots/" + c.Bot.ID + "/messages"
+	for _, ids := range [][]string{nil, {f.instanceID, f.instanceID}, {"bad"}, {"22222222-2222-4222-8222-222222222222"}} {
+		before, a := clientMessageState(t, f.store), f.snapshot()
+		req, _ := http.NewRequest("POST", f.server.URL+path, strings.NewReader(clientMessageBody))
+		req.Header.Set("Authorization", "Bearer invalid")
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Idempotency-Key", clientMessageKey)
+		for _, id := range ids {
+			req.Header.Add("X-RelayNest-Instance-ID", id)
+		}
+		resp, err := f.server.Client().Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		raw, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		want, code := 400, "INVALID_REQUEST"
+		if ids == nil {
+			code = "INSTANCE_REQUIRED"
+		}
+		if len(ids) == 1 && ids[0] == "22222222-2222-4222-8222-222222222222" {
+			want, code = 409, "INSTANCE_MISMATCH"
+		}
+		if resp.StatusCode != want || !strings.Contains(string(raw), `"code":"`+code+`"`) || before != clientMessageState(t, f.store) || a != f.snapshot() {
+			t.Fatalf("header gate %d %s", resp.StatusCode, raw)
+		}
+	}
+	for _, header := range []string{"Authorization", "Idempotency-Key"} {
+		before, a := clientMessageState(t, f.store), f.snapshot()
+		req, _ := http.NewRequest("POST", f.server.URL+path, strings.NewReader(clientMessageBody))
+		req.Header.Set("Authorization", "Bearer "+f.android.Token)
+		req.Header.Set("Idempotency-Key", clientMessageKey)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-RelayNest-Instance-ID", f.instanceID)
+		req.Header.Add(header, req.Header.Get(header))
+		resp, err := f.server.Client().Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		want := 400
+		if header == "Authorization" {
+			want = 401
+		}
+		if resp.StatusCode != want || before != clientMessageState(t, f.store) || a != f.snapshot() {
+			t.Fatal("duplicate header bypass")
+		}
+	}
+	// 真实 probe A 后切换独立 B；B 必须在认证旧 Bearer 之前拒绝。
+	probe, err := f.server.Client().Get(f.server.URL + "/api/v1/instance")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var dto map[string]string
+	json.NewDecoder(probe.Body).Decode(&dto)
+	probe.Body.Close()
+	if dto["instance_id"] != f.instanceID {
+		t.Fatal("probe A")
+	}
+	b, h, err := authenticationDependencies(context.Background(), filepath.Join(t.TempDir(), "b.sqlite"), f.server.URL, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer b.Close()
+	f.server.Config.Handler = httpapi.New(health.New(nil), h)
+	before := clientMessageState(t, b)
+	status, raw, headers := clientMessageRequest(f, c.Bot.ID, clientMessageKey, clientMessageBody)
+	assertBotResponse(t, status, 409, raw, headers)
+	if !strings.Contains(raw, "INSTANCE_MISMATCH") || before != clientMessageState(t, b) {
+		t.Fatal("switched instance executed")
+	}
+}

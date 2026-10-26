@@ -30,6 +30,10 @@ type MessageHandlers interface {
 	CreateBotMessage(http.ResponseWriter, *http.Request)
 }
 
+type ClientMessageHandlers interface {
+	CreateClientMessage(http.ResponseWriter, *http.Request)
+}
+
 type DeviceHandlers interface {
 	ListDeviceSessions(http.ResponseWriter, *http.Request)
 	RevokeDeviceSession(http.ResponseWriter, *http.Request)
@@ -46,6 +50,9 @@ func New(h *health.Handler, authentication ...AuthHandlers) http.Handler {
 		}
 		if m, ok := a.(MessageHandlers); ok {
 			mux.HandleFunc("POST /api/v1/bot/messages", m.CreateBotMessage)
+		}
+		if m, ok := a.(ClientMessageHandlers); ok {
+			mux.HandleFunc("POST /api/v1/client/bots/{id}/messages", m.CreateClientMessage)
 		}
 		mux.HandleFunc("POST /api/v1/auth/login", a.Login)
 		mux.HandleFunc("GET /api/v1/auth/session", a.GetSession)
