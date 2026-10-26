@@ -1,6 +1,6 @@
 # 已完成任务记录
 
-核对日期：2026-10-25。压缩前历史基线：`086fa51d79d7726545a9abbab8feebb25770034e`。本页将原任务卡、实施、修复、独审和集成记录按交付结果汇总；局部已完成不扩大为父功能、阶段、部署或正式验收完成。
+核对日期：2026-10-26。压缩前历史基线：`086fa51d79d7726545a9abbab8feebb25770034e`。本页将原任务卡、实施、修复、独审和集成记录按交付结果汇总；局部已完成不扩大为父功能、阶段、部署或正式验收完成。
 
 历史原件统一恢复：`git show 086fa51d79d7726545a9abbab8feebb25770034e:docs/tasks/<原路径>`，例如 `...:docs/tasks/reports/P05-01-I01.md`。该提交是本项目主历史祖先，可随 Git 历史恢复；不另外保存旧卡、重复报告或 archive 副本。原台账全部 331 条 `done`（含规划、修复、审计、集成、工作区准备）按下列 ID 前缀聚合；过程任务不另计产品功能。精确历史元数据仍在该基线的 `docs/tasks/registry.json`。main 集成提交及该基线文件可从主历史检索；表中的原始实现／独审来源提交不一定是 main 祖先，不能保证 fresh clone 可直接解析。分支清理后的来源对象可从 `/home/lijx/Projects/RelayNest-backups/branch-cleanup-20261025T114418.040950Z/all-local-heads.bundle` 恢复后只读核对；这是本地历史备份，不是运行依赖。
 
@@ -54,7 +54,7 @@
 - 原 ID：`P05-02-S01`、SCOPE/ALLOC、PLAN01 及 A/I；父 `P05-02` 仍未完成。
 - 稳定身份/操作/UUID 键作用域、同键重放原创建快照/回执、异内容冲突、同事务计数、无正文墓碑及 Bot 永久删除清理；`0007_idempotency.sql` 已精确集成。内部冲突/墓碑/过大错误留给后续 HTTP 409/410/413 映射。
 - 五包普通及 race、vet/build、storage 额外复验、三轮并发/重开/九类故障与真实 COMMIT 失败、删除成功/失败回滚通过；0001～0006 迁移及 checksum 不变。
-- 正式 Bot/Android 消息创建 HTTP、G1/浏览器/发布未测；管理员入口仍须完整实例绑定，不以协议桩代替。
+- 本节存储结果不代表正式 HTTP；Bot 当前有限入口已另见 [BE-02-BOT](#g5-be02-bot)，Android 管理员入口、G1/浏览器/发布仍未完成，不以协议桩代替。
 
 <a id="g4"></a>
 
@@ -65,7 +65,43 @@
 - 离线工具完成无迁移打开、进程锁、换 ID/认证代次推进及全管理员会话撤销；恢复/克隆清理推送待办，正常移动保留。真实六迁移临时库 `pending=1` 组合及失败回滚、普通/race 通过；未操作现网。人工停服、入口隔离和正确操作模式仍是前置。
 - 内部身份发现区分 NoMatch/Matched/Unavailable；完整摘要匹配后须业务事务再 `AuthorizeTx`，停用/降权/代次/轮换/撤销等拒绝不得回落管理员，依赖故障失败关闭。真实 SQLite、并发轮换/取消/超时、相关包/race/vet/build 通过。
 - 未测移交：摘要匹配后读事务 COMMIT 故障定点注入；真实附件 HTTP 顺序、状态/no-store、send/receive 资源域及文件打开顺序。已有写事务 COMMIT 失败不能冒称覆盖上述读事务分支。
-- 完整 `B01`、AUTH01/HTTP01、G-INSTANCE-RUNTIME/COMPOSITION、Android 新 G1/S04 均未闭环。AUTH01 分支提交不算 main 完成；接续信息在后端待办中保留。
+- AUTH 子范围现已独审并集成实际目标 work，见 [BE-01-AUTH](#g5-be01-auth)；完整 `B01`、HTTP01、G-INSTANCE-RUNTIME/COMPOSITION、Android 新 G1/S04 仍未闭环。
+
+<a id="g5-be01-auth"></a>
+
+### G5 BE-01-AUTH Android 实例入口与事务绑定
+
+- 原 ID：`P08-04-D01-B01-AUTH01`；类型：有限 leaf；状态：`done`（2026-10-26，由主调度依据 A02 PASS 与 I01 精确组合证据从 integrating 归档）。仅完成 AUTH 子范围，父 BE-01、HTTP01、G-INSTANCE-RUNTIME／COMPOSITION 仍未完成。
+- 依赖：[已完成基线 P08-04-D01-M01](#g4)、[已完成基线 P08-04-D01-B01-PLAN02](#g4)。
+- 门槛：`G-GIT`、`G-API`、`G-INSTANCE-CONTRACT`；条件未实证不记通过。
+
+- 基线与恢复：历史实施基线 `5519ebfee27e3ad74145466eb27051945804f07e`，源实现 `d894f14175249bbd17609a0eb3521462577151c8`（历史分支 `codex/instance-server-bind-20261025`）。R01 `/root/backend_recovery` 从远端非破坏恢复并准备固定 SHA 隔离树；目标 `work` 初始 `01c74a776b0b76fcc6616f60ae637a5a53f18384`，M01／PLAN02 均已集成。
+- 短历史：A01 `/root/auth_audit_a01` 给出 CHANGES_REQUIRED，`BE-01-AUTH-A01-001` 为旧 Bot／Device／装配测试缺真实实例头导致全服普通检查 FAIL；追加 `BE-01-AUTH-A01-002` 为闭库场景旧断言误用 SERVICE_UNAVAILABLE，冻结身份错误应为 INSTANCE_UNAVAILABLE。未确认生产 AUTH 缺陷。F01 `/root/auth_fix_f01` 提交 `39529d3d3f0f5b070af2237d6361025d436de20e`（parent `d894f141…`），仅修 `server/internal/bots/lifecycle_auth_test.go`、`server/internal/devices/http_test.go`、`server/cmd/relaynest/main_test.go`，保留原权限／回滚断言及一般会话存储故障覆盖，75 插入／5 删除。
+- 最终独审：A02 `/root/auth_audit_a01` 固定 `39529d3d3f0f5b070af2237d6361025d436de20e` PASS，关闭 A01-001／002；原九 AUTH 文件不变。独立全服普通、相关五包 race、全服 vet、十二文件 gofmt/diff、锁版 npm ci/build PASS。
+- 精确集成：I01 `/root/auth_integrate_i01` 在目标 `work` 无冲突 cherry-pick，`907c2a4dbf3a8774bcd438fb22b2381def7394a5` → `1aa0aa9e0c390a46a7293cae56410e0baae8ce71`；映射 `d894f14175249bbd17609a0eb3521462577151c8` → `c2e978323d364b39bbab72dd494f40dac1a4dfae`、`39529d3d3f0f5b070af2237d6361025d436de20e` → `1aa0aa9e0c390a46a7293cae56410e0baae8ce71`。range-diff 两提交均 `=`，无额外业务修改。
+- 组合验证：全服普通、vet/build，auth/httpapi/devices/bots/storage/messages/idempotency/cmd 八包串行 race，锁版 Node 22.23.2／npm 10.9.8 ci/build、gofmt/diff 和目标关键路由 PASS；主调度两文档 patch 受保护。一次 gofmt 误用目录造成 lstat 失败，正确重跑 PASS，不是产品 FAIL。全服 race、HTTP01 与完整 G1 父验收 NOT_RUN，不扩大局部完成结论。
+
+允许五个 auth 主文件：http.go、request_security.go、session.go、device_sessions.go、instance_binding.go 及测试。实现不可伪造的私有请求绑定、同 SessionStore 控制的读/写闭包；复用 ReadInstanceIDTx、不缓存/嵌套事务，失败清空输出，提交前不发布凭据。Android login 分阶段解码，不能在 ID 校验前先解完整 Password；AndroidSession 保持独立封闭 DTO，GET session 不返 Bearer。其他 AdminBearer 分支先 ID 后读 Bearer，混合/重复凭据失败关闭。
+
+检查：真实 auth HTTP+SQLite 验证缺头400 INSTANCE_REQUIRED、畸形/空/多值400 INVALID_REQUEST、错ID409 INSTANCE_MISMATCH、身份/DB故障503 INSTANCE_UNAVAILABLE，代次失效401；错误no-store且不泄实际ID。Create、读取/续期、logout、WithAuthorizedWrite、设备列表/撤销同快照/提交复核，revoked自撤、Session.id与提交后通知保持；登录校验后切库和事务中变化无部分结果，Web/CSRF不回归。运行 auth/storage 定向及 race/静态检查；交付真实内部接口后才允许 HTTP 包接入。
+
+<a id="g5-be02-bot"></a>
+
+### G5 BE-02-BOT Bot 正式创建 HTTP
+
+- 原 ID：`P05-02-S02`；类型：有限 leaf；状态：`done`（2026-10-26，由主调度依据 A01 PASS 与 I01 精确集成证据从 integrating 归档）。仅完成当前有限 Bot 文本入口，父 BE-02 仍未完成；管理员入口未开始，仍依赖完整 BE-01。
+- 依赖：[已完成基线 P05-02-S01](#g3)、[已完成基线 P05-02-PLAN01](#g3)、[已完成基线 P08-04-D01-B01-BOT01](#g4)。
+- 门槛：`G-GIT`、`G-API`；条件未实证不记通过。
+
+- 基线：`01c74a776b0b76fcc6616f60ae637a5a53f18384`；S01 最终 `e674801f3640508327e102bda37805b687c3108d`、PLAN01 集成 `50be58eaaba6c8918dbd7642d9ef06125f0dda07` 及报告 `137799bc9f3c94b279b94a0d18b01480bb4903bd`、BOT01 最终 `4698f39dbe7e78f86cba209a0a44a750c9fdd8db` 经 R01 验证均为基线祖先。
+- 短历史与范围：从未开始经 ready／running／review／integrating 完成；Implementer `/root/bot_implement` 在隔离树 `/workspace/RelayNest-be02-bot`、分支 `codex/be02-bot-20261026` 提交 `907c2a4dbf3a8774bcd438fb22b2381def7394a5`。实际五文件为 `server/internal/httpapi/messages.go`、`messages_test.go`、`router.go`、`server/cmd/relaynest/main.go`、`main_test.go`；未改 auth／bots／SQL／API。
+- 最终独审：A01 `/root/bot_audit_a01` 对固定 `907c2a4dbf3a8774bcd438fb22b2381def7394a5` PASS。真实 HTTP／SQLite 及临时 overlay 补证 410 墓碑、读取 body 时撤销／降权、精确大小边界；普通五包、串行五包 race、vet/build/gofmt、锁版 Web typecheck/build PASS。
+- 精确集成：I01 `/root/bot_integrate_i01` 在目标 `work` 无冲突快进 `01c74a776b0b76fcc6616f60ae637a5a53f18384` → `907c2a4dbf3a8774bcd438fb22b2381def7394a5`，源与目标准确受审 SHA 相同。全服普通、五包串行 race、vet/build/gofmt、锁版 Node 22.23.2／npm 10.9.8 Web 构建及目标路由回归 PASS；主调度 BACKEND／PROGRESS patch 哈希前后相同，index 空，未 push。
+- 保留风险 `A01-R01`：默认跨包并行 race 首轮因基线 50ms busy-timeout 夹具触发 SQLITE_BUSY（messages 包本次零差异）；独立单测 race 连续 30 次、基线 20 次与五包串行 race PASS，不隐去首轮 FAIL。404 在当前禁止附件／引用的有限阶段无可达资源路径，仍 NOT_RUN；Webhook 未接线、范围外 NOT_RUN，不宣称完整引用／Webhook 验收。
+
+允许 httpapi/messages.go、router.go、cmd/relaynest/main.go 三主文件及测试；不改auth/bots/SQL/API/管理员/Webhook分支，共享接线串行。正式 POST /api/v1/bot/messages 只用真实 API Token 与 BOT01 固定身份；启用/send/提交前凭据代次仍需验证，BotID只来自身份、不接受body指定，实例头不切身份。调用S01同事务创建，commit后201 Message+no-store。
+
+请求≤256KiB、UUIDv4幂等头；未知/结构400、语义422、超限413、未授权401、能力403、资源域404、异摘要409 IDEMPOTENCY_CONFLICT、墓碑410 RESOURCE_EXPIRED、存储503，遵循冻结Error/request_id/retryable及默认值摘要；日志不含凭据/正文。检查真实路由+SQLite丢首响应/重启同键仍同ID且不增序号/changes/job，并发同键/异内容、commit失败全回滚、API reset新Token同作用域旧Token拒绝、跨Bot不泄漏；当前授权/能力先于查重，实例头缺失/畸形/错误不影响Bot身份。必跑httpapi/messages/idempotency/bots/cmd测试、相关race、go vet ./...；Webhook未接线须记NOT_RUN。
 
 ## Web 管理端
 

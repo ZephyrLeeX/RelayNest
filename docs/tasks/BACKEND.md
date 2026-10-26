@@ -20,10 +20,10 @@
 
 ### BE-01 服务实例绑定
 
-- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+- 子项证据：[AUTH 已完成独审与精确集成](COMPLETED.md#g5-be01-auth)；HTTP01 尚未开始，父项仍待同一组合 SHA 完整验收。
 
 - 旧ID：`P08-04-D01-B01`；类型：父收口，不整组派发；状态：进行中（父收口未完成）。
-- 依赖：[已完成基线 P08-04-D01-M01](COMPLETED.md#g4)、[已完成基线 P04-05-S03](COMPLETED.md#g1)、[已完成基线 P04-06](COMPLETED.md#g1)、[已完成基线 P08-04-D01-B01-SCOPE01](COMPLETED.md#g4)、[已完成基线 P08-04-D01-B01-BOT01](COMPLETED.md#g4)、[已完成基线 P08-04-D01-B01-PLAN02](COMPLETED.md#g4)、`BE-01-AUTH`、`BE-01-HTTP`。
+- 依赖：[已完成基线 P08-04-D01-M01](COMPLETED.md#g4)、[已完成基线 P04-05-S03](COMPLETED.md#g1)、[已完成基线 P04-06](COMPLETED.md#g1)、[已完成基线 P08-04-D01-B01-SCOPE01](COMPLETED.md#g4)、[已完成基线 P08-04-D01-B01-BOT01](COMPLETED.md#g4)、[已完成基线 P08-04-D01-B01-PLAN02](COMPLETED.md#g4)、[已完成 BE-01-AUTH](COMPLETED.md#g5-be01-auth)、`BE-01-HTTP`。
 - 门槛：`G-GIT`、`G-API`、`G-INSTANCE-CONTRACT`；条件未实证不记通过。
 
 父收口目标：公开 probe 与 Android 登录/会话/设备/Bot 管理真实路由完整 G1 组合；依赖中的 M01/SCOPE01/BOT01/PLAN02 仅是已完成局部基线。AUTH 和 HTTP 两包及 BOT01 最终集成后，在同一组合 SHA 逐项验收；不以 AUTH 局部通过放行消费者。当前 G-INSTANCE-RUNTIME、G-INSTANCE-COMPOSITION 均 pending。
@@ -34,19 +34,7 @@ G1 已批准生命周期：Android 先验证实例 ID 再读取密码/Bearer，�
 
 <a id="be-01-auth"></a>
 
-### BE-01-AUTH Android实例入口与事务绑定
-
-- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
-
-- 旧ID：`P08-04-D01-B01-AUTH01`；类型：有限 leaf；状态：已有WIP，待独审集成。
-- 依赖：[已完成基线 P08-04-D01-M01](COMPLETED.md#g4)、[已完成基线 P08-04-D01-B01-PLAN02](COMPLETED.md#g4)。
-- 门槛：`G-GIT`、`G-API`、`G-INSTANCE-CONTRACT`；条件未实证不记通过。
-
-当前已有 WIP `d894f14175249bbd17609a0eb3521462577151c8`，分支 `codex/instance-server-bind-20261025` 已保存并推送，尚未独审/集成；不是现有活跃 worker。旧 Bot/Device fixture 缺实例头导致全 server 检查失败，必须更新真实输入并保留断言，不能标整体通过。
-
-允许五个 auth 主文件：http.go、request_security.go、session.go、device_sessions.go、instance_binding.go 及测试。实现不可伪造的私有请求绑定、同 SessionStore 控制的读/写闭包；复用 ReadInstanceIDTx、不缓存/嵌套事务，失败清空输出，提交前不发布凭据。Android login 分阶段解码，不能在 ID 校验前先解完整 Password；AndroidSession 保持独立封闭 DTO，GET session 不返 Bearer。其他 AdminBearer 分支先 ID 后读 Bearer，混合/重复凭据失败关闭。
-
-检查：真实 auth HTTP+SQLite 验证缺头400 INSTANCE_REQUIRED、畸形/空/多值400 INVALID_REQUEST、错ID409 INSTANCE_MISMATCH、身份/DB故障503 INSTANCE_UNAVAILABLE，代次失效401；错误no-store且不泄实际ID。Create、读取/续期、logout、WithAuthorizedWrite、设备列表/撤销同快照/提交复核，revoked自撤、Session.id与提交后通知保持；登录校验后切库和事务中变化无部分结果，Web/CSRF不回归。运行 auth/storage 定向及 race/静态检查；交付真实内部接口后才允许 HTTP 包接入。
+已完成子项：[BE-01-AUTH Android 实例入口与事务绑定的范围、验收与证据](COMPLETED.md#g5-be01-auth)。
 
 <a id="be-01-http"></a>
 
@@ -55,7 +43,7 @@ G1 已批准生命周期：Android 先验证实例 ID 再读取密码/Bearer，�
 - 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
 
 - 旧ID：`P08-04-D01-B01-HTTP01`；类型：有限 leaf；状态：未开始。
-- 依赖：`BE-01-AUTH`、[已完成基线 P08-04-D01-B01-BOT01](COMPLETED.md#g4)、[已完成基线 P08-04-D01-B01-PLAN02](COMPLETED.md#g4)。
+- 依赖：[已完成 BE-01-AUTH](COMPLETED.md#g5-be01-auth)、[已完成基线 P08-04-D01-B01-BOT01](COMPLETED.md#g4)、[已完成基线 P08-04-D01-B01-PLAN02](COMPLETED.md#g4)。
 - 门槛：`G-GIT`、`G-API`、`G-INSTANCE-CONTRACT`；条件未实证不记通过。
 
 允许 router.go、instance.go、httpapi/bots.go、bots/repository.go、cmd/relaynest/main.go 五个主文件及测试；auth/devices只读消费最终接口，main只接线。Bot ListPage 与 RenewRead 不得分离快照；仓储读取放入 AUTH 授权读闭包，Bot写继续同事务授权写，devices只验证共享安全入口。
@@ -70,10 +58,10 @@ G1 已批准生命周期：Android 先验证实例 ID 再读取密码/Bearer，�
 
 ### BE-02 消息幂等创建和接收回执
 
-- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+- 子项证据：[Bot 有限文本 HTTP 已完成独审与精确集成](COMPLETED.md#g5-be02-bot)；ADMIN 尚未开始，父项原组合验收仍未闭环。
 
 - 旧ID：`P05-02`；类型：父收口，不整组派发；状态：进行中（父收口未完成）。
-- 依赖：[已完成基线 P05-01](COMPLETED.md#g2)、[已完成基线 P05-02-PLAN01](COMPLETED.md#g3)、[已完成基线 P05-02-S01](COMPLETED.md#g3)、`BE-02-BOT`、`BE-02-ADMIN`。
+- 依赖：[已完成基线 P05-01](COMPLETED.md#g2)、[已完成基线 P05-02-PLAN01](COMPLETED.md#g3)、[已完成基线 P05-02-S01](COMPLETED.md#g3)、[已完成 BE-02-BOT](COMPLETED.md#g5-be02-bot)、`BE-02-ADMIN`。
 - 允许范围：`server/internal/messages/**`、`server/internal/idempotency/**`、`server/migrations/**`，及对应测试。
 - 门槛：`G-GIT`；条件未实证不记通过。
 
@@ -83,17 +71,7 @@ G1 已批准生命周期：Android 先验证实例 ID 再读取密码/Bearer，�
 
 <a id="be-02-bot"></a>
 
-### BE-02-BOT Bot正式创建HTTP
-
-- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
-
-- 旧ID：`P05-02-S02`；类型：有限 leaf；状态：未开始。
-- 依赖：[已完成基线 P05-02-S01](COMPLETED.md#g3)、[已完成基线 P05-02-PLAN01](COMPLETED.md#g3)、[已完成基线 P08-04-D01-B01-BOT01](COMPLETED.md#g4)。
-- 门槛：`G-GIT`、`G-API`；条件未实证不记通过。
-
-允许 httpapi/messages.go、router.go、cmd/relaynest/main.go 三主文件及测试；不改auth/bots/SQL/API/管理员/Webhook分支，共享接线串行。正式 POST /api/v1/bot/messages 只用真实 API Token 与 BOT01 固定身份；启用/send/提交前凭据代次仍需验证，BotID只来自身份、不接受body指定，实例头不切身份。调用S01同事务创建，commit后201 Message+no-store。
-
-请求≤256KiB、UUIDv4幂等头；未知/结构400、语义422、超限413、未授权401、能力403、资源域404、异摘要409 IDEMPOTENCY_CONFLICT、墓碑410 RESOURCE_EXPIRED、存储503，遵循冻结Error/request_id/retryable及默认值摘要；日志不含凭据/正文。检查真实路由+SQLite丢首响应/重启同键仍同ID且不增序号/changes/job，并发同键/异内容、commit失败全回滚、API reset新Token同作用域旧Token拒绝、跨Bot不泄漏；当前授权/能力先于查重，实例头缺失/畸形/错误不影响Bot身份。必跑httpapi/messages/idempotency/bots/cmd测试、相关race、go vet ./...；Webhook未接线须记NOT_RUN。
+已完成子项：[BE-02-BOT Bot 正式创建 HTTP 的范围、验收与证据](COMPLETED.md#g5-be02-bot)。
 
 <a id="be-02-admin"></a>
 
@@ -102,7 +80,7 @@ G1 已批准生命周期：Android 先验证实例 ID 再读取密码/Bearer，�
 - 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
 
 - 旧ID：`P05-02-S03`；类型：有限 leaf；状态：未开始。
-- 依赖：`BE-02-BOT`、[已完成基线 P05-02-PLAN01](COMPLETED.md#g3)、`BE-01`。
+- 依赖：[已完成 BE-02-BOT](COMPLETED.md#g5-be02-bot)、[已完成基线 P05-02-PLAN01](COMPLETED.md#g3)、`BE-01`。
 - 门槛：`G-GIT`、`G-API`；条件未实证不记通过。
 
 允许 httpapi/messages.go、router.go、cmd/relaynest/main.go、必要 messages/create.go 四主文件及测试；auth只消费 BE-01 已集成接口。正式 POST /api/v1/client/bots/{id}/messages 仅 Android AdminBearer，固定sender=administrator、Bot启用/receive。S01幂等/消息/投递/changes/待办必须处于 B01 WithAuthorizedWrite 的同一受控事务，先ID再读Bearer，提交前复核ID/会话/代次；不能以M01/BOT01/桩middleware代替完整绑定。
