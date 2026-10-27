@@ -486,10 +486,13 @@ func TestMessageQueuedInvalidationAndContext(t *testing.T) {
 	if e == nil || !reflect.DeepEqual(out, Created{}) {
 		t.Fatal("blocked context succeeded")
 	}
-	// 独立 Store 也不能穿过真实文件写锁，错误不释放候选结果。
-	out, e = New(f.other).CreateApplication(messageContext, f.identity, f.input())
-	if e == nil || !reflect.DeepEqual(out, Created{}) {
-		t.Fatal("file lock bypass")
+	// 独立 Store 也受同库写准入约束；使用新的有界 context 观察排队取消，
+	// 不能复用上面已经超时的 ctx，也不能等待本测试尚未释放的事务。
+	otherCtx, cancelOther := context.WithTimeout(messageContext, 20*time.Millisecond)
+	defer cancelOther()
+	out, e = New(f.other).CreateApplication(otherCtx, f.identity, f.input())
+	if !errors.Is(e, context.DeadlineExceeded) || !reflect.DeepEqual(out, Created{}) {
+		t.Fatal("file lock bypass", e)
 	}
 	close(release)
 	if e = <-done; e != nil {

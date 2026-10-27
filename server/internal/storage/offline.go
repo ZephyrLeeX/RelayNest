@@ -15,7 +15,7 @@ import (
 
 // OpenOffline 只打开迁移完整的现存库；不初始化身份、不更换 journal 模式，
 // 不调用正常启动迁移。调用方须另持进程排他锁并确认全部服务已经停机。
-func OpenOffline(ctx context.Context, cfg Config) (*Store, error) {
+func OpenOffline(ctx context.Context, cfg Config) (_ *Store, err error) {
 	if cfg.Path == "" || cfg.Path == ":memory:" {
 		return nil, ErrInstanceUnavailable
 	}
@@ -43,8 +43,27 @@ func OpenOffline(ctx context.Context, cfg Config) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
+	s := newStore()
+	s.path = path
+	s.gate, err = retainWriteGate(path, false)
+	if err != nil {
+		return nil, err
+	}
+	release, err := s.gate.acquire(ctx, s.lifecycle.closedCh)
+	if err != nil {
+		return nil, errors.Join(err, s.Close())
+	}
+	defer func() {
+		release()
+		if err != nil {
+			err = errors.Join(err, s.Close())
+		}
+	}()
+	if err = s.checkDatabaseFile(); err != nil {
+		return nil, err
+	}
 	// mode=rw 防止检查文件后到连接建立间意外新建库；驱动参数不来自用户路径。
-	u := url.URL{Scheme: "file", Path: path}
+	u := url.URL{Scheme: "file", Path: s.gate.path}
 	q := url.Values{}
 	q.Set("mode", "rw")
 	q.Set("_txlock", "immediate")
@@ -52,20 +71,18 @@ func OpenOffline(ctx context.Context, cfg Config) (*Store, error) {
 	q.Add("_pragma", "foreign_keys(ON)")
 	q.Add("_pragma", "synchronous(FULL)")
 	u.RawQuery = q.Encode()
-	s := &Store{}
 	s.writer, err = sql.Open("sqlite", u.String())
 	if err != nil {
 		return nil, err
 	}
 	s.writer.SetMaxOpenConns(1)
 	s.writer.SetMaxIdleConns(1)
-	fail := func(err error) (*Store, error) { return nil, errors.Join(err, s.Close()) }
 	if err = s.writer.PingContext(ctx); err != nil {
-		return fail(err)
+		return nil, err
 	}
-	s.reader, err = openPool(path, cfg, true)
+	s.reader, err = openPool(s.gate.path, cfg, true)
 	if err != nil {
-		return fail(err)
+		return nil, err
 	}
 	err = transact(ctx, s.reader, func(tx *sql.Tx) error {
 		rows, err := tx.QueryContext(ctx, "SELECT version,name,checksum FROM schema_migrations ORDER BY version")
@@ -97,7 +114,7 @@ func OpenOffline(ctx context.Context, cfg Config) (*Store, error) {
 		return err
 	})
 	if err != nil {
-		return fail(err)
+		return nil, err
 	}
 	return s, nil
 }
