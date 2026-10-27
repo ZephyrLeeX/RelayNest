@@ -62,11 +62,11 @@ Debian 恢复：推送 STORAGE、共享写准入修复及 ADMIN 有限文本 HTT
 ### 未完成
 
 - **未开始｜Bot 生命周期与权限收口**：重置／删除正式 HTTP、领取租约／等待请求／投递队列完整联动，以及身份权限整体矩阵（P04-08）。
-- **开发中｜历史／引用和共享已读父范围**：历史仓储首叶已 A01／I01 完成，完整源三提交精确合入 `6e5ca4b…`；父范围仍 running，[REFERENCE-CREATE](tasks/BACKEND.md#be-04-01-reference-create) 已 running，由 `/root/be04_reference_implementer` 在基线 `dbdb1c9…` 私有树接续，仅既有 Bot API／Android 文本引用；未提交现场已保留，检查进行中且最终结果未回交，独审／集成尚 NOT_RUN。引用创建、共享已读、公开 cursor／HTTP、附件投影及后续组合验收未完成。[READ-STORAGE](tasks/BACKEND.md#be-04-01-read-storage) 已正式分包 ready，0010_bot_read_states.sql 由总调度独占分配，最多四主文件，待独立 Implementer；尚未实施／测试。其他 CAS 编辑、Webhook、按钮回调和故障回归仍待实施。
+- **开发中｜历史／引用和共享已读父范围**：历史仓储首叶已 A01／I01 完成，完整源三提交精确合入 `6e5ca4b…`；父范围仍 running，[REFERENCE-CREATE](tasks/BACKEND.md#be-04-01-reference-create) 已 running，由 `/root/be04_reference_implementer` 在基线 `dbdb1c9…` 私有树接续，仅既有 Bot API／Android 文本引用；未提交现场已保留，检查进行中且最终结果未回交，独审／集成尚 NOT_RUN。引用创建、共享已读、公开 cursor／HTTP、附件投影及后续组合验收未完成。[READ-STORAGE](tasks/BACKEND.md#be-04-01-read-storage) 已 running，独立 `/root/be04_read_implementer` 正准备私有树并获准开始代码，0010_bot_read_states.sql 仍专属本叶；Go 排队等待，尚无已交付实施提交／验证结果。其他 CAS 编辑、Webhook、按钮回调和故障回归仍待实施。
 - **开发中｜附件功能**：流式持久化准备已完成；真实上传 HTTP／Bot-first／Android／设置路由仍待派发接线及本端点 G1 验收，父 BE-05-01 未完成；关联权限与保护引用、下载／Range、安全响应、启动恢复及孤儿回收仍未开始。
 - **未开始｜投递与清理（P6）**：原子领取、Long Polling、ACK／续约、退避重试、失败管理、历史／墓碑清理、队列生命周期、全局配置及健康投影。
 - **未开始｜Hub 同步运行时**：增量同步、bootstrap 重建、WS 提示及连接撤销。
-- **开发中｜正式推送服务端（P9）**：[注册／偏好 STORAGE](tasks/COMPLETED.md#g5-be10-storage) 已 A02 PASS，精确本地集成组合 `af84503…` 经权限解除后 I01 全部必检 PASS，存储叶完成；原 main 未更新，[当前设备五端点 HTTP](tasks/COMPLETED.md#g5-be10-http) 已 A02／I01完成，父原验收独立组合、待办调度和 FCM／OPPO Adapter 仍未完成。Android FCM PoC 不代表这些服务已实现；失效 token 仅按发送快照条件解绑对应注册，不删除设备会话。
+- **开发中｜正式推送服务端（P9）**：[注册／偏好 STORAGE](tasks/COMPLETED.md#g5-be10-storage) 已 A02 PASS，精确本地集成组合 `af84503…` 经权限解除后 I01 全部必检 PASS，存储叶完成；原 main 未更新，[当前设备五端点 HTTP](tasks/COMPLETED.md#g5-be10-http) 已 A02／I01完成，父 COMPOSE-R01 两组 overlay 已准备，E01并发模式／E02撤销重登旧回调 Go均 NOT_RUN、排 REFERENCE之后；父原验收独立组合、待办调度和 FCM／OPPO Adapter 仍未完成。Android FCM PoC 不代表这些服务已实现；失效 token 仅按发送快照条件解绑对应注册，不删除设备会话。
 
 ## 3. Web 管理端
 

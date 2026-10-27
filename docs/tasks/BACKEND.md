@@ -208,7 +208,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-04-01-READ-STORAGE 共享已读事务仓储与原子初始化
 
-- 类型：有限子叶；状态：`ready`（2026-10-28，总调度确认有限规划及迁移分配，准备角色 `/root/admin_i01_resume`，Implementer 尚待派发）。固定产品基线 `d4604184a2d3e2616146d63b8b902d052a723237`，纯元数据推进不改变该业务基线；实施工作树／owner由总调度派发时另登记。依赖[BE-02 限定父组合](COMPLETED.md#g5-be02-compose)、[HISTORY-STORAGE](COMPLETED.md#g5-be04-history-storage)及既有[B01／Bot事务与认证基础](COMPLETED.md#g1)均已集成；不依赖尚未完成的 REFERENCE-CREATE，不能将其 WIP 作为输入。源码／迁移尚未实施，编译／测试／独审／精确集成均 **NOT_RUN**。
+- 类型：有限子叶；状态：`running`（2026-10-28，总调度已派独立 Implementer `/root/be04_read_implementer` 并授权开始代码，准备角色 `/root/admin_i01_resume`）。固定产品基线 `d4604184a2d3e2616146d63b8b902d052a723237`，纯元数据推进不改变该业务基线；私有实施工作树／分支正在准备，准确路径／HEAD待 Implementer 首报再登记，不猜提交 SHA。依赖[BE-02 限定父组合](COMPLETED.md#g5-be02-compose)、[HISTORY-STORAGE](COMPLETED.md#g5-be04-history-storage)及既有[B01／Bot事务与认证基础](COMPLETED.md#g1)均已集成；不依赖尚未完成的 REFERENCE-CREATE，不能将其 WIP 作为输入。代码已获准开始，尚未回交实施提交；Go 等待全局重型窗口（排 REFERENCE 之后），编译／测试／独审／精确集成均 **NOT_RUN**。
 - 单目标：仅共享已读可信事务仓储及初始化，最多四个主要文件：新增 `server/internal/sync/read_models.go`、`server/internal/sync/read_repository.go`、`server/migrations/0010_bot_read_states.sql`，仅修改 `server/internal/bots/repository.go` 的 CreateWithWrite 原子初始化；必要同包新 read 测试／Bot 创建测试、`server/internal/attachments/schema_test.go`和 devices push 迁移计数测试。SQL旧1～9／auth／storage／changes／messages／API／router／main／Web及其他任务树只读；不引入 HTTP／DTO／外部错误码或改契约。
 - **迁移排他锁**：总调度2026-10-28正式独占分配 **`0010_bot_read_states.sql` → BE-04-01-READ-STORAGE**，至精确集成核收前不得另派同号 writer；本条即编号锁登记位置。0009 永久保留给 push。分配前实核当前两个 common Git 库、44 refs、15注册树，无0010＋或未提交迁移；证据 `/tmp/relaynest-be04-read-plan-20261027-172206/migration-scan.json`，不同于旧环境独立库计数。当前仅登记，不创建 SQL。
 - 冻结语义：消费受信调用方 `*sql.Tx`，拒 nil，不自开／提交事务，不造仅凭公开 Actor 字段的授权包装；同 tx验证 Bot及状态，缺行／损坏 fail closed，不 lazy repair。已读输入上界用 `bots.bot_seq`，不以现存消息 MAX替代；disabled Bot可读。max合并仅实际前进时更新 read_seq／version／非空UTC时间并同事务追加 `changes.ReadUpdated`；旧／相同水位不改时间版本、不写事件。版本溢出及腐坏值失败且不发布部分结果；未读只统计现存 application 且 bot_seq>read_seq，不计管理员／callback／编辑／过期。
@@ -538,7 +538,9 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - P01 有限规划（2026-10-26）：owner Backend Orchestrator，Agent `/root/push_registration_plan`，固定基线 `571dc5dca696d4dfb446a868ca58169cf488579b` / `work`，只读细化当前 leaf 的准确文件／事务边界与准备／真实接线拆分，不修改代码、状态或分配迁移。状态仍未开始；新迁移候选 0009 须另核锁，完整 BE-01 门槛未满足，不据规划放行真实注册验收。
 - P01 已返回 STORAGE／HTTP 两有限子包建议；主调度采用并保留原完整验收。R04 `/root/resume_checkpoint` 核实际基线 `571dc5dca696d4dfb446a868ca58169cf488579b`，P04-05 精确集成 `d78711faa56dd01b7e10cf4eec3b70490f2d04e9`／最终 `005994a049635163e879c069ecf02526c8ddbe1f`、P03-07 集成 `981692f49663075aa553ce45aa645e75197b15ea`／最终 `375a270c74080d9eb3ea8e975d8c79814afc091f` 均为祖先；九个 worktree 均无 0009 或迁移修改，当前无迁移 writer。由调度将 0009 排他分配下列 STORAGE 子包至精确集成，不与未来迁移并写。
 
-- 证据与交接：STORAGE 与五端点 HTTP 各已独审／精确集成；下一门槛为独立父组合核收原 T9.3 注册版本／时间、CAS、并发切换／撤销迟到、条件解绑不误删及实例绑定与资格边界。父组合尚未派发／未验收，不以子叶 done 自动满足；完整平台发送／真机／全局实例门禁仍按后续任务。
+- 证据与交接：STORAGE 与五端点 HTTP 各已独审／精确集成；下一门槛为独立父组合核收原 T9.3 注册版本／时间、CAS、并发切换／撤销迟到、条件解绑不误删及实例绑定与资格边界。父组合 R01 已准备、尚未运行／验收，不以子叶 done 自动满足；完整平台发送／真机／全局实例门禁仍按后续任务。
+
+- `BE10-COMPOSE-R01`：独立验证树 `.worktrees/backend-be10-compose-r01`／`verify/be10-compose-r01-20261028`，固定 `d4604184a2d3e2616146d63b8b902d052a723237`，两组临时 overlay 已在 `/tmp/relaynest-be10-compose-r01-20261028` 准备；待补 E01 并发模式切换、E02 撤销／重登后旧回调隔离。所有 Go 检查 **NOT_RUN**，按重型队列排 REFERENCE 之后，不以 overlay存在当 PASS；独审及父精确组合核收尚未完成。
 
 - 旧ID：`P09-01`；类型：有限分拆收口；状态：`running`（2026-10-28，STORAGE 与有限 HTTP 已完成；父原验收独立组合仍未闭环，下一步另派 COMPOSE，BE-01 既定现有后端依赖已完成）。
 - 依赖：[已完成基线 P04-05](COMPLETED.md#g1)、[已完成基线 P03-07](COMPLETED.md#e1)。
