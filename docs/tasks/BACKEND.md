@@ -119,7 +119,9 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 ### BE-02 消息幂等创建和接收回执
 
 - 子项证据：[Bot 有限文本 HTTP](COMPLETED.md#g5-be02-bot) 与 [ADMIN 有限文本 HTTP](COMPLETED.md#g5-be02-admin) 均已完成独审及精确集成；父项原四项真实组合验收仍未闭环。
-- 下一有限组合验证 R01 为 `ready`／准备：待总调度向独立 Researcher 正式派发并固定归档后的真实目标 SHA，目前未运行，不凭两个子项 done 标父 done。
+- 有限父组合 R01 由 `ready` 转为 `running`／验证准备（2026-10-27，总调度已实际派发 Backend Researcher `/root/be02_compose_prep`）：生产代码来源为 ADMIN 归档后 `5d6a57df45f9bbf8185da8957e83ace08ec0ef27`；本次仅元数据的新提交后，Integrator 准备独立 `.worktrees/backend-be02-compose-r01` / `verify/be02-compose-r01-20261027` 并回交准确固定 HEAD／输入 hash。Researcher 在收到基线与全局重型锁前不编译；当前执行 **NOT_RUN**，后续仍须不同 Auditor 审证据及 I01 准确组合，不能由两个子项 done 标父 done。
+- R01 已核的父验收补证点：既有 Bot 四项 HTTP＋SQLite 主要证据在 `internal/httpapi/messages_test.go` 的自建单路由 mux；`cmd/relaynest/main_test.go` 的生产 `authenticationDependencies＋httpapi.New` Bot 测试主要为成功 smoke，ADMIN 六组已有生产链。此处不是撤销已完成 Bot／ADMIN 叶，而是补齐父四项在真实生产 Bot＋ADMIN 装配下的独立组合复验。
+- R01 源码只读，仅允许 `/tmp` 复制完整 `main_test.go` 后追加 `TestBE02Compose*`，用 Go overlay 映射该测试路径；不能删除原测试、改 SQL／生产逻辑／原超时或断言。计划补 Bot 丢响应／重开、真实仓储 token 轮换前后及旧 token 拒绝、409、当前授权与语句／COMMIT 故障；双入口核实际回执、SQLite 完整计数及匿名事件 hash。不得将仓储轮换补证说成未来 reset HTTP 已实现。每次执行记录固定源码 SHA、server/Web tree、go.mod／go.sum、原始完整测试与追加副本、overlay manifest、实际 embed 内容 SHA256及命令／退出码；最终证据不得依赖未集成的推送 HTTP WIP。
 
 - 旧ID：`P05-02`；类型：父收口，不整组派发；状态：进行中（父收口未完成）。
 - 依赖：[已完成基线 P05-01](COMPLETED.md#g2)、[已完成基线 P05-02-PLAN01](COMPLETED.md#g3)、[已完成基线 P05-02-S01](COMPLETED.md#g3)、[已完成 BE-02-BOT](COMPLETED.md#g5-be02-bot)、[已完成 BE-02-ADMIN](COMPLETED.md#g5-be02-admin)。
@@ -541,8 +543,9 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 ### BE-10-01-HTTP 当前设备注册与偏好真实接线
 
 - 类型：有限 leaf；状态：`running`（2026-10-27，总调度核原依赖及独立 STORAGE-BUSY-01 修复均已完成并派发阶段 1 handler 实施；尚未真实 router/main 组合验收，不标 done）。依赖[已完成 STORAGE](COMPLETED.md#g5-be10-storage)、[已完成 BE-01 现有后端父范围](COMPLETED.md#g5-be01)；写准入修复已[独审及精确集成](COMPLETED.md#g5-storage-busy-01)。
-- 阶段 1 原 Implementer `/root/push_http_implementer` 从固定基线 `3aec54e04945c9e1a8442f7ca996d2ded15f56e7` 开始；恢复 owner 为 `/root/push_http_resume`，已保留 checkpoint `1291ea355c3c3f837df56f5d5e1f08d6bc641059`（parent `3aec54e…`），仅 `devices/http.go`、`devices/push_http.go`、`devices/push_http_test.go` 三路径，Go 编译／执行 **NOT_RUN**。隔离 `.worktrees/backend-push-http` / `impl/backend-push-http-20261027`，Implementer 独占本树／index 与 handler 两文件及必要测试；阶段 2 必须接收 ADMIN 完成归档后的最新真实基线并获总调度明确放行，未放行前公共 router/main 仍只读，重型检查须获全局锁。
-- 后续首包只允许 `server/internal/devices/{push_http.go,http.go}` 及必要对应测试实现 handler；`server/internal/httpapi/router.go`、`server/cmd/relaynest/main.go` 目前仍全只读，ADMIN I01 已完成，公共锁由总调度转派并明确放行真实接线，不能自行使用旧基线接线。其他生产文件只读；原完整 HTTP 验收仍须最后真实 router＋main＋SQLite，不能以 handler 单测冒充已完成。
+- 阶段 1 原 Implementer `/root/push_http_implementer` 从 `3aec54e04945c9e1a8442f7ca996d2ded15f56e7` 开始；恢复 owner `/root/push_http_resume` 已保存 checkpoint `1291ea355c3c3f837df56f5d5e1f08d6bc641059`（parent `3aec54e…`）。阶段 2 已由总调度正式放行：先以 `backup/push-http-phase1-20261027` 保留原 checkpoint，再从真实 ADMIN 归档基线 `5d6a57df45f9bbf8185da8957e83ace08ec0ef27` 无冲突重放为 `3471a3bbc659580f14c627e5dc6c7cbbc9e7b680`（parent `5d6a57d…`），range-diff 一项 `=`；原三文件与 `1291ea3` 一致、其他 server 与 `5d6a57d` 一致，不重新实现。隔离树／分支仍为 `.worktrees/backend-push-http` / `impl/backend-push-http-20261027`，本树／index及公共接线写锁归该 Implementer。
+- 阶段 2 仅允许 `server/internal/devices/{push_http.go,http.go}`、`server/internal/httpapi/router.go`、`server/cmd/relaynest/main.go` 四主文件及必要对应测试；其他生产源码、auth／仓储／迁移／API 契约只读。本次记录 Go 编译／执行 **NOT_RUN（尚未收到完整新结果）**，不凭获锁或已有 handler checkpoint 记通过；短编译／handler 普通及后续重型矩阵均按总调度排队，一次仅一个 full／cmd／race 窗口。上述 `5d6a57d` 为本叶已授实际产品基线，canonical 本次纯元数据推进不要求它再次重放。
+- 原完整 HTTP 验收仍须最终真实 router＋main＋SQLite、独立固定 SHA 审计及精确集成；handler 单测、编译或阶段 2 接线获准均不能冒充完成，父 BE-10-01／平台发送／跨端门槛不自动通过。
 - 按冻结五 operations 接线 GET/PUT current/push、DELETE current/push/{provider}、GET/PUT current/notifications；真实当前 Android Bearer 与同事务实例门禁，拒 Web/Bot／目标选择器／客户端时间，262144 字节／严格 schema／no-store／无 token。原设备及认证／Bot 路由非回归，真实 router＋main＋SQLite 组合，不以直接 handler 测试冒充。
 - 原 BE-10-01 全部验收及资格边界保留，STORAGE 准备不替代 H01／G1；后端发送适配器及平台实测仍分别归后续任务。
 
