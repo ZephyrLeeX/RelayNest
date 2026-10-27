@@ -204,6 +204,19 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - 验收：原幂等语义、真实 B01 授权、Bot API＋Android 双入口真实 HTTP／SQLite及原子回滚；同 Bot 引用成功、跨 Bot／不存在一致拒绝、源删后幂等重试无新增，回执／delivery／message.created 的 original 引用一致；失败不得写序号／消息／投递／changes／幂等或泄露正文。仅 Bot API／Android 新引用，Webhook identity 新引用仍不支持，不扩大附件／按钮或重写 BE-02 历史完成范围。
 - 限制与后包：引用支持当前仍未完成，父 BE-04-01 继续 running，READ-STORAGE／历史 HTTP／最终父组合另包；共享已读初始策略待具体设计。无需迁移、不占0010，0009永久保留给 push。原准备未运行 Go／npm／validator；实施检查按总调度的全局重型窗口排队，不与其他 Actor 并跑。
 
+<a id="be-04-01-read-storage"></a>
+
+#### BE-04-01-READ-STORAGE 共享已读事务仓储与原子初始化
+
+- 类型：有限子叶；状态：`ready`（2026-10-28，总调度确认有限规划及迁移分配，准备角色 `/root/admin_i01_resume`，Implementer 尚待派发）。固定产品基线 `d4604184a2d3e2616146d63b8b902d052a723237`，纯元数据推进不改变该业务基线；实施工作树／owner由总调度派发时另登记。依赖[BE-02 限定父组合](COMPLETED.md#g5-be02-compose)、[HISTORY-STORAGE](COMPLETED.md#g5-be04-history-storage)及既有[B01／Bot事务与认证基础](COMPLETED.md#g1)均已集成；不依赖尚未完成的 REFERENCE-CREATE，不能将其 WIP 作为输入。源码／迁移尚未实施，编译／测试／独审／精确集成均 **NOT_RUN**。
+- 单目标：仅共享已读可信事务仓储及初始化，最多四个主要文件：新增 `server/internal/sync/read_models.go`、`server/internal/sync/read_repository.go`、`server/migrations/0010_bot_read_states.sql`，仅修改 `server/internal/bots/repository.go` 的 CreateWithWrite 原子初始化；必要同包新 read 测试／Bot 创建测试、`server/internal/attachments/schema_test.go`和 devices push 迁移计数测试。SQL旧1～9／auth／storage／changes／messages／API／router／main／Web及其他任务树只读；不引入 HTTP／DTO／外部错误码或改契约。
+- **迁移排他锁**：总调度2026-10-28正式独占分配 **`0010_bot_read_states.sql` → BE-04-01-READ-STORAGE**，至精确集成核收前不得另派同号 writer；本条即编号锁登记位置。0009 永久保留给 push。分配前实核当前两个 common Git 库、44 refs、15注册树，无0010＋或未提交迁移；证据 `/tmp/relaynest-be04-read-plan-20261027-172206/migration-scan.json`，不同于旧环境独立库计数。当前仅登记，不创建 SQL。
+- 冻结语义：消费受信调用方 `*sql.Tx`，拒 nil，不自开／提交事务，不造仅凭公开 Actor 字段的授权包装；同 tx验证 Bot及状态，缺行／损坏 fail closed，不 lazy repair。已读输入上界用 `bots.bot_seq`，不以现存消息 MAX替代；disabled Bot可读。max合并仅实际前进时更新 read_seq／version／非空UTC时间并同事务追加 `changes.ReadUpdated`；旧／相同水位不改时间版本、不写事件。版本溢出及腐坏值失败且不发布部分结果；未读只统计现存 application 且 bot_seq>read_seq，不计管理员／callback／编辑／过期。
+- 初始化：旧 Bot迁移为 read_seq=0／version=1／非空UTC（复用现有 strftime UTC约定），新 Bot在 CreateWithWrite同事务初始化；初建仅原 BotUpsert，不额外 ReadUpdated。PRD4.2／Tech4与6.3／OAS ReadState已有version≥1和UTC必填约束，此为既有合同实现细节，不增加外部接口。原Bot凭据／BotUpsert／readrow成功和回滚原子，不发布未提交明文或状态。
+- 验收：真实 SQLite 9→10迁移，原1～9 checksums不变；旧／新Bot初始化稳定、reopen不改时间版本、FK／删除级联；真实RequestSecurity多设备和B01授权、伪actor／撤销／实例代次否定；两个Store并发max、事件数恰等于实际前进次数，旧设备不倒退。最高消息删除后曾用序号仍可作有效上界；SQL／changes／COMMIT／重新授权／取消失败全回滚、无部分结果或凭据发布；错误／溢出／缺row不隐式修复。保留原50ms／12并发及10ms门槛，不改断言或超时掩盖问题。
+- 正式检查门槛：锁版 Go1.27.3／Node22.23.2／npm10.9.8，真实 Web embed先核同版输入；实际相关 sync／bots／messages／auth／storage／changes／attachments／devices 普通与受影响 race、全服普通／vet／build、gofmt／diff及迁移检查，重型串行。完整本地提交后不同Agent固定SHA审计，再准确并集I01核收；所有命令须记录PASS／FAIL／NOT_RUN及退出码，原迁移计数fixture失败与修正事实不删除。
+- 父与后包：只完成存储／初始化，不等于共享已读HTTP、同步投影、推送已读过滤或跨端完成；REFERENCE-CREATE及历史／共享已读HTTP后包、BE-04-01原验收／最终组合仍未完成，后包消费本叶须等独审／精确集成完成。未创建新状态库，未 push／部署／创建完成标记。
+
 <a id="be-04-02"></a>
 
 ### BE-04-02 应用消息 CAS 编辑
