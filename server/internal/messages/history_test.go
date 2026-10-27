@@ -158,7 +158,12 @@ func TestHistoryInvalidAndFailuresReturnNoCandidate(t *testing.T) {
 		if _, err := tx.Exec(`PRAGMA ignore_check_constraints=ON`); err != nil {
 			return err
 		}
-		defer tx.Exec(`PRAGMA ignore_check_constraints=OFF`)
+		// PRAGMA 是连接状态，须在事务仍存活时单独复位；回滚只恢复行数据。
+		defer func() {
+			if _, err := tx.Exec(`PRAGMA ignore_check_constraints=OFF`); err != nil {
+				t.Errorf("restore connection check constraints: %v", err)
+			}
+		}()
 		if _, err := tx.Exec(`UPDATE messages SET updated_at=?,revision='broken' WHERE id=?`, messages[1].UpdatedAt.Format("2006-01-02T15:04:05.999999999Z07:00"), messages[1].ID); err != nil {
 			return err
 		}
@@ -169,6 +174,18 @@ func TestHistoryInvalidAndFailuresReturnNoCandidate(t *testing.T) {
 		return errors.New("rollback scan fixture")
 	}); err == nil {
 		t.Fatal("scan fixture committed")
+	}
+	if err := f.s.Write(messageContext, func(tx *sql.Tx) error {
+		var ignored int
+		if err := tx.QueryRow(`PRAGMA ignore_check_constraints`).Scan(&ignored); err != nil {
+			return err
+		}
+		if ignored != 0 {
+			t.Fatal("connection constraints remained disabled")
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
 	}
 	// 真实 SQLite SQL 故障，不为生产代码加测试钩子。
 	if err := f.s.Write(messageContext, func(tx *sql.Tx) error {
@@ -214,6 +231,45 @@ func TestHistorySameTransactionSnapshot(t *testing.T) {
 		}
 		return nil
 	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestHistorySQLiteIterationFailureReturnsNoPartialPage(t *testing.T) {
+	f := setupMessages(t)
+	seed := historySeed(t, f, 3)
+	rollback := errors.New("rollback iteration fixture")
+	err := f.s.Write(messageContext, func(tx *sql.Tx) error {
+		if _, err := tx.Exec(`ALTER TABLE messages RENAME TO history_source`); err != nil {
+			return err
+		}
+		// 用事务内测试视图让第二行的 SQLite 表达式失败，不向生产查询加钩子。
+		if _, err := tx.Exec(`CREATE VIEW messages AS SELECT id,bot_id,bot_seq,created_change_seq,sender,revision,format,
+			CASE WHEN bot_seq=2 THEN json_extract('broken-json','$') ELSE text END AS text,
+			buttons_json,reply_to_message_id,original_reply_to_message_id,created_at,updated_at FROM history_source`); err != nil {
+			return err
+		}
+		rows, err := tx.Query(`SELECT id,text FROM messages WHERE bot_id=? ORDER BY bot_seq DESC`, f.a.Bot.ID)
+		if err != nil {
+			return err
+		}
+		var id, text string
+		if !rows.Next() || rows.Scan(&id, &text) != nil || id != seed[2].ID {
+			rows.Close()
+			t.Fatal("iteration fixture did not produce first row")
+		}
+		if rows.Next() || rows.Err() == nil {
+			rows.Close()
+			t.Fatal("iteration fixture did not fail on second row")
+		}
+		rows.Close()
+		page, err := f.r.ListHistoryTx(messageContext, tx, f.a.Bot.ID, HistoryQuery{Limit: 3})
+		if err == nil || !reflect.DeepEqual(page, HistoryPage{}) {
+			t.Fatal("SQLite iteration error published partial page", err)
+		}
+		return rollback
+	})
+	if !errors.Is(err, rollback) {
 		t.Fatal(err)
 	}
 }
