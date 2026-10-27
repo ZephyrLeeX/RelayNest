@@ -18,11 +18,17 @@ import (
 type Handler struct {
 	sessions *auth.SessionStore
 	security *auth.RequestSecurity
+	push     *PushRepository
 }
 
 // NewHandler 消费启动阶段共享的会话存储及来源安全入口。
 func NewHandler(sessions *auth.SessionStore, security *auth.RequestSecurity) *Handler {
 	return &Handler{sessions: sessions, security: security}
+}
+
+// NewHandlerWithPush 在启动期装配注册/偏好仓储；复用同一会话与请求安全入口。
+func NewHandlerWithPush(sessions *auth.SessionStore, security *auth.RequestSecurity, push *PushRepository) *Handler {
+	return &Handler{sessions: sessions, security: security, push: push}
 }
 
 // 仅显式投影冻结的公开元数据，避免认证模型扩展时泄露凭据。
