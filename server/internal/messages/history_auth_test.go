@@ -24,6 +24,7 @@ type historySecurity struct {
 	actor                        auth.AdminRequest
 	botID, messageID, instanceID string
 	entered                      bool
+	cfg                          storage.Config
 }
 
 func historySQL(t *testing.T, store *storage.Store, query string, args ...any) {
@@ -47,7 +48,7 @@ func newHistorySecurity(t *testing.T) *historySecurity {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { other.Close() })
-	f := &historySecurity{store: s, other: other, sessions: auth.NewSessionStore(s), repo: messages.New(s)}
+	f := &historySecurity{cfg: cfg, store: s, other: other, sessions: auth.NewSessionStore(s), repo: messages.New(s)}
 	historySQL(t, s, `INSERT INTO administrator VALUES(1,'admin','test-hash',1)`)
 	_, secrets, err := f.sessions.Create(ctx, 1, auth.SessionInput{ClientType: "android", DeviceID: "11111111-1111-4111-8111-111111111111", DeviceName: "phone"})
 	if err != nil {
@@ -126,7 +127,7 @@ func (f *historySecurity) read(ctx context.Context, actor auth.AdminRequest, wri
 func historyIdle(t *testing.T, f *historySecurity) int64 {
 	t.Helper()
 	var idle int64
-	if err := f.store.Read(context.Background(), func(tx *sql.Tx) error {
+	if err := f.other.Read(context.Background(), func(tx *sql.Tx) error {
 		return tx.QueryRow(`SELECT idle_expires_at FROM sessions WHERE id=?`, f.actor.Session.ID).Scan(&idle)
 	}); err != nil {
 		t.Fatal(err)
@@ -152,13 +153,20 @@ func TestHistoryRealAuthorizationAndInvalidation(t *testing.T) {
 					}); err != nil {
 						t.Fatal(err)
 					}
+					// 原 Store 在实例轮换后按设计失败关闭，另开观察者只检查数据库无续期。
+					observer, err := storage.Open(context.Background(), f.cfg)
+					if err != nil {
+						t.Fatal(err)
+					}
+					t.Cleanup(func() { observer.Close() })
+					f.other = observer
 				case "forged":
 					actor = auth.AdminRequest{Session: f.actor.Session, Source: f.actor.Source}
 				case "tampered":
 					actor.Session.DeviceName = "other"
 				}
 				if mode == "success" {
-					historySQL(t, f.store, `UPDATE sessions SET idle_expires_at=? WHERE id=?`, time.Now().Add(time.Hour).Unix(), f.actor.Session.ID)
+					historySQL(t, f.store, `UPDATE sessions SET idle_expires_at=? WHERE id=?`, time.Now().Add(time.Hour).UnixNano(), f.actor.Session.ID)
 				}
 				before := historyIdle(t, f)
 				entered := false
@@ -249,7 +257,7 @@ func TestHistoryAuthorizedReadWaitCancellation(t *testing.T) {
 	if e := <-done; e != nil {
 		t.Fatal(e)
 	}
-	if !errors.Is(err, context.DeadlineExceeded) || entered || f.entered || !reflect.DeepEqual(page, messages.HistoryPage{}) {
+	if !errors.Is(ctx.Err(), context.DeadlineExceeded) || !errors.Is(err, auth.ErrStorage) || entered || f.entered || !reflect.DeepEqual(page, messages.HistoryPage{}) {
 		t.Fatal("cancelled gate wait read body", err)
 	}
 	// 新请求能继续读；取消没有滞留共享写准入。
