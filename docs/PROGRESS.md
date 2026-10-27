@@ -35,7 +35,7 @@
 
 Bot Hub 只负责消息传输、存储和路由，不执行业务命令或 MCP 工具。
 
-Debian 恢复：从准确快照及已有 WIP 接续，权威目标已迁回项目根 resume；推送 STORAGE、共享写准入修复及 [ADMIN 有限文本 HTTP](tasks/COMPLETED.md#g5-be02-admin) 均完成独审／精确集成。固定 `665edd7` 的全服普通／race／vet／build 与 A04 独立六组真实 HTTP＋SQLite均 PASS，关闭 ADMIN-A03-B01；额度中断部分输出按未完整结果保留，不算开发 FAIL／whole PASS。父 BE-02 的四项 Bot＋Admin 组合 R01 已派 Researcher be02_compose_prep，running／验证准备，待独立固定输入树及验证锁后执行，尚无运行结果。BE-10-01-HTTP 保持 running，恢复 owner push_http_resume 已保留旧 `1291ea3…` 备份并从 ADMIN 归档 `5d6a57d…` 重放为 `3471a3b…`；阶段 2 四主文件／公共接线已正式放行，本次尚未收到完整 Go 编译／执行结果，不先记 PASS。父推送／HTTP 及跨端门槛仍未完成，未 push、部署、发布或创建完成标记。
+Debian 恢复：从准确快照及已有 WIP 接续，权威目标已迁回项目根 resume；推送 STORAGE、共享写准入修复及 [ADMIN 有限文本 HTTP](tasks/COMPLETED.md#g5-be02-admin) 均完成独审／精确集成。固定 `665edd7` 的全服普通／race／vet／build 与 A04 独立六组真实 HTTP＋SQLite均 PASS，关闭 ADMIN-A03-B01；额度中断部分输出按未完整结果保留，不算开发 FAIL／whole PASS。父 BE-02 的 R01 在固定 `15aa3cd…` 完成双生产入口外部断言及普通／相关 race 六命令 PASS，现为 review 待不同 A01／I01；COMMIT companion 与独立 HTTP 回滚分层记录，同次 HTTP 事务内部直接观测仍 NOT_RUN，证据充分性待审，父项不标 done。BE-10-01-HTTP 保持 running，阶段 1 `3471a3b…` handler 六组普通 PASS，阶段 2 checkpoint `2c7038a…` 的 router／五组生产装配短普通均完整 PASS；whole 普通／相关 race／vet／build及独审／I01仍待补齐，不能以短检查代验收。父推送／HTTP 及跨端门槛仍未完成，未 push、部署、发布或创建完成标记。
 
 ### 已完成
 
