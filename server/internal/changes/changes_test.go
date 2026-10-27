@@ -301,13 +301,17 @@ func TestLockFailure(t *testing.T) {
 			return err
 		}
 		entered := false
-		err = second.Write(ctx, func(other *sql.Tx) error {
+		// 同库 Store 现在共享写准入；在持有者回调内验证新的有界等待取消，
+		// 不依赖另一个 SQLite 连接先返回 busy，也不增加原 10ms 配置。
+		waitCtx, cancelWait := context.WithTimeout(ctx, 10*time.Millisecond)
+		defer cancelWait()
+		err = second.Write(waitCtx, func(other *sql.Tx) error {
 			entered = true
 			exec(t, other, "INSERT INTO test_entities VALUES (1)")
 			_, err := Append(ctx, other, metadata(BotUpsert, "second"))
 			return err
 		})
-		if err == nil || entered {
+		if !errors.Is(err, context.DeadlineExceeded) || entered {
 			t.Fatalf("lock did not propagate: %v entered=%v", err, entered)
 		}
 		cancelled, cancel := context.WithCancel(ctx)

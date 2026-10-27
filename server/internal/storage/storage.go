@@ -102,6 +102,10 @@ func Open(ctx context.Context, cfg Config) (_ *Store, err error) {
 	}); err != nil {
 		return nil, err
 	}
+	// 初始化期间也可能发生外部路径变化；发布 Store 前必须再次核对文件锚。
+	if err = s.checkDatabaseFile(); err != nil {
+		return nil, err
+	}
 	return s, nil
 }
 

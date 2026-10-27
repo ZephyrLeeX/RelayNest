@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -442,5 +444,154 @@ func TestWriteGateExternalLockKeepsSQLiteBusyBudget(t *testing.T) {
 	var sqliteErr *sqlite.Error
 	if called || !errors.As(err, &sqliteErr) || sqliteErr.Code()&0xff != sqlite3.SQLITE_BUSY || elapsed > 300*time.Millisecond {
 		t.Fatalf("external busy hidden/retried: called=%v elapsed=%v err=%v", called, elapsed, err)
+	}
+}
+
+// 只向 SQLite 注册一个常驻分发器；每例故障按临时库规范路径隔离并在
+// cleanup 删除，不随测试次数累积驱动钩子，也不捕获已结束用例的 t。
+var initializationFaults struct {
+	once sync.Once
+	sync.Mutex
+	byPath map[string]*initializationFault
+}
+
+type initializationFault struct {
+	once   sync.Once
+	fired  atomic.Bool
+	mutate func() error
+	err    error
+}
+
+func injectInitializationFault(t *testing.T, path string, mutate func() error) *initializationFault {
+	t.Helper()
+	initializationFaults.once.Do(func() {
+		sqlite.RegisterConnectionHook(func(_ sqlite.ExecQuerierContext, dsn string) error {
+			u, err := url.Parse(dsn)
+			if err != nil {
+				return nil
+			}
+			initializationFaults.Lock()
+			fault := initializationFaults.byPath[u.Path]
+			initializationFaults.Unlock()
+			if fault == nil {
+				return nil
+			}
+			fault.once.Do(func() { fault.err = fault.mutate(); fault.fired.Store(true) })
+			return fault.err
+		})
+	})
+	fault := &initializationFault{mutate: mutate}
+	initializationFaults.Lock()
+	if initializationFaults.byPath == nil {
+		initializationFaults.byPath = make(map[string]*initializationFault)
+	}
+	if initializationFaults.byPath[path] != nil {
+		initializationFaults.Unlock()
+		t.Fatal("duplicate initialization fault path")
+	}
+	initializationFaults.byPath[path] = fault
+	initializationFaults.Unlock()
+	t.Cleanup(func() {
+		initializationFaults.Lock()
+		delete(initializationFaults.byPath, path)
+		initializationFaults.Unlock()
+	})
+	return fault
+}
+
+func TestWriteGateInitializationPathChangeFailsClosed(t *testing.T) {
+	for _, offline := range []bool{false, true} {
+		for _, change := range []string{"symlink", "replacement"} {
+			t.Run(fmt.Sprintf("offline=%v/%s", offline, change), func(t *testing.T) {
+				path := filepath.Join(t.TempDir(), "original.sqlite")
+				otherPath := filepath.Join(t.TempDir(), "other.sqlite")
+				original, other := gateStore(t, path), gateStore(t, otherPath)
+				for store, value := range map[*Store]int{original: 101, other: 202} {
+					if err := store.Write(context.Background(), func(tx *sql.Tx) error {
+						_, err := tx.Exec("UPDATE system_state SET config_version=?", value)
+						return err
+					}); err != nil {
+						t.Fatal(err)
+					}
+				}
+				// 预先打开观察连接，使之后的读保持原文件句柄，不重新选路径。
+				readMarker := func(store *Store) int {
+					var n int
+					if err := store.reader.QueryRow("SELECT config_version FROM system_state").Scan(&n); err != nil {
+						t.Fatal(err)
+					}
+					return n
+				}
+				beforeOriginal, beforeOther := readMarker(original), readMarker(other)
+				request := path
+				if change == "symlink" {
+					request = filepath.Join(filepath.Dir(path), "alias.sqlite")
+					if err := os.Symlink(path, request); err != nil {
+						t.Fatal(err)
+					}
+				}
+				fault := injectInitializationFault(t, original.gate.path, func() error {
+					if change == "symlink" {
+						if err := os.Remove(request); err != nil {
+							return err
+						}
+						return os.Symlink(otherPath, request)
+					}
+					if err := os.Rename(path, path+".moved"); err != nil {
+						return err
+					}
+					return os.Link(otherPath, path)
+				})
+				// 故障后先恢复路径，再关闭原观察 Store；不把活库重命名当受支持维护。
+				t.Cleanup(func() {
+					if !fault.fired.Load() || fault.err != nil {
+						return
+					}
+					if change == "symlink" {
+						if err := os.Remove(request); err != nil {
+							t.Error(err)
+							return
+						}
+						if err := os.Symlink(path, request); err != nil {
+							t.Error(err)
+						}
+					} else {
+						if err := os.Remove(path); err != nil {
+							t.Error(err)
+							return
+						}
+						if err := os.Rename(path+".moved", path); err != nil {
+							t.Error(err)
+						}
+					}
+				})
+				opener := Open
+				if offline {
+					opener = OpenOffline
+				}
+				candidate, err := opener(context.Background(), Config{Path: request, BusyTimeout: 50 * time.Millisecond})
+				if candidate != nil {
+					_ = candidate.Close()
+				}
+				if !fault.fired.Load() || fault.err != nil {
+					t.Fatalf("fault did not run: %v %v", fault.fired.Load(), fault.err)
+				}
+				if candidate != nil || !errors.Is(err, ErrInstanceUnavailable) {
+					t.Fatalf("published mismatched Store: %v %v", candidate, err)
+				}
+				if got := readMarker(original); got != beforeOriginal {
+					t.Fatalf("original marker changed: %d->%d", beforeOriginal, got)
+				}
+				if got := readMarker(other); got != beforeOther {
+					t.Fatalf("other marker changed: %d->%d", beforeOther, got)
+				}
+				writeGates.Lock()
+				refs := original.gate.refs
+				writeGates.Unlock()
+				if refs != 1 {
+					t.Fatalf("failed initialization retained %d references", refs)
+				}
+			})
+		}
 	}
 }
