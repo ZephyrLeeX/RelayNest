@@ -192,31 +192,26 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-04-01-HISTORY-STORAGE 历史／详情与同 Bot 引用只读仓储准备
 
-已完成有限子叶：[完整 source 链、实际检查、A01／I01 映射及范围限制](COMPLETED.md#g5-be04-history-storage)。仅仓储准备已集成；父 BE-04-01 仍 `running`、未完成原历史／引用／共享已读验收，后续 REFERENCE-CREATE／READ-STORAGE／HTTP 分包；不开放创建引用、不增加共享已读／附件投影／公开 cursor／HTTP，初始共享已读策略待具体设计。0009 保留，0010 未分配。
+已完成有限子叶：[完整 source 链、实际检查、A01／I01 映射及范围限制](COMPLETED.md#g5-be04-history-storage)。仅仓储准备已集成；父 BE-04-01 仍 `running`、未完成原历史／引用／共享已读验收，REFERENCE-CREATE 已另独审／精确集成，READ-STORAGE／HTTP后包仍未完成；不增加共享已读／附件投影／公开 cursor／HTTP。0009 保留，0010 已另专属 READ-STORAGE，本 HISTORY 子叶未分配新号。
 
 <a id="be-04-01-reference-create"></a>
 
 #### BE-04-01-REFERENCE-CREATE 既有双入口文本创建接通同 Bot 回复引用
 
-- 类型：有限子叶；状态：`integrating`（2026-10-28，总调度依据固定源 `65488a571fe241bee116309df96aaee351099fc6` 的不同 A01 PASS 派发 I01；由 running 经 review 转 integrating）。源实施基线 `dbdb1c9fa13a8053bd039d4910c18dd2cdffd060`，单提交准确七路径，源树 `.worktrees/backend-be04-reference` clean并冻结。依赖[BE-02限定父组合](COMPLETED.md#g5-be02-compose)和[HISTORY-STORAGE](COMPLETED.md#g5-be04-history-storage)已完成；Integrator `/root/restore_backend_1028` 独占 I01树/index及目标Git/index，目标 `resume/backend-20261026@bd95d01462d967b822e6d25bcca365cad387aaa3`，隔离 `.worktrees/backend-be04-reference-i01`／`integrate/backend-be04-reference-i01-20261028`。源已无冲突精确重放，待新HTTP＋引用并集检查；准备阶段Go全部 **NOT_RUN**，重型窗口等待 BE10-COMPOSE-A01 释放，尚未快进root、不标done。
-- 源证据：`/tmp/relaynest-be04-reference-validation-20261028` 固定输入全服普通143.565秒／全服race581.710秒／vet0.749秒／build1.354秒完整exit0。独立A01 `/root/admin_i01_resume` 固定完整源链 **PASS**、无发现；真实cmd七组/messages四组独立检查18.362秒exit0，证据 `/tmp/relaynest-be04-reference-a01-20261027-173519/{inputs.json,commands.jsonl,independent.log,post.json}`。A01确认真实HTTP同DDL503／全回滚与仓储callback成功后真实延迟FK COMMIT失败配对足够；同一次HTTP事务内部直接COMMIT观测仍 **NOT_RUN**，不得冒称已直接观测。上述源检查不冒充I01新并集实测。
-- 单目标：既有 Bot API／Android 文本创建支持同 Bot 回复引用，无新路由。首次请求在当前授权、基本校验／原摘要、幂等查询之后验证引用；命中旧 key 原样重放，源删除后旧成功 key 仍返回原 receipt／delivery 且无新增。首次引用在同事务序号分配前校验，双引用列同时写入，message.created 保留 original 引用 ID；两 HTTP 回执复用原 originalID。跨 Bot／合法不存在引用统一 404 RESOURCE_NOT_FOUND，管理员错误白名单须覆盖；新增 UUID 结构／格式按既有400／422规则，不创设新合同。
-- 允许范围：四主文件 `server/internal/messages/{create.go,repository.go,pending.go}` 和 `server/internal/httpapi/messages.go`；必要同包测试、`server/internal/httpapi/messages_test.go`、仅新 `server/cmd/relaynest/message_references_test.go`。SQL／API／依赖／已集成 history及reference／auth／storage／changes／router／main生产与旧 main_test 全部只读；公共 router／main 写锁由总调度另行排他协调，本叶不得触及其生产文件或其他任务树。
-- 验收：原幂等语义、真实 B01 授权、Bot API＋Android 双入口真实 HTTP／SQLite及原子回滚；同 Bot 引用成功、跨 Bot／不存在一致拒绝、源删后幂等重试无新增，回执／delivery／message.created 的 original 引用一致；失败不得写序号／消息／投递／changes／幂等或泄露正文。仅 Bot API／Android 新引用，Webhook identity 新引用仍不支持，不扩大附件／按钮或重写 BE-02 历史完成范围。
-- 限制与后包：引用支持当前仍未完成，父 BE-04-01 继续 running，READ-STORAGE／历史 HTTP／最终父组合另包；共享已读初始策略待具体设计。无需迁移、不占0010，0009永久保留给 push。原准备未运行 Go／npm／validator；实施检查按总调度的全局重型窗口排队，不与其他 Actor 并跑。
+已完成有限叶：[完整源链、A01／精确I01映射、新HTTP并集实际检查及COMMIT配对限制](COMPLETED.md#g5-be04-reference-create)。只完成既有 Bot API／Android 文本引用；父 BE-04-01 仍 running，历史／共享已读HTTP、READ-STORAGE、附件投影和父最终组合未完成，Webhook引用／附件／按钮不开放。
 
 <a id="be-04-01-read-storage"></a>
 
 #### BE-04-01-READ-STORAGE 共享已读事务仓储与原子初始化
 
-- 类型：有限子叶；状态：`running`（2026-10-28，总调度已派独立 Implementer `/root/be04_read_implementer` 并授权开始代码，准备角色 `/root/admin_i01_resume`）。固定产品基线 `d4604184a2d3e2616146d63b8b902d052a723237`，纯元数据推进不改变该业务基线；Implementer 首报已核私有树 `.worktrees/backend-be04-read`／`impl/backend-be04-read-20261028` 从准确 `8b3c0c9e27bad2ea1522790972e8d4ac9f61cd91` clean 起步，现代码实施中，尚未交付实现提交。依赖[BE-02 限定父组合](COMPLETED.md#g5-be02-compose)、[HISTORY-STORAGE](COMPLETED.md#g5-be04-history-storage)及既有[B01／Bot事务与认证基础](COMPLETED.md#g1)均已集成；不依赖尚未完成的 REFERENCE-CREATE，不能将其 WIP 作为输入。代码已获准开始，尚未回交实施提交；Go 等待全局重型窗口（排 REFERENCE 之后），编译／测试／独审／精确集成均 **NOT_RUN**。
+- 类型：有限子叶；状态：`running`（2026-10-28，总调度已派独立 Implementer `/root/be04_read_implementer` 并授权开始代码，准备角色 `/root/admin_i01_resume`）。固定产品基线 `d4604184a2d3e2616146d63b8b902d052a723237`，纯元数据推进不改变该业务基线；Implementer 首报已核私有树 `.worktrees/backend-be04-read`／`impl/backend-be04-read-20261028` 从准确 `8b3c0c9e27bad2ea1522790972e8d4ac9f61cd91` clean 起步，现代码实施中，尚未交付实现提交。依赖[BE-02 限定父组合](COMPLETED.md#g5-be02-compose)、[HISTORY-STORAGE](COMPLETED.md#g5-be04-history-storage)及既有[B01／Bot事务与认证基础](COMPLETED.md#g1)均已集成；本叶实施起步不依赖 REFERENCE-CREATE，后者现已另行完成；不得把未审其他WIP作为输入。代码已获准开始，尚未回交实施提交；当前仅获 new-tests最小窗口，首次Go验证正在进行、最终结果尚未回交，不猜PASS；正式完整检查／独审／精确集成仍待补。
 - 单目标：仅共享已读可信事务仓储及初始化，最多四个主要文件：新增 `server/internal/sync/read_models.go`、`server/internal/sync/read_repository.go`、`server/migrations/0010_bot_read_states.sql`，仅修改 `server/internal/bots/repository.go` 的 CreateWithWrite 原子初始化；必要同包新 read 测试／Bot 创建测试、`server/internal/attachments/schema_test.go`和 devices push 迁移计数测试。SQL旧1～9／auth／storage／changes／messages／API／router／main／Web及其他任务树只读；不引入 HTTP／DTO／外部错误码或改契约。
-- **迁移排他锁**：总调度2026-10-28正式独占分配 **`0010_bot_read_states.sql` → BE-04-01-READ-STORAGE**，至精确集成核收前不得另派同号 writer；本条即编号锁登记位置。0009 永久保留给 push。分配前实核当前两个 common Git 库、44 refs、15注册树，无0010＋或未提交迁移；证据 `/tmp/relaynest-be04-read-plan-20261027-172206/migration-scan.json`，不同于旧环境独立库计数。当前仅登记，不创建 SQL。
+- **迁移排他锁**：总调度2026-10-28正式独占分配 **`0010_bot_read_states.sql` → BE-04-01-READ-STORAGE**，至精确集成核收前不得另派同号 writer；本条即编号锁登记位置。0009 永久保留给 push。分配前实核当前两个 common Git 库、44 refs、15注册树，无0010＋或未提交迁移；证据 `/tmp/relaynest-be04-read-plan-20261027-172206/migration-scan.json`，不同于旧环境独立库计数。编号锁持续至本叶准确集成，不允许其他任务占用。
 - 冻结语义：消费受信调用方 `*sql.Tx`，拒 nil，不自开／提交事务，不造仅凭公开 Actor 字段的授权包装；同 tx验证 Bot及状态，缺行／损坏 fail closed，不 lazy repair。已读输入上界用 `bots.bot_seq`，不以现存消息 MAX替代；disabled Bot可读。max合并仅实际前进时更新 read_seq／version／非空UTC时间并同事务追加 `changes.ReadUpdated`；旧／相同水位不改时间版本、不写事件。版本溢出及腐坏值失败且不发布部分结果；未读只统计现存 application 且 bot_seq>read_seq，不计管理员／callback／编辑／过期。
 - 初始化：旧 Bot迁移为 read_seq=0／version=1／非空UTC（复用现有 strftime UTC约定），新 Bot在 CreateWithWrite同事务初始化；初建仅原 BotUpsert，不额外 ReadUpdated。PRD4.2／Tech4与6.3／OAS ReadState已有version≥1和UTC必填约束，此为既有合同实现细节，不增加外部接口。原Bot凭据／BotUpsert／readrow成功和回滚原子，不发布未提交明文或状态。
 - 验收：真实 SQLite 9→10迁移，原1～9 checksums不变；旧／新Bot初始化稳定、reopen不改时间版本、FK／删除级联；真实RequestSecurity多设备和B01授权、伪actor／撤销／实例代次否定；两个Store并发max、事件数恰等于实际前进次数，旧设备不倒退。最高消息删除后曾用序号仍可作有效上界；SQL／changes／COMMIT／重新授权／取消失败全回滚、无部分结果或凭据发布；错误／溢出／缺row不隐式修复。保留原50ms／12并发及10ms门槛，不改断言或超时掩盖问题。
 - 正式检查门槛：锁版 Go1.27.3／Node22.23.2／npm10.9.8，真实 Web embed先核同版输入；实际相关 sync／bots／messages／auth／storage／changes／attachments／devices 普通与受影响 race、全服普通／vet／build、gofmt／diff及迁移检查，重型串行。完整本地提交后不同Agent固定SHA审计，再准确并集I01核收；所有命令须记录PASS／FAIL／NOT_RUN及退出码，原迁移计数fixture失败与修正事实不删除。
-- 父与后包：只完成存储／初始化，不等于共享已读HTTP、同步投影、推送已读过滤或跨端完成；REFERENCE-CREATE及历史／共享已读HTTP后包、BE-04-01原验收／最终组合仍未完成，后包消费本叶须等独审／精确集成完成。未创建新状态库，未 push／部署／创建完成标记。
+- 父与后包：只完成存储／初始化，不等于共享已读HTTP、同步投影、推送已读过滤或跨端完成；REFERENCE-CREATE已另行完成；历史／共享已读HTTP后包、BE-04-01原验收／最终组合仍未完成，后包消费本叶须等独审／精确集成完成。未创建新状态库，未 push／部署／创建完成标记。
 
 <a id="be-04-02"></a>
 
@@ -535,33 +530,19 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 ### BE-10-01 Hub 推送注册与设备通知偏好
 
-- 完成追加依赖（不改变上述开工依赖）：[BE-01](BACKEND.md#be-01)；基础准备可先进行，真实全范围收口必须满足。
-
-- P01 有限规划（2026-10-26）：owner Backend Orchestrator，Agent `/root/push_registration_plan`，固定基线 `571dc5dca696d4dfb446a868ca58169cf488579b` / `work`，只读细化当前 leaf 的准确文件／事务边界与准备／真实接线拆分，不修改代码、状态或分配迁移。状态仍未开始；新迁移候选 0009 须另核锁，完整 BE-01 门槛未满足，不据规划放行真实注册验收。
-- P01 已返回 STORAGE／HTTP 两有限子包建议；主调度采用并保留原完整验收。R04 `/root/resume_checkpoint` 核实际基线 `571dc5dca696d4dfb446a868ca58169cf488579b`，P04-05 精确集成 `d78711faa56dd01b7e10cf4eec3b70490f2d04e9`／最终 `005994a049635163e879c069ecf02526c8ddbe1f`、P03-07 集成 `981692f49663075aa553ce45aa645e75197b15ea`／最终 `375a270c74080d9eb3ea8e975d8c79814afc091f` 均为祖先；九个 worktree 均无 0009 或迁移修改，当前无迁移 writer。由调度将 0009 排他分配下列 STORAGE 子包至精确集成，不与未来迁移并写。
-
-- 证据与交接：STORAGE 与五端点 HTTP 各已独审／精确集成；下一门槛为独立父组合核收原 T9.3 注册版本／时间、CAS、并发切换／撤销迟到、条件解绑不误删及实例绑定与资格边界。父组合 R01 已准备、尚未运行／验收，不以子叶 done 自动满足；完整平台发送／真机／全局实例门禁仍按后续任务。
-
-- `BE10-COMPOSE-R01`：独立验证树 `.worktrees/backend-be10-compose-r01`／`verify/be10-compose-r01-20261028`，固定 `d4604184a2d3e2616146d63b8b902d052a723237`，两组临时 overlay 已在 `/tmp/relaynest-be10-compose-r01-20261028` 准备；待补 E01 并发模式切换、E02 撤销／重登后旧回调隔离。所有 Go 检查 **NOT_RUN**，按重型队列排 REFERENCE 之后，不以 overlay存在当 PASS；独审及父精确组合核收尚未完成。
-
-- 旧ID：`P09-01`；类型：有限分拆收口；状态：`running`（2026-10-28，STORAGE 与有限 HTTP 已完成；父原验收独立组合仍未闭环，下一步另派 COMPOSE，BE-01 既定现有后端依赖已完成）。
-- 依赖：[已完成基线 P04-05](COMPLETED.md#g1)、[已完成基线 P03-07](COMPLETED.md#e1)。
-- 允许范围：`server/internal/devices/**`、`server/migrations/**`，及对应测试。
-- 门槛：`G-API`、`G-GIT`；条件未实证不记通过。
-
-按T9.3冻结通道集合及逐provider注册版本/时间实现，仅当前设备会话可登记；部分上报不清空其他通道。全局/Bot/DND/预览配置CAS独立于注册代次，SDK注册成功不改用户提醒模式，vendor激活须满足冻结资格门槛。target_invalid仅设备/会话/provider/发送注册版本匹配才条件解绑对应注册，保留设备/会话/其他通道/偏好；会话撤销使全部通道失效，token与秘密不回显/日志。覆盖同版异值、并发模式切换、撤销后迟到登记及旧代次失败不删新注册。Android写入口另须BE-01实例绑定。
+已完成限定服务器父范围：[原完整验收、R01失败／修正／补证、不同A01及准确新组合I01](COMPLETED.md#g5-be10-compose)。只含服务器注册／偏好／条件解绑及实例边界，发送调度、FCM／OPPO资格与真机、Android正式通知和全局实例门禁未由此完成。
 
 <a id="be-10-01-storage"></a>
 
 ### BE-10-01-STORAGE 注册与通知偏好存储准备
 
-已完成子项：[范围、原验收、A01／F01／A02 及 I01 精确组合复验](COMPLETED.md#g5-be10-storage)。存储准备与下方有限 HTTP 各已完成，父 BE-10-01 仍未完成；0009 永久占用，本包写锁已释放，后续迁移须重新核号。
+已完成子项：[范围、原验收、A01／F01／A02 及 I01 精确组合复验](COMPLETED.md#g5-be10-storage)。存储准备与下方有限 HTTP 各已完成，限定服务器父范围也已另经独立组合完成；0009 永久占用，本包写锁已释放，后续迁移须重新核号。
 
 <a id="be-10-01-http"></a>
 
 ### BE-10-01-HTTP 当前设备注册与偏好真实接线
 
-已完成有限叶：[完整源链、A01 两编号／修复／A02 PASS、四提交映射、准确 I01 新组合与精确集成证据](COMPLETED.md#g5-be10-http)。只完成当前设备五 operations，不含父 BE-10-01 独立组合收口、发送适配器、FCM／OPPO真机、Android正式通知及全局门禁；原父验收保留，其他任务不自动 done。
+已完成有限叶：[完整源链、A01 两编号／修复／A02 PASS、四提交映射、准确 I01 新组合与精确集成证据](COMPLETED.md#g5-be10-http)。只完成当前设备五 operations，其限定父组合已另行完成；不含发送适配器、FCM／OPPO真机、Android正式通知及全局门禁；原父验收保留，其他任务不自动 done。
 
 <a id="be-10-02"></a>
 
@@ -570,7 +551,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
 
 - 旧ID：`P09-02`；类型：有限 leaf；状态：未开始。
-- 依赖：`BE-10-01`、[已完成基线 P05-01](COMPLETED.md#g2)。
+- 依赖：[已完成 BE-10-01 限定服务器父组合](COMPLETED.md#g5-be10-compose)、[已完成基线 P05-01](COMPLETED.md#g2)。共享已读 READ-STORAGE 正在实施、尚无已集成运行时，已读过滤依赖须在有限规划中具体核实；此前置完成不自动使整包 ready。
 - 允许范围：`server/internal/push/**`，及对应测试。
 - 门槛：`G-GIT`；条件未实证不记通过。
 
