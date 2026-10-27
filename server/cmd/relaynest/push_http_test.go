@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -630,4 +631,55 @@ func TestAssembledPushRejectsValidBotToken(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAssembledNotificationConflictContractResponses(t *testing.T) {
+	f := botHTTP(t, nil)
+	capture := func(filename, code, raw string) {
+		t.Helper()
+		for _, secret := range []string{f.android.Token, f.web.Token, f.instanceID, f.databasePath} {
+			if strings.Contains(raw, secret) {
+				t.Fatal("public error capture contains a private value")
+			}
+		}
+		if directory := os.Getenv("RELAYNEST_NOTIFICATION_ERROR_CAPTURE_DIR"); directory != "" {
+			if err := os.MkdirAll(directory, 0700); err != nil {
+				t.Fatal(err)
+			}
+			file, err := os.OpenFile(filepath.Join(directory, filename), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, writeErr := file.WriteString(raw)
+			closeErr := file.Close()
+			if writeErr != nil || closeErr != nil {
+				t.Fatal("cannot save public error capture", writeErr, closeErr)
+			}
+		}
+		t.Logf("captured real HTTP409 code=%s sha256=%x", code, sha256.Sum256([]byte(raw)))
+	}
+	status, raw, headers := f.admin("PUT", assembledNotificationsPath, assembledNotifications(0, "fcm"))
+	assertAssembledPush(t, status, 200, raw, headers, "")
+	before := mustAssembledPushState(t, f.store)
+	status, raw, headers = f.admin("PUT", assembledNotificationsPath, assembledNotifications(0, "fcm"))
+	assertAssembledPush(t, status, 409, raw, headers, "SETTINGS_CONFLICT")
+	if mustAssembledPushState(t, f.store) != before {
+		t.Fatal("conflict capture changed state")
+	}
+	capture("settings-conflict.json", "SETTINGS_CONFLICT", raw)
+	f.sql("UPDATE device_notification_settings SET settings_version=?", int64(math.MaxInt64))
+	before = mustAssembledPushState(t, f.store)
+	status, raw, headers = f.admin("PUT", assembledNotificationsPath, assembledNotifications(math.MaxInt64, "fcm"))
+	assertAssembledPush(t, status, 409, raw, headers, "SETTINGS_VERSION_EXHAUSTED")
+	if mustAssembledPushState(t, f.store) != before {
+		t.Fatal("exhaustion capture changed state")
+	}
+	capture("settings-version-exhausted.json", "SETTINGS_VERSION_EXHAUSTED", raw)
+	before = mustAssembledPushState(t, f.store)
+	status, raw, headers = f.request("PUT", assembledNotificationsPath, assembledNotifications(math.MaxInt64, "fcm"), "android", f.android.Token, map[string]string{"X-RelayNest-Instance-ID": "11111111-1111-4111-8111-111111111111"})
+	assertAssembledPush(t, status, 409, raw, headers, "INSTANCE_MISMATCH")
+	if mustAssembledPushState(t, f.store) != before {
+		t.Fatal("instance mismatch capture changed state")
+	}
+	capture("instance-mismatch.json", "INSTANCE_MISMATCH", raw)
 }

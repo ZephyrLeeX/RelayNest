@@ -1,9 +1,11 @@
 """校验结构、示例及权限声明；字节/Range 扩展仅验证契约，不模拟 HTTP 服务。"""
 
+import argparse
 import copy
 from datetime import datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import json
+import hashlib
 import re
 from pathlib import Path
 
@@ -1974,7 +1976,85 @@ def check_instance_declaration_mutations(document):
     return len(mutations)
 
 
+def notification_conflict_response_schema():
+    """专有配置错误保持完整恢复字段；公共分支只接受实例不匹配。"""
+    return {'oneOf': [
+        {'$ref': '#/components/schemas/NotificationSettingsConflict'},
+        {'allOf': [
+            {'$ref': '#/components/schemas/Error'},
+            {'properties': {'error': {'properties': {'code': {'const': 'INSTANCE_MISMATCH'}}}}},
+        ]},
+    ]}
+
+
+def check_notification_conflict_http_responses(document, directory):
+    """以真实生产HTTP捕获的三个公开错误验证声明，不读取消息或Token。"""
+    schema = document['paths']['/devices/current/notifications']['put']['responses']['409']['content']['application/json']['schema']
+    components = {'components': {'schemas': document['components']['schemas']}}
+    wrapped = {**schema, **components}
+    Draft202012Validator.check_schema(wrapped)
+    validator = ContractValidator(wrapped, format_checker=FormatChecker())
+    branches = [ContractValidator({**branch, **components}, format_checker=FormatChecker())
+                for branch in schema['oneOf']]
+    responses = {}
+    for code, filename, expected_branch in (
+            ('SETTINGS_CONFLICT', 'settings-conflict.json', 0),
+            ('SETTINGS_VERSION_EXHAUSTED', 'settings-version-exhausted.json', 0),
+            ('INSTANCE_MISMATCH', 'instance-mismatch.json', 1)):
+        raw = (directory / filename).read_bytes()
+        value = json.loads(raw)
+        if value['error']['code'] != code or not validator.is_valid(value):
+            raise SystemExit('真实通知409未通过Schema：' + code)
+        matched = [index for index, branch in enumerate(branches) if branch.is_valid(value)]
+        if matched != [expected_branch]:
+            raise SystemExit('真实通知409分支不互斥：' + code)
+        responses[code] = value
+        print('PASS: real notification409 code=' + code
+              + ' branch=' + str(expected_branch)
+              + ' fields=' + ','.join(sorted(value['error']))
+              + ' sha256=' + hashlib.sha256(raw).hexdigest())
+
+    negatives = []
+    for code in ('SETTINGS_CONFLICT', 'SETTINGS_VERSION_EXHAUSTED'):
+        for required in ('latest_settings_version', 'recovery_path'):
+            value = copy.deepcopy(responses[code])
+            del value['error'][required]
+            negatives.append((code + ' missing ' + required, value))
+        value = copy.deepcopy(responses[code])
+        value['error']['code'] = 'INSTANCE_MISMATCH'
+        negatives.append((code + ' mixed instance with settings fields', value))
+        value = copy.deepcopy(responses[code])
+        value['error']['latest_settings_version'] = str(value['error']['latest_settings_version'])
+        negatives.append((code + ' string version', value))
+        value = copy.deepcopy(responses[code])
+        value['error']['recovery_path'] = '/devices/current/push'
+        negatives.append((code + ' wrong recovery resource', value))
+    for code in ('SETTINGS_CONFLICT', 'SETTINGS_VERSION_EXHAUSTED', 'OTHER_CONFLICT'):
+        value = copy.deepcopy(responses['INSTANCE_MISMATCH'])
+        value['error']['code'] = code
+        negatives.append(('public branch cannot admit ' + code, value))
+    for code in responses:
+        value = copy.deepcopy(responses[code])
+        value['error']['unexpected'] = True
+        negatives.append((code + ' unexpected nested field', value))
+        value = copy.deepcopy(responses[code])
+        value['unexpected'] = True
+        negatives.append((code + ' unexpected outer field', value))
+    value = copy.deepcopy(responses['INSTANCE_MISMATCH'])
+    value['error']['latest_settings_version'] = 0
+    value['error']['recovery_path'] = '/devices/current/notifications'
+    negatives.append(('instance must not carry settings recovery fields', value))
+    for name, value in negatives:
+        if validator.is_valid(value):
+            raise SystemExit('通知409负例未拒绝：' + name)
+    print(f'PASS: notification409 {len(negatives)} negative mutations rejected')
+
+
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--notification-responses', type=Path,
+                        help='Go真实生产HTTP测试捕获的三个409公开错误目录')
+    arguments = parser.parse_args()
     document = yaml.safe_load((ROOT / 'openapi.yaml').read_text(encoding='utf-8'))
     validate_spec(document)
     check_instance_declarations(document)
@@ -2243,8 +2323,7 @@ def main():
                 or op['responses']['200']['content']['application/json']['schema'] != {
                     '$ref': '#/components/schemas/NotificationSettingsState'}):
             raise SystemExit('通知路径/权限/状态/事务声明不符：' + oid)
-        if method == 'put' and op['responses']['409']['content']['application/json']['schema'] != {
-                '$ref': '#/components/schemas/NotificationSettingsConflict'}:
+        if method == 'put' and op['responses']['409']['content']['application/json']['schema'] != notification_conflict_response_schema():
             raise SystemExit('通知冲突缺少最新版本及恢复路径')
     expected_union = ['SyncMessageUpsert', 'SyncMessageDelete', 'SyncBotUpsert', 'SyncBotDelete',
                       'SyncReadUpdate', 'SyncDeliveryUpsert', 'SyncDeviceNotifications', 'SyncGlobalSettings']
@@ -2484,6 +2563,8 @@ def main():
     print(f'PASS: {mutation_count} declaration mutations rejected; Session consumer graph fixed')
     print(f'PASS: OpenAPI 3.1; {len(schemas)} schemas; '
           f'{valid} valid + {invalid} invalid examples; {len(operation_map)} operations/security')
+    if arguments.notification_responses is not None:
+        check_notification_conflict_http_responses(document, arguments.notification_responses)
 
 
 if __name__ == '__main__':

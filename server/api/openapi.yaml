@@ -3224,7 +3224,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotificationSettingsConflict'
+                oneOf:
+                - $ref: '#/components/schemas/NotificationSettingsConflict'
+                - allOf:
+                  - $ref: '#/components/schemas/Error'
+                  - properties:
+                      error:
+                        properties:
+                          code:
+                            const: INSTANCE_MISMATCH
       x-error-codes:
         '401':
         - AUTHENTICATION_REQUIRED
