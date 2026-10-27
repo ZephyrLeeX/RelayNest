@@ -35,7 +35,7 @@
 
 Bot Hub 只负责消息传输、存储和路由，不执行业务命令或 MCP 工具。
 
-Debian 恢复：推送 STORAGE、共享写准入修复及 ADMIN 有限文本 HTTP 均已独审／精确集成；[BE-02 原四项有限父组合](tasks/COMPLETED.md#g5-be02-compose) 也已由 R01 实际双入口普通／race、不同 A01 PASS 和 I01 等值核收完成。COMMIT companion／同 DDL 生产 HTTP 回滚的配对方法经 A01 判断充分，同次 HTTP 内部直接观测仍 NOT_RUN，不改写为已直接观测；HTTP jobs=0／未来范围仍保留。BE-10-01-HTTP 仍 running，`2c7038a…` 短检查、全服普通137.877秒和 vet／build已 PASS，相关六包 race566.727秒亦 PASS；A01 两编号 CHANGES_REQUIRED，真实 Bot 误用测试修复 `8cf74db…` 普通／race PASS 待 A02，偏好409最小合同修正 `df160ff…` 已含完整合同及真实三409普通／race验证 PASS，A02正式结论和最终 df whole／race／vet／build仍待补，独审／I01待补，不据此完成父推送或跨端门槛。历史失败与额度中断事实保留，未 push、部署、发布或创建完成标记。
+Debian 恢复：推送 STORAGE、共享写准入修复及 ADMIN 有限文本 HTTP 均已独审／精确集成；[BE-02 原四项有限父组合](tasks/COMPLETED.md#g5-be02-compose) 也已由 R01 实际双入口普通／race、不同 A01 PASS 和 I01 等值核收完成。COMMIT companion／同 DDL 生产 HTTP 回滚的配对方法经 A01 判断充分，同次 HTTP 内部直接观测仍 NOT_RUN，不改写为已直接观测；HTTP jobs=0／未来范围仍保留。[BE-10-01-HTTP 有限五端点](tasks/COMPLETED.md#g5-be10-http) 已经 A01 两编号修复、完整 df 源检查、不同 A02 PASS及准确539新组合 I01全检查／精确集成完成；保留 harness 原目录冲突 FAIL与仅临时修正后的完整复验。父 BE-10-01 独立组合、平台发送／真机及跨端门槛仍未完成。历史失败与额度中断事实保留，未 push、部署、发布或创建完成标记。
 
 ### 已完成
 
@@ -62,11 +62,11 @@ Debian 恢复：推送 STORAGE、共享写准入修复及 ADMIN 有限文本 HTT
 ### 未完成
 
 - **未开始｜Bot 生命周期与权限收口**：重置／删除正式 HTTP、领取租约／等待请求／投递队列完整联动，以及身份权限整体矩阵（P04-08）。
-- **开发中｜历史／引用和共享已读父范围**：历史仓储首叶已 A01／I01 完成，完整源三提交精确合入 `6e5ca4b…`；父范围仍 running，[REFERENCE-CREATE](tasks/BACKEND.md#be-04-01-reference-create) 已登记 ready／准备隔离树待 Implementer，仅既有 Bot API／Android 文本引用；源码及 Go 检查尚 NOT_RUN。引用创建、共享已读、公开 cursor／HTTP、附件投影及后续组合验收未完成。未分配0010；其他 CAS 编辑、Webhook、按钮回调和故障回归仍待实施。
+- **开发中｜历史／引用和共享已读父范围**：历史仓储首叶已 A01／I01 完成，完整源三提交精确合入 `6e5ca4b…`；父范围仍 running，[REFERENCE-CREATE](tasks/BACKEND.md#be-04-01-reference-create) 已 running，由 `/root/be04_reference_implementer` 在基线 `dbdb1c9…` 私有树接续，仅既有 Bot API／Android 文本引用；未提交现场已保留，检查进行中且最终结果未回交，独审／集成尚 NOT_RUN。引用创建、共享已读、公开 cursor／HTTP、附件投影及后续组合验收未完成。未分配0010；其他 CAS 编辑、Webhook、按钮回调和故障回归仍待实施。
 - **开发中｜附件功能**：流式持久化准备已完成；真实上传 HTTP／Bot-first／Android／设置路由仍待派发接线及本端点 G1 验收，父 BE-05-01 未完成；关联权限与保护引用、下载／Range、安全响应、启动恢复及孤儿回收仍未开始。
 - **未开始｜投递与清理（P6）**：原子领取、Long Polling、ACK／续约、退避重试、失败管理、历史／墓碑清理、队列生命周期、全局配置及健康投影。
 - **未开始｜Hub 同步运行时**：增量同步、bootstrap 重建、WS 提示及连接撤销。
-- **开发中｜正式推送服务端（P9）**：[注册／偏好 STORAGE](tasks/COMPLETED.md#g5-be10-storage) 已 A02 PASS，精确本地集成组合 `af84503…` 经权限解除后 I01 全部必检 PASS，存储叶完成；原 main 未更新，父功能的真实 HTTP、待办调度和 FCM／OPPO Adapter 仍未完成。Android FCM PoC 不代表这些服务已实现；失效 token 仅按发送快照条件解绑对应注册，不删除设备会话。
+- **开发中｜正式推送服务端（P9）**：[注册／偏好 STORAGE](tasks/COMPLETED.md#g5-be10-storage) 已 A02 PASS，精确本地集成组合 `af84503…` 经权限解除后 I01 全部必检 PASS，存储叶完成；原 main 未更新，[当前设备五端点 HTTP](tasks/COMPLETED.md#g5-be10-http) 已 A02／I01完成，父原验收独立组合、待办调度和 FCM／OPPO Adapter 仍未完成。Android FCM PoC 不代表这些服务已实现；失效 token 仅按发送快照条件解绑对应注册，不删除设备会话。
 
 ## 3. Web 管理端
 
