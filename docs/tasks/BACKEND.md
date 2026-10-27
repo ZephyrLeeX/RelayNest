@@ -198,7 +198,8 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-04-01-REFERENCE-CREATE 既有双入口文本创建接通同 Bot 回复引用
 
-- 类型：有限子叶；状态：`running`（2026-10-28，Implementer `/root/be04_reference_implementer` 已实际接续隔离树，准备角色 `/root/admin_i01_resume`）。依赖[BE-02 限定父组合](COMPLETED.md#g5-be02-compose)和[HISTORY-STORAGE](COMPLETED.md#g5-be04-history-storage)已完成并精确集成至 `6e5ca4b7b7ca8b11d8a550bcf35627499132c1e3`。准备前 root `471e30989dc820afcae6d22e4f52ab9a4270a4fe`，实际实施固定基线 `dbdb1c9fa13a8053bd039d4910c18dd2cdffd060`；隔离树 `.worktrees/backend-be04-reference`／分支 `impl/backend-be04-reference-20261027`，本树／index及四主文件写锁归 Implementer。已有四主文件／必要测试未提交现场，检查尚在进行、最终结果未回交，不能记 PASS；独审／精确集成仍 **NOT_RUN**。
+- 类型：有限子叶；状态：`integrating`（2026-10-28，总调度依据固定源 `65488a571fe241bee116309df96aaee351099fc6` 的不同 A01 PASS 派发 I01；由 running 经 review 转 integrating）。源实施基线 `dbdb1c9fa13a8053bd039d4910c18dd2cdffd060`，单提交准确七路径，源树 `.worktrees/backend-be04-reference` clean并冻结。依赖[BE-02限定父组合](COMPLETED.md#g5-be02-compose)和[HISTORY-STORAGE](COMPLETED.md#g5-be04-history-storage)已完成；Integrator `/root/restore_backend_1028` 独占 I01树/index及目标Git/index，目标 `resume/backend-20261026@bd95d01462d967b822e6d25bcca365cad387aaa3`，隔离 `.worktrees/backend-be04-reference-i01`／`integrate/backend-be04-reference-i01-20261028`。源已无冲突精确重放，待新HTTP＋引用并集检查；准备阶段Go全部 **NOT_RUN**，重型窗口等待 BE10-COMPOSE-A01 释放，尚未快进root、不标done。
+- 源证据：`/tmp/relaynest-be04-reference-validation-20261028` 固定输入全服普通143.565秒／全服race581.710秒／vet0.749秒／build1.354秒完整exit0。独立A01 `/root/admin_i01_resume` 固定完整源链 **PASS**、无发现；真实cmd七组/messages四组独立检查18.362秒exit0，证据 `/tmp/relaynest-be04-reference-a01-20261027-173519/{inputs.json,commands.jsonl,independent.log,post.json}`。A01确认真实HTTP同DDL503／全回滚与仓储callback成功后真实延迟FK COMMIT失败配对足够；同一次HTTP事务内部直接COMMIT观测仍 **NOT_RUN**，不得冒称已直接观测。上述源检查不冒充I01新并集实测。
 - 单目标：既有 Bot API／Android 文本创建支持同 Bot 回复引用，无新路由。首次请求在当前授权、基本校验／原摘要、幂等查询之后验证引用；命中旧 key 原样重放，源删除后旧成功 key 仍返回原 receipt／delivery 且无新增。首次引用在同事务序号分配前校验，双引用列同时写入，message.created 保留 original 引用 ID；两 HTTP 回执复用原 originalID。跨 Bot／合法不存在引用统一 404 RESOURCE_NOT_FOUND，管理员错误白名单须覆盖；新增 UUID 结构／格式按既有400／422规则，不创设新合同。
 - 允许范围：四主文件 `server/internal/messages/{create.go,repository.go,pending.go}` 和 `server/internal/httpapi/messages.go`；必要同包测试、`server/internal/httpapi/messages_test.go`、仅新 `server/cmd/relaynest/message_references_test.go`。SQL／API／依赖／已集成 history及reference／auth／storage／changes／router／main生产与旧 main_test 全部只读；公共 router／main 写锁由总调度另行排他协调，本叶不得触及其生产文件或其他任务树。
 - 验收：原幂等语义、真实 B01 授权、Bot API＋Android 双入口真实 HTTP／SQLite及原子回滚；同 Bot 引用成功、跨 Bot／不存在一致拒绝、源删后幂等重试无新增，回执／delivery／message.created 的 original 引用一致；失败不得写序号／消息／投递／changes／幂等或泄露正文。仅 Bot API／Android 新引用，Webhook identity 新引用仍不支持，不扩大附件／按钮或重写 BE-02 历史完成范围。
@@ -288,7 +289,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - P01 有限规划（2026-10-26）：owner Backend Orchestrator，Agent `/root/backend_dependency_plan`，基线 `388dd8ae1f3641bdfd26a7a421e4171b8da16971` / `work` 只读；只细化本 leaf 的准确 3～5 主文件工作包及迁移／接口边界，不写文件或预占迁移号。状态仍未开始；BE-01 完整完成追加门槛未满足，不据准备规划放行真实上传验收。
 - P01 已返回有限拆分；R02 `/root/backend_recovery` 验证 P05-01 最终 `ed488e543d892f2353fbc95f72a2f0af98ba9a8d` 为基线祖先，六个 worktree 均无 0008 文件或迁移改动，唯一 HTTP 写入者不改迁移。由调度拆成下列两个执行子包，原完整验收不变；状态转准备中，只有两包和完整 BE-01 门槛全部满足才可收口。
 
-- 子项证据：[STORAGE 已完成独审与精确集成](COMPLETED.md#g5-be05-storage)，源与最终 `064807f9e5e126f48c9360d4d02a40fc209f790e`；[HTTP 真实上传接线](#be-05-01-http) 尚未开始；[BE-01 现有后端依赖已完成](COMPLETED.md#g5-be01)，父原上传验收仍待满足。
+- 子项证据：[STORAGE 已完成独审与精确集成](COMPLETED.md#g5-be05-storage)，源与最终 `064807f9e5e126f48c9360d4d02a40fc209f790e`；[HTTP 真实上传接线](#be-05-01-http) 已running、私树WIP未提交；[BE-01 现有后端依赖已完成](COMPLETED.md#g5-be01)，父原上传验收仍待满足。
 
 - 旧ID：`P05-05`；类型：有限分拆收口（不整组派发）；状态：准备中（STORAGE 已完成，HTTP 及父验收待闭环，BE-01 现有后端依赖已完成）。
 - 依赖：[已完成基线 P05-01](COMPLETED.md#g2)。
@@ -307,7 +308,8 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 ### BE-05-01-HTTP 真实上传接线与组合验收
 
-- 类型：有限 leaf；状态：`todo`；依赖 [已完成 BE-05-01-STORAGE](COMPLETED.md#g5-be05-storage)、[已完成 BE-01 现有后端父范围](COMPLETED.md#g5-be01)，必须分别独审和集成。准备路径为 `server/internal/httpapi/attachments.go`、`router.go`、`server/cmd/relaynest/main.go` 及相关测试，派发前固定真实基线及排他锁。
+- 类型：有限 leaf；状态：`running`（2026-10-28，独立 Implementer `/root/be05_upload_implementer` 已在 `.worktrees/be05-http-upload`／`resume/be05-http-upload-20261028@bd95d01462d967b822e6d25bcca365cad387aaa3` 实施，五路径WIP未提交）；依赖 [已完成 BE-05-01-STORAGE](COMPLETED.md#g5-be05-storage)、[已完成 BE-01 现有后端父范围](COMPLETED.md#g5-be01)，必须分别独审和集成。准备路径为 `server/internal/httpapi/attachments.go`、`router.go`、`server/cmd/relaynest/main.go` 及相关测试，派发前固定真实基线及排他锁。
+- 当前交接：本上传私树及router/main写锁归该Implementer，不分配迁移；gofmt／diff检查PASS，真实Web dist按hash复用；Go编译／测试／独审／精确集成全部 **NOT_RUN**，等待总调度重型窗口。该WIP不进入REFERENCE-I01候选。
 - 沿用原上传完整验收及冻结 query＋原始二进制流／201/no-store／错误合同；真实 Bot-first 格式及身份发现先于读流，Matched 拒绝不回退、Unavailable 失败关闭、仅 NoMatch 进入 Android 同快照门禁，最终提交重验代次／会话。Web Cookie／Webhook／receive-only 无上传权。
 - 必须真实 HTTP＋SQLite＋文件组合，配置使用实际可注入正 int64 接口，不能默认值写死或宣称未实现的设置路由已生效；STORAGE 测试不能替代真实读流顺序、事务和安全错误验收。完成后父 BE-05-01 仍须核原完整验收，无范围丢失。
 
