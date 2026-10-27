@@ -583,3 +583,51 @@ func TestAssembledPushAuthorizationBecomesStale(t *testing.T) {
 		})
 	}
 }
+
+func TestAssembledPushRejectsValidBotToken(t *testing.T) {
+	f := botHTTP(t, nil)
+	// 从真实管理员管理入口取得新签发的有效凭据，不能用任意字符串冒称Bot身份。
+	status, raw, headers := f.admin("POST", "/api/v1/admin/bots", botCreateBody)
+	assertBotResponse(t, status, 201, raw, headers)
+	created := decodeBotCreated(t, raw)
+	if created.APIToken.Token == "" {
+		t.Fatal("production Bot create did not issue an API credential")
+	}
+	// 先经正式Bot消息路由完成正对照，证明凭据当前有效而非未知/失效Token。
+	status, raw, headers = f.request("POST", "/api/v1/bot/messages", `{"format":"plain","text":"Bot credential positive control"}`, "bot", created.APIToken.Token, map[string]string{"Idempotency-Key": "00000000-0000-4000-8000-000000000137"})
+	assertBotResponse(t, status, 201, raw, headers)
+	var receipt struct {
+		BotID  string `json:"bot_id"`
+		Sender string `json:"sender"`
+	}
+	if json.Unmarshal([]byte(raw), &receipt) != nil || receipt.BotID != created.Bot.ID || receipt.Sender != "application" || strings.Contains(raw, created.APIToken.Token) {
+		t.Fatal("valid Bot credential positive control did not commit the expected message")
+	}
+	var messages, deliveries, idempotency int
+	if err := f.store.Read(context.Background(), func(tx *sql.Tx) error {
+		return tx.QueryRow("SELECT (SELECT count(*) FROM messages),(SELECT count(*) FROM deliveries),(SELECT count(*) FROM idempotency)").Scan(&messages, &deliveries, &idempotency)
+	}); err != nil || messages != 1 || deliveries != 0 || idempotency != 1 {
+		t.Fatal("positive control did not finish its legitimate persistent effects", err)
+	}
+	// application消息不排管理员发往Bot的delivery；随后必须连这个空队列也保持不变。
+	// 正对照完成后才取基线，覆盖消息/投递/待办/幂等、Bot凭据及会话和设备偏好。
+	state := func() [3][32]byte {
+		return [3][32]byte{mustAssembledPushState(t, f.store), clientMessageState(t, f.store), f.snapshot()}
+	}
+	for _, operation := range []struct{ method, path, body string }{
+		{"GET", assembledPushPath, ""},
+		{"PUT", assembledPushPath, assembledRegistration("synthetic-device-registration", 1, 0)},
+		{"DELETE", assembledPushPath + "/fcm", `{"expected_version":0}`},
+		{"GET", assembledNotificationsPath, ""},
+		{"PUT", assembledNotificationsPath, assembledNotifications(0, "fcm")},
+	} {
+		t.Run(operation.method+operation.path, func(t *testing.T) {
+			before := state()
+			status, raw, headers := f.request(operation.method, operation.path, operation.body, "bot", created.APIToken.Token, nil)
+			assertAssembledPush(t, status, 401, raw, headers, "AUTHENTICATION_REQUIRED")
+			if strings.Contains(raw, created.APIToken.Token) || state() != before {
+				t.Fatal("valid Bot token crossed into current-device authorization or changed persistent state")
+			}
+		})
+	}
+}

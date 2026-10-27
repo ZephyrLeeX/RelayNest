@@ -393,7 +393,7 @@ func TestPushHTTPAuthorizationOrderAndBodyIsolation(t *testing.T) {
 				r.Header.Del("X-RelayNest-Instance-ID")
 			}, 401, "AUTHENTICATION_REQUIRED"},
 			{"missing-auth", func(r *http.Request) { r.Header.Del("Authorization") }, 401, "AUTHENTICATION_REQUIRED"},
-			{"bot-token", func(r *http.Request) { r.Header.Set("Authorization", "Bearer synthetic-bot-credential") }, 401, "AUTHENTICATION_REQUIRED"},
+			{"invalid-non-session-bearer", func(r *http.Request) { r.Header.Set("Authorization", "Bearer synthetic-bot-credential") }, 401, "AUTHENTICATION_REQUIRED"},
 			{"selector", func(r *http.Request) { r.URL.RawQuery = "session_id=other" }, 400, "INVALID_REQUEST"},
 		} {
 			t.Run(operation.method+operation.path+tc.name, func(t *testing.T) {
