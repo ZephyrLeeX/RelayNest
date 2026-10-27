@@ -188,6 +188,16 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 验收：越 Bot 引用拒绝。；旧设备不倒退。；自己的消息与编辑不增加未读。 运行上述允许包的共同检查。
 
+<a id="be-04-01-history-storage"></a>
+
+#### BE-04-01-HISTORY-STORAGE 历史／详情与同 Bot 引用只读仓储准备
+
+- 类型：有限子叶；状态：`ready`（2026-10-27，总调度采纳独立 Planner 拆分，BE-02 前置已完成；仅准备工作树，Implementer 尚待派发，父 BE-04-01 原验收整体未完成）。准备角色 `/root/admin_i01_resume`；固定产品基线 `a4ef63e8c52b4468491f3b2abe7c910de55f57e1`，实施基线为本次纯元数据提交后的准确 HEAD；隔离树 `.worktrees/backend-be04-history`／分支 `impl/backend-be04-history-20261027`。实施前由总调度登记新 Implementer／源码写锁；当前 Go 编译／测试、独审／精确集成均 **NOT_RUN**。
+- 单目标与允许写范围：仅 `server/internal/messages/{history.go,history_models.go,reference.go}` 及对应 `history_test.go`／`reference_test.go`，优先复用模型减少文件；实现历史／详情和同 Bot 引用域的只读事务仓储准备。全部消费受信调用方 `*sql.Tx`，拒绝 nil，不自开／提交事务，不造仅凭 Actor 公开字段的授权包装。
+- 原验收中本叶覆盖：`bot_seq DESC`、排他内部边界、有界 limit＋1；同 tx 核 Bot 存在及读取，停用 Bot 历史可读；同 Bot 存在引用接受，跨 Bot／不存在统一不可用；源删不泄正文且保留 originalID。真实 SQLite 覆盖多 Bot 分页、并发新增删改不改变排序、边界／limit、错误无部分结果、引用 FK、真实 RequestSecurity＋B01 授权及伪 Actor／会话／实例代次、取消及最终失败不发布。无 route 不声称 Web／Bot HTTP 完成。
+- 排他边界：`create.go`／`repository.go`／`pending.go` 显式拒引用保持；auth／changes／storage／SQL／API／router／main 与推送 HTTP WIP 全部只读。public DTO、cursor codec、HTTP、创建引用放开及共享 read 表另包；后包初始 readstate version≥1／time 非空规则待具体设计，本叶不实现、不设新外部错误码。
+- 迁移：Planner 已只读核六注册树和三独立 Git 仓库 refs，最高 0009，无 0010＋或未提交迁移；原 0006 已具双引用列、同 Bot 触发器／FK SET NULL，本叶无需迁移、不占 0010。0009 永久由 push 占用；未来 READ-STORAGE 派发时重新核号分配，不以本次扫描预占。
+
 <a id="be-04-02"></a>
 
 ### BE-04-02 应用消息 CAS 编辑
@@ -531,8 +541,9 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - 类型：有限 leaf；状态：`running`（2026-10-27，总调度核原依赖及独立 STORAGE-BUSY-01 修复均已完成并派发阶段 1 handler 实施；尚未真实 router/main 组合验收，不标 done）。依赖[已完成 STORAGE](COMPLETED.md#g5-be10-storage)、[已完成 BE-01 现有后端父范围](COMPLETED.md#g5-be01)；写准入修复已[独审及精确集成](COMPLETED.md#g5-storage-busy-01)。
 - 阶段 1 原 Implementer `/root/push_http_implementer` 从 `3aec54e04945c9e1a8442f7ca996d2ded15f56e7` 开始；恢复 owner `/root/push_http_resume` 已保存 checkpoint `1291ea355c3c3f837df56f5d5e1f08d6bc641059`（parent `3aec54e…`）。阶段 2 已由总调度正式放行：先以 `backup/push-http-phase1-20261027` 保留原 checkpoint，再从真实 ADMIN 归档基线 `5d6a57df45f9bbf8185da8957e83ace08ec0ef27` 无冲突重放为 `3471a3bbc659580f14c627e5dc6c7cbbc9e7b680`（parent `5d6a57d…`），range-diff 一项 `=`；原三文件与 `1291ea3` 一致、其他 server 与 `5d6a57d` 一致，不重新实现。隔离树／分支仍为 `.worktrees/backend-push-http` / `impl/backend-push-http-20261027`，本树／index及公共接线写锁归该 Implementer。
 - 阶段 2 checkpoint `2c7038a2196be27927e5ba474f93cfbcfef56533`（parent `3471a3b…`，真实基线仍 `5d6a57d…`）已保留，累计四主实现＋三测试；旧 `1291ea3…` 备份和 `3471a3b…` 一项等价重放历史保持，不重复重放代码。阶段 1 六组 handler 普通在准确 `3471a3b…` **PASS**（exit 0／6.090 秒），证据 `/tmp/relaynest-push-http-phase1-20261027-iq565fyx/commands.jsonl`。
-- 阶段 2 短普通已有完整 **PASS**：同 `2c7038a…`、Go 1.27.3 的 `router-exact` 与 `assembled-push` 均有开始／结束／exit 0（1.716／10.810 秒），五组生产 TLS＋SQLite、真实 main 子进程／日志／事务／授权用例通过；证据 `/tmp/relaynest-push-http-phase2-20261027-2dqjpoxx/{inputs.json,commands.jsonl,router-exact.log,assembled-push.log}`。不将额度中断误记成这些已完成短检查失败或未跑。同 `2c7038a…` 全服普通另已完整 PASS（exit 0／137.877 秒），vet／build（7.625／1.591 秒）及 gofmt／diff／clean 检查 PASS，实际证据 `/tmp/relaynest-push-http-ordinary-20261027-bjpjyeum/{inputs.json,commands.jsonl,*log}`；准确复用而非本 I01 重跑。新相关 race 尚在执行，未有完整结果不能记 PASS；独立审计／精确集成仍待完成，叶状态保持 running。
+- 阶段 2 短普通已有完整 **PASS**：同 `2c7038a…`、Go 1.27.3 的 `router-exact` 与 `assembled-push` 均有开始／结束／exit 0（1.716／10.810 秒），五组生产 TLS＋SQLite、真实 main 子进程／日志／事务／授权用例通过；证据 `/tmp/relaynest-push-http-phase2-20261027-2dqjpoxx/{inputs.json,commands.jsonl,router-exact.log,assembled-push.log}`。不将额度中断误记成这些已完成短检查失败或未跑。同 `2c7038a…` 全服普通另已完整 PASS（exit 0／137.877 秒），vet／build（7.625／1.591 秒）及 gofmt／diff／clean 检查 PASS，实际证据 `/tmp/relaynest-push-http-ordinary-20261027-bjpjyeum/{inputs.json,commands.jsonl,*log}`；准确复用而非本 I01 重跑。同 `2c7038a…` 相关六包 race 已完整 **PASS**（exit 0／566.727 秒），证据 `/tmp/relaynest-push-http-race-20261027-ltqvy615/commands.jsonl`。A01 正式 **CHANGES_REQUIRED**：`BE10-HTTP-A01-01` 为偏好 PUT 409 schema 缺公共 INSTANCE_MISMATCH；`BE10-HTTP-A01-02` 为仅合成 Bearer 不足真实 Bot 误用验证。独立审计／精确集成仍未完成，叶状态保持 running。
 - 仅允许 `server/internal/devices/{push_http.go,http.go}`、`server/internal/httpapi/router.go`、`server/cmd/relaynest/main.go` 四主文件及必要对应测试；其他生产源码、auth／仓储／迁移／API 契约只读。各检查仍按总调度排队，一次仅一个 full／cmd／race 窗口。上述 `5d6a57d` 为本叶已授实际产品基线，canonical 纯元数据推进不要求它再次重放。
+- 编号修复进展：`BE10-HTTP-A01-02` 已仅两测试提交 `8cf74db212762719315be9108a8a1b32a2f87083`（parent `2c7038a…`），真实管理 HTTP 签发 Bot 凭据、Bot 消息 201 正对照及五个拒绝 401／no-store／完整 hash 不变；普通／race 完整 PASS（exit 0／3.874／11.075 秒），实际 `/tmp/relaynest-be10-http-f01-02-20261027-2ozs655w/commands.jsonl`，待不同 A02 独审。`BE10-HTTP-A01-01` 用户已明确同意最小合同修正，Fixer `/root/push_http_resume` 获准修改 `server/api/openapi.yaml` 的该 409 oneOf：保留 settings 并补公共 Error 嵌套 `error.code=INSTANCE_MISMATCH`；必要的 `server/api/validate.py` 最小合同验证工具及对应测试补证也获授权，仅限本 operation 例子／真实响应接入，不弱化通用 schema、不改其他 operations／依赖，runtime 四文件不改。已核 HTTP 树这三文件有未提交现场、临时锁版工具 venv 已准备；新提交 SHA／合同验证结果尚未回交，仍 **NOT_RUN**，不再记待用户答复。A01 独立两组 5.241 秒仅有工具输出、无持久 stdout／ledger，不伪造日志路径；最终 A02 须提供新可核证据。root 尚无本叶产品代码。
 - 原完整 HTTP 验收仍须最终真实 router＋main＋SQLite、独立固定 SHA 审计及精确集成；handler 单测、编译或阶段 2 接线获准均不能冒充完成，父 BE-10-01／平台发送／跨端门槛不自动通过。
 - 按冻结五 operations 接线 GET/PUT current/push、DELETE current/push/{provider}、GET/PUT current/notifications；真实当前 Android Bearer 与同事务实例门禁，拒 Web/Bot／目标选择器／客户端时间，262144 字节／严格 schema／no-store／无 token。原设备及认证／Bot 路由非回归，真实 router＋main＋SQLite 组合，不以直接 handler 测试冒充。
 - 原 BE-10-01 全部验收及资格边界保留，STORAGE 准备不替代 H01／G1；后端发送适配器及平台实测仍分别归后续任务。

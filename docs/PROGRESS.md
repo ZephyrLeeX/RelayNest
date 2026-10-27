@@ -35,7 +35,7 @@
 
 Bot Hub 只负责消息传输、存储和路由，不执行业务命令或 MCP 工具。
 
-Debian 恢复：推送 STORAGE、共享写准入修复及 ADMIN 有限文本 HTTP 均已独审／精确集成；[BE-02 原四项有限父组合](tasks/COMPLETED.md#g5-be02-compose) 也已由 R01 实际双入口普通／race、不同 A01 PASS 和 I01 等值核收完成。COMMIT companion／同 DDL 生产 HTTP 回滚的配对方法经 A01 判断充分，同次 HTTP 内部直接观测仍 NOT_RUN，不改写为已直接观测；HTTP jobs=0／未来范围仍保留。BE-10-01-HTTP 仍 running，`2c7038a…` 短检查、全服普通137.877秒和 vet／build已 PASS，新相关 race 未形成完整结果、独审／I01待补，不据此完成父推送或跨端门槛。历史失败与额度中断事实保留，未 push、部署、发布或创建完成标记。
+Debian 恢复：推送 STORAGE、共享写准入修复及 ADMIN 有限文本 HTTP 均已独审／精确集成；[BE-02 原四项有限父组合](tasks/COMPLETED.md#g5-be02-compose) 也已由 R01 实际双入口普通／race、不同 A01 PASS 和 I01 等值核收完成。COMMIT companion／同 DDL 生产 HTTP 回滚的配对方法经 A01 判断充分，同次 HTTP 内部直接观测仍 NOT_RUN，不改写为已直接观测；HTTP jobs=0／未来范围仍保留。BE-10-01-HTTP 仍 running，`2c7038a…` 短检查、全服普通137.877秒和 vet／build已 PASS，相关六包 race566.727秒亦 PASS；A01 两编号 CHANGES_REQUIRED，真实 Bot 误用测试修复 `8cf74db…` 普通／race PASS 待 A02，偏好409最小合同修正已获用户同意、尚待提交／验证，独审／I01待补，不据此完成父推送或跨端门槛。历史失败与额度中断事实保留，未 push、部署、发布或创建完成标记。
 
 ### 已完成
 
@@ -60,7 +60,7 @@ Debian 恢复：推送 STORAGE、共享写准入修复及 ADMIN 有限文本 HTT
 ### 未完成
 
 - **未开始｜Bot 生命周期与权限收口**：重置／删除正式 HTTP、领取租约／等待请求／投递队列完整联动，以及身份权限整体矩阵（P04-08）。
-- **未开始｜其余消息功能**：历史分页、引用和共享已读、CAS 编辑、标准 JSON Webhook、按钮回调独立事件及综合故障回归。
+- **准备中｜历史仓储首叶**：[BE-04-01-HISTORY-STORAGE](tasks/BACKEND.md#be-04-01-history-storage) ready，独立工作树准备后待 Implementer；仅历史／详情／同 Bot 引用只读事务仓储，无需迁移且不占0010，Go检查尚 NOT_RUN。父历史分页／引用／共享已读及 CAS 编辑、标准 JSON Webhook、按钮回调和综合故障回归仍未完成。
 - **开发中｜附件功能**：流式持久化准备已完成；真实上传 HTTP／Bot-first／Android／设置路由仍待派发接线及本端点 G1 验收，父 BE-05-01 未完成；关联权限与保护引用、下载／Range、安全响应、启动恢复及孤儿回收仍未开始。
 - **未开始｜投递与清理（P6）**：原子领取、Long Polling、ACK／续约、退避重试、失败管理、历史／墓碑清理、队列生命周期、全局配置及健康投影。
 - **未开始｜Hub 同步运行时**：增量同步、bootstrap 重建、WS 提示及连接撤销。
