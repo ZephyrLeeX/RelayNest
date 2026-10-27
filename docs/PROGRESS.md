@@ -1,11 +1,11 @@
 # RelayNest 项目进度
 
 - 更新日期：2026-10-27（UTC+8）。
-- 后端本轮恢复基线：`bde0193a5e1f561cb0b3d30a08bea691fcd499a8`；唯一权威目标为项目根 `/home/codex/projects/RelayNest` / `resume/backend-20261026`。推送 STORAGE 与 [STORAGE-BUSY-01](tasks/COMPLETED.md#g5-storage-busy-01) 已完成；[ADMIN 有限文本 HTTP](tasks/COMPLETED.md#g5-be02-admin) 完整 WIP 链在准确 `665edd785d8784ae0e3304d3d3bdfed2d474f872` 组合全服普通／race／vet／build PASS、A04 独立 PASS、I01 精确 ff 后完成，旧监听／夹具／SQLITE_BUSY／额度未完成日志全部保留。父 BE-02 四项真实 Bot＋Admin 组合仍未闭环。`main@01c74a7` ref 未变，历史克隆不再双目标推进，其他模块运行状态不在本轮核实范围，未部署或发布。
+- 后端本轮恢复基线：`bde0193a5e1f561cb0b3d30a08bea691fcd499a8`；唯一权威目标为项目根 `/home/codex/projects/RelayNest` / `resume/backend-20261026`。推送 STORAGE 与 [STORAGE-BUSY-01](tasks/COMPLETED.md#g5-storage-busy-01) 已完成；[ADMIN 有限文本 HTTP](tasks/COMPLETED.md#g5-be02-admin) 完整 WIP 链在准确 `665edd785d8784ae0e3304d3d3bdfed2d474f872` 组合全服普通／race／vet／build PASS、A04 独立 PASS、I01 精确 ff 后完成，旧监听／夹具／SQLITE_BUSY／额度未完成日志全部保留。[BE-02 原四项有限父组合](tasks/COMPLETED.md#g5-be02-compose) 已独立 R01／A01／I01 完成，保留直接 HTTP 内部 COMMIT 观测 NOT_RUN 等方法限制。`main@01c74a7` ref 未变，历史克隆不再双目标推进，其他模块运行状态不在本轮核实范围，未部署或发布。
 - 状态来源：[模块任务入口](tasks/README.md)中七个模块的条目是未完成任务唯一状态源；已完成结果见 [COMPLETED](tasks/COMPLETED.md)，执行与独审／精确集成规则见 [WORKFLOW](tasks/WORKFLOW.md)。本页只作模块摘要，证据仍须核对实际提交。
 - **已完成**：限定范围已完成实现、独立审计和精确集成；用户批准的 PoC 验收例外单列说明，不等于整阶段或正式端到端通过。
 - **开发中**：已有实现但父功能尚未闭环；**未开始**：尚未启动功能实现；**待验收**：实际环境验证未完成；**受阻**：缺少相关外部条件；**后置**：尚未满足启动门槛。
-- 当前后端调度证据见 [BACKEND](tasks/BACKEND.md)：2026-10-26 AUTH、BE-02-BOT 与 [附件 STORAGE 准备](tasks/COMPLETED.md#g5-be05-storage) 已完成独审和本地精确集成；[HTTP01 叶](tasks/COMPLETED.md#g5-be01-http) 也已完成 A02 PASS 与本地精确集成；[BE-01 既定现有后端父范围](tasks/COMPLETED.md#g5-be01) 经 COMPOSE R01／A01／I01 收口；BE-02／BE-05-01 仍未闭环，全局两实例门槛仍 pending；其他模块运行状态不在本轮核实范围。会话结束后不承诺后台运行；契约、任务卡或准备报告存在，不计作运行时功能完成。
+- 当前后端调度证据见 [BACKEND](tasks/BACKEND.md)：2026-10-26 AUTH、BE-02-BOT 与 [附件 STORAGE 准备](tasks/COMPLETED.md#g5-be05-storage) 已完成独审和本地精确集成；[HTTP01 叶](tasks/COMPLETED.md#g5-be01-http) 也已完成 A02 PASS 与本地精确集成；[BE-01 既定现有后端父范围](tasks/COMPLETED.md#g5-be01) 经 COMPOSE R01／A01／I01 收口；BE-02 限定父组合已另行闭环，BE-05-01 仍未完成，全局两实例门槛仍 pending；其他模块运行状态不在本轮核实范围。会话结束后不承诺后台运行；契约、任务卡或准备报告存在，不计作运行时功能完成。
 
 ## 1. Android 程序
 
@@ -35,7 +35,7 @@
 
 Bot Hub 只负责消息传输、存储和路由，不执行业务命令或 MCP 工具。
 
-Debian 恢复：从准确快照及已有 WIP 接续，权威目标已迁回项目根 resume；推送 STORAGE、共享写准入修复及 [ADMIN 有限文本 HTTP](tasks/COMPLETED.md#g5-be02-admin) 均完成独审／精确集成。固定 `665edd7` 的全服普通／race／vet／build 与 A04 独立六组真实 HTTP＋SQLite均 PASS，关闭 ADMIN-A03-B01；额度中断部分输出按未完整结果保留，不算开发 FAIL／whole PASS。父 BE-02 的 R01 在固定 `15aa3cd…` 完成双生产入口外部断言及普通／相关 race 六命令 PASS，现为 review 待不同 A01／I01；COMMIT companion 与独立 HTTP 回滚分层记录，同次 HTTP 事务内部直接观测仍 NOT_RUN，证据充分性待审，父项不标 done。BE-10-01-HTTP 保持 running，阶段 1 `3471a3b…` handler 六组普通 PASS，阶段 2 checkpoint `2c7038a…` 的 router／五组生产装配短普通均完整 PASS；whole 普通／相关 race／vet／build及独审／I01仍待补齐，不能以短检查代验收。父推送／HTTP 及跨端门槛仍未完成，未 push、部署、发布或创建完成标记。
+Debian 恢复：推送 STORAGE、共享写准入修复及 ADMIN 有限文本 HTTP 均已独审／精确集成；[BE-02 原四项有限父组合](tasks/COMPLETED.md#g5-be02-compose) 也已由 R01 实际双入口普通／race、不同 A01 PASS 和 I01 等值核收完成。COMMIT companion／同 DDL 生产 HTTP 回滚的配对方法经 A01 判断充分，同次 HTTP 内部直接观测仍 NOT_RUN，不改写为已直接观测；HTTP jobs=0／未来范围仍保留。BE-10-01-HTTP 仍 running，`2c7038a…` 短检查、全服普通137.877秒和 vet／build已 PASS，新相关 race 未形成完整结果、独审／I01待补，不据此完成父推送或跨端门槛。历史失败与额度中断事实保留，未 push、部署、发布或创建完成标记。
 
 ### 已完成
 
@@ -52,13 +52,13 @@ Debian 恢复：从准确快照及已有 WIP 接续，权威目标已迁回项�
 - **已完成｜认证入口与实例事务绑定（AUTH01）**：A02 固定修复 SHA 独审 PASS，A01-001／002 关闭；已精确集成目标 `work` 至 `1aa0aa9e0c390a46a7293cae56410e0baae8ce71`。仅 AUTH 子范围完成，完整 G1 仍 pending。见[完成证据](tasks/COMPLETED.md#g5-be01-auth)。
 - **已完成｜Bot 正式创建 HTTP（BE-02-BOT）**：当前有限 plain/markdown 文本入口已独审并精确集成 `907c2a4dbf3a8774bcd438fb22b2381def7394a5`；保留并行 race 夹具 SQLITE_BUSY 首轮失败及串行复验 PASS，404／Webhook 限制见[完成证据](tasks/COMPLETED.md#g5-be02-bot)。
 - **已完成｜管理员正式创建 HTTP（BE-02-ADMIN）**：完整 WIP／修复链在准确 `665edd7…` 组合取得 A04 PASS、全服普通／race／vet／build PASS、I01 精确合入；仅当前有限 plain／markdown 文本与持久化回执，父组合及未来附件／引用／按钮／跨端仍未完成。见[完成证据](tasks/COMPLETED.md#g5-be02-admin)。
+- **已完成｜正式幂等创建既定有限父组合（P05-02／BE-02）**：生产 Bot＋管理员 HTTP／SQLite 的提交后回执、丢响应重试、同键异内容409、token轮换稳定身份经独立 R01／A01／I01 收口；保留 plain／markdown、持久化回执、HTTP jobs=0与 COMMIT 方法限制，不等于正式 reset HTTP／Webhook／附件／引用／按钮／ACK 已实现。见[完整完成证据](tasks/COMPLETED.md#g5-be02-compose)。
 - **已完成｜附件流式持久化准备（BE-05-01-STORAGE）**：staging/ready、稳定身份去重及活动尝试 fencing 已独审并精确集成 `064807f9e5e126f48c9360d4d02a40fc209f790e`；仅存储准备，真实上传未接线。见[完成证据](tasks/COMPLETED.md#g5-be05-storage)。
 - **已完成｜公开探测与真实路由 HTTP 子范围（HTTP01）**：A02 固定 `d8706747…` PASS，A01-001 关闭；实现／修复精确集成至 `cf2c8b49b4b5338e58e4b9d6e9698e5e648bdc31`。历史 HTTP/2 自测与并发超时 FAIL、串行 PASS 和未测限制见[完成证据](tasks/COMPLETED.md#g5-be01-http)；现有后端父范围另见 [BE-01](tasks/COMPLETED.md#g5-be01)。
 - **已完成｜实例绑定现有后端父范围（BE-01）**：公开 probe＋八个现有 auth／device／admin-bot 路由经独立 COMPOSE R01／A01 与 I01 精确组合核实 PASS；保留既定 G1 瞬切窗口。见[父验收与限制](tasks/COMPLETED.md#g5-be01)。Android／真机／跨端、未来附件／WS／代理验收仍 NOT_RUN，全局 G-INSTANCE-RUNTIME／G-INSTANCE-COMPOSITION 仍 pending。
 
 ### 未完成
 
-- **开发中｜正式幂等创建父功能（P05-02）**：存储基础、BE-02-BOT 与 [BE-02-ADMIN 有限文本入口](tasks/COMPLETED.md#g5-be02-admin) 已完成独审及精确集成；ADMIN 完整 WIP 链经 A04／I01 收口，准确 `665edd7` 全服 race PASS，旧基线 SQLITE_BUSY 根因及修复证据保留。父四项真实 Bot＋管理员 HTTP／SQLite 组合 R01／独审／准确组合仍待完成，不因子叶 done 自动完成。
 - **未开始｜Bot 生命周期与权限收口**：重置／删除正式 HTTP、领取租约／等待请求／投递队列完整联动，以及身份权限整体矩阵（P04-08）。
 - **未开始｜其余消息功能**：历史分页、引用和共享已读、CAS 编辑、标准 JSON Webhook、按钮回调独立事件及综合故障回归。
 - **开发中｜附件功能**：流式持久化准备已完成；真实上传 HTTP／Bot-first／Android／设置路由仍待派发接线及本端点 G1 验收，父 BE-05-01 未完成；关联权限与保护引用、下载／Range、安全响应、启动恢复及孤儿回收仍未开始。

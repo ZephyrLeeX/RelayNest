@@ -215,6 +215,41 @@ G1 已批准生命周期：Android 先验证实例 ID 再读取密码/Bearer，�
 
 commit后201 ClientMessageReceipt含原message/delivery_id，no-store；同有效管理员换会话仍同作用域，重放前核当前授权。错误同Bot分支并保实例错误，接受G1瞬切字节窗口。检查真实HTTP+SQLite丢响应重试/重新登录同键不增消息/投递/不可变事件/序号/changes/job，异内容409；任一步/commit失败全回滚；缺/重复/畸形/错ID无副作用，事务中ID/会话/代次失效拒绝，probe A切B不认证/不执行；Web/Bot误用及管理/设备/health非回归。必跑httpapi/messages/idempotency/auth/cmd测试、相关race、go vet ./...、go test -race -count=1 ./...。
 
+<a id="g5-be02-compose"></a>
+
+### G5 BE-02 正式幂等创建与回执有限父组合
+
+- 原 ID：`P05-02`；类型：有限父收口；状态：`done`（2026-10-27，总调度依据 R01 实际双入口组合、不同 A01 PASS 与 I01 等值核收 PASS，从 review 经 integrating 完成归档）。原 Bot／ADMIN 两叶早于本父完成，其历史记录中的“父未闭环”保留为当时状态，不靠子项 done 自动完成父项。
+- 四项原验收均由真实生产 Bot＋管理员 HTTP／SQLite 独立组合收口：**提交后才回执；丢失响应重试不重复；同键异内容 409；Token 重置不更换稳定身份作用域**。本次没有新增产品源码／迁移或拼入未审推送 HTTP `2c7038a…`。
+- R01 Researcher `/root/be02_compose_prep` 的固定源码为 `15aa3cd7e64db235102c051f78ec7e4801ddb764`，证据快照 `f915c86504a1036e145c57757810116c95c6a8b6`；六条普通／相关 race 均完整 exit 0，生产装配、计数与范围详见下方保留的原 R01 快照。只在 `/tmp` 追加测试，原 77924 字节测试前缀保留，overlay SHA256 `e5a00a42acdd0876e023bf2c3f428cd4576a87467aa07166c62c8fd2ce688935`；原 v1 私有 DTO 编译失败／v2 修测试 struct 后通过与额度阶段均保留，不将其冒称生产失败或重跑过的 whole 矩阵。
+- 独立 **BE-02-COMPOSE-A01 PASS**：Auditor `/root/be02_compose_audit` 固定上述 `f915c865…` 证据快照，核 source15aa／overlay e5a／R01 六条命令，独立只复跑 `TestBE02ComposeProduction／TestBE02ComposeFaults`，exit 0／5.739 秒。前后源码仍 15aa、树 clean／所有输入与 overlay 同一；独立日志 SHA256 `bed72dc83481be11c4cd301bc697777c42d1d99f20b92501f20232472e19cf52`。证据 `/tmp/relaynest-be02-compose-a01-20261027-113300/{inputs.json,independent.log,post.json}`。
+- **COMMIT 方法与限制**：A01 结合真实源码提交／回执顺序、延迟 FK companion 事务内部到达 COMMIT 的直接证据，以及同 DDL 另一生产 HTTP 503／完整回滚的配对证据，判断足以覆盖原“提交后才回执”验收，无需新增生产 hook。**未直接观测同一次 HTTP 事务内部已到达 COMMIT，该直接内部观测仍为 NOT_RUN；companion 不等于 HTTP 内部观测，本次不把方法判断改写为直接实测。**
+- **BE-02-COMPOSE-I01 PASS**：Integrator `/root/admin_i01_resume` 独占 root 文档／index，仅核收既有精确组合。归档前 root `resume/backend-20261026@f915c865…` 与受测 source15aa／完整 whole 已测 `665edd785d8784ae0e3304d3d3bdfed2d474f872` 的 server tree `032e99f18fe47e10c8c7418138b567a45413d1e8`、Web tree `a93c7865a737912c8833d05df5ebf407b296c378` 相同；go.mod／sum、九迁移和真实 embed 逐文件 SHA256 一致，全部既定依赖与 Bot／ADMIN 子叶已为目标祖先。复核 R01 六完整 exit 0、原测试前缀与日志 hash、A01 映射／退出码正确；没有新产品提交、冲突或需重放的 feature，未重新运行 Go／npm／whole／build，而准确复用同业务源码既有 665 全服普通／race／vet／build 及 I01 root build 证据。实际核收 `/tmp/relaynest-be02-compose-i01-20261027-113727/checks.json`。
+- 完成范围仍仅 plain／markdown、无附件／引用／按钮，回执仅持久化而非 ACK／已读／业务成功。Bot／Admin 计数来自各自独立 fixture，不是同库顺序累计；HTTP `jobs=0`，不声称生产 HTTP 非零正式推送待办已验收。正式 reset HTTP、Webhook、附件／引用／按钮、后续 BE-04 等未实现能力及 Android／跨端实例门槛均不自动完成；未分配新迁移，0009 继续原占用。Bot Hub 不执行业务命令或 MCP。
+- 本次只将原父证据移入本页并修相应完成依赖链接；其他完成叶不重做，后继任务仍待各自规划／派发。未 push、部署或创建 `.codex-task-done`，本父 done 不代表全后端完成。
+
+#### 原 R01 证据快照与原验收（f915 时，保留当时 review 状态）
+
+以下“待 A01／I01”属于历史快照；最终闭环以上方 A01／I01 为准。观测限制、独立 fixture 计数和原验收原样保留，不将配对证据改写为同次 HTTP 内部直接观测。
+
+- 子项证据：[Bot 有限文本 HTTP](#g5-be02-bot) 与 [ADMIN 有限文本 HTTP](#g5-be02-admin) 均已完成独审及精确集成；父项原四项真实组合验收仍未闭环。
+- 父组合 R01 证据已交付，状态由 `running` 转为 `review`（2026-10-27，总调度依据 Backend Researcher `/root/be02_compose_prep` 的实际结果，仅提交证据快照待不同 A01；尚未独审／I01，不标 done）。固定源码／独立验证树为 `15aa3cd7e64db235102c051f78ec7e4801ddb764` / `.worktrees/backend-be02-compose-r01` / `verify/be02-compose-r01-20261027`，不消费未集成 HTTP WIP；本次快照仅元数据，源码与该固定对象及已测 `665edd7…` 的 server／Web 一致。
+- R01 使用生产 `authenticationDependencies → httpapi.New → 真实 TLS／HTTP → SQLite` 双入口，补齐此前 Bot 单路由 mux 四项证据与生产装配仅 smoke 的父组合缺口，不重做或撤销已完成子叶。Researcher 报告四项外部可观察断言 **PASS**：201／no-store 回执与已持久化消息／幂等对应，管理员 delivery／不可变 event／payload 序号一致；首响应完全不读取，确认数据库已提交后断连，再做原键重试。Bot 重开生产装配、真实仓储 Rotate／旧 token 拒绝，管理员真实 logout／login，同键异内容 409 IDEMPOTENCY_CONFLICT、当前降权 403 均在动作后的基准快照上验证回放零增量；轮换／登录／降权自身的合法变更不混称回放无副作用。仓储 Rotate 不代表正式 reset HTTP 已实现。
+- 计数向量为 `[sum(bot_seq), message, delivery, distinct event, changes, jobs, idempotency, changehigh]`：Bot、Admin **各自独立入口／fixture** 的初始基线均为 `[0,0,0,0,1,0,0,1]`；Bot 首提交为 `[1,1,0,0,2,0,1,2]`，Admin 首提交为 `[1,1,1,1,3,0,1,3]`。这些不是同库顺序累计；动作后重试前后完整状态／匿名事件 hash 相同。HTTP fixture `jobs=0`，不能宣称生产 HTTP 非零推送待办已验收；非零 job 原子性只准确引用本轮已实际通过的 `messages/TestIdempotentFaultsAreAtomic` 等真实仓储检查。
+- 故障补证：11 类真实 HTTP 故障均得到 503／no-store、无成功回执、完整状态不变。**COMMIT 观测限制：companion 真实仓储事务中直接观测消息／幂等／延迟违规行各 1、业务 callback 返回 nil，随后真实延迟 FK COMMIT 失败；另一条生产 HTTP 在相同故障 DDL 下得到 503 与全回滚。未直接观测同一次 HTTP 事务内部已达 COMMIT，该直接内部观测仍为 NOT_RUN。不得把 companion 称为 HTTP 内部观测，配对证据是否充分由不同 A01 决定，不能据此自行豁免验收门槛。**
+- 实际执行 Go 1.27.3 普通三条及相关 race 三条全部 exit 0：cmd 普通／race `13.837／46.252` 秒，httpapi `2.241／6.366` 秒，messages `1.589／10.286` 秒。固定证据 `/tmp/relaynest-be02-compose-r01/{evidence.json,final-inputs.json,commands.jsonl,main_test.go,overlay.json}`；最终追加测试副本 SHA256 `e5a00a42acdd0876e023bf2c3f428cd4576a87467aa07166c62c8fd2ce688935`，原 `main_test.go` 的 77924 字节前缀逐字节保留（原 SHA256 `272d02e3064dd92c1f0cb4606eb79bb5bb338a4d8fc4c3051318284b21325cf7`）。日志 hash 已独立核对，只摘要计数、状态及匿名 hash，原始正文／token／credential 不入库。
+- 保留历史：R01 v1 仅 `/tmp` overlay 误用私有 DTO，编译 exit 1；改为本地 decode struct 的 v2 后上述六命令 PASS，原 `ordinary-cmd.log`、`main_test.v1.go.txt`、`final-inputs.v1.json` 均保留，不能算生产源码失败。额度中断期间未产生本快照或后续 A01／I01 结果，不把已完成六命令改记失败，也不冒称已审完。准确复用已测 `665edd7…` 全服普通／race／vet／build：相同 server／Web tree、go.mod／sum、九迁移及真实 embed 输入 hash 见 `final-inputs.json` 引用的准备证据，whole 矩阵不是本 R01 新跑。
+- R01 未改变生产源码、SQL、原超时或断言；范围仍仅 plain／markdown、无附件／引用／按钮／Webhook／ACK。父四项原验收与依赖保留，正式 reset HTTP、HTTP 非零推送与跨端门槛均不据此自动通过。
+
+- 旧ID：`P05-02`；类型：父收口，不整组派发；状态：`review`（R01 已交付，待不同 A01 审证据及 I01 准确组合；父收口未完成，不标 done）。
+- 依赖：[已完成基线 P05-01](#g2)、[已完成基线 P05-02-PLAN01](#g3)、[已完成基线 P05-02-S01](#g3)、[已完成 BE-02-BOT](#g5-be02-bot)、[已完成 BE-02-ADMIN](#g5-be02-admin)。
+- 允许范围：`server/internal/messages/**`、`server/internal/idempotency/**`、`server/migrations/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+父卡保留四项原验收：提交后才回执；丢失响应重试不重复；同键异内容409；Token重置不更换稳定身份作用域。存储基础虽已完成，必须组合真实 Bot 与管理员 HTTP+SQLite 复验。
+
+当前有限阶段仅 plain/markdown 文本且无附件/引用/按钮；其他输入显式拒绝并记录未实现，不能吞字段或声称完整 CreateMessageRequest 通过。后续引用、附件、按钮、标准Webhook的阶段门槛分别由 BE-04/05 保留。回执仅代表持久化，不代表应用ACK、已读或业务成功。
+
 <a id="g5-be05-storage"></a>
 
 ### G5 BE-05-01-STORAGE 流式持久化状态机准备
