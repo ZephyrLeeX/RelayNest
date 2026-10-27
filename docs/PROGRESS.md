@@ -17,8 +17,6 @@
 - **已完成｜登录局部基础（P08-04-S01～S03）**：HTTPS 网络层与安装身份、加密会话存储、登录 UI 的本地组合分别审计集成。仅为局部基础，不代表完整登录父功能完成。
 - **已完成｜FCM 最小 PoC（P2）**：一加 Ace 3 Pro、Android 16／ColorOS 16 上的 data-only 提示有实测证据；打开应用补偿和 WorkManager 周期调度／模拟落盘已验证。G-FCM 限定放行，非真实 Hub 最终同步或正式 AC-09。见[门槛结论](tasks/COMPLETED.md#a2)及[独立审计](tasks/COMPLETED.md#a2)。
 
-- **已完成｜历史／详情／同 Bot 引用只读事务仓储准备**：[HISTORY-STORAGE](tasks/COMPLETED.md#g5-be04-history-storage) 源必检和独立八组测试 PASS，I01 源码／输入等值复用检查后精确集成；未声称新跑全服普通或提供历史 HTTP。
-
 ### 未完成
 
 - **开发中｜Hub 登录与安全会话父功能（P08-04）**：局部基础已完成；服务端实例绑定、新 G1 探测接入及会话升级、正式组合仍未闭环。
@@ -58,6 +56,8 @@ Debian 恢复：推送 STORAGE、共享写准入修复及 ADMIN 有限文本 HTT
 - **已完成｜附件流式持久化准备（BE-05-01-STORAGE）**：staging/ready、稳定身份去重及活动尝试 fencing 已独审并精确集成 `064807f9e5e126f48c9360d4d02a40fc209f790e`；仅存储准备，真实上传未接线。见[完成证据](tasks/COMPLETED.md#g5-be05-storage)。
 - **已完成｜公开探测与真实路由 HTTP 子范围（HTTP01）**：A02 固定 `d8706747…` PASS，A01-001 关闭；实现／修复精确集成至 `cf2c8b49b4b5338e58e4b9d6e9698e5e648bdc31`。历史 HTTP/2 自测与并发超时 FAIL、串行 PASS 和未测限制见[完成证据](tasks/COMPLETED.md#g5-be01-http)；现有后端父范围另见 [BE-01](tasks/COMPLETED.md#g5-be01)。
 - **已完成｜实例绑定现有后端父范围（BE-01）**：公开 probe＋八个现有 auth／device／admin-bot 路由经独立 COMPOSE R01／A01 与 I01 精确组合核实 PASS；保留既定 G1 瞬切窗口。见[父验收与限制](tasks/COMPLETED.md#g5-be01)。Android／真机／跨端、未来附件／WS／代理验收仍 NOT_RUN，全局 G-INSTANCE-RUNTIME／G-INSTANCE-COMPOSITION 仍 pending。
+
+- **已完成｜历史／详情／同 Bot 引用只读事务仓储准备**：[HISTORY-STORAGE](tasks/COMPLETED.md#g5-be04-history-storage) 源必检和独立八组测试 PASS，I01 源码／输入等值复用检查后精确集成；未声称新跑全服普通或提供历史 HTTP。
 
 ### 未完成
 
