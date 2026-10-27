@@ -194,6 +194,16 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 已完成有限子叶：[完整 source 链、实际检查、A01／I01 映射及范围限制](COMPLETED.md#g5-be04-history-storage)。仅仓储准备已集成；父 BE-04-01 仍 `running`、未完成原历史／引用／共享已读验收，后续 REFERENCE-CREATE／READ-STORAGE／HTTP 分包；不开放创建引用、不增加共享已读／附件投影／公开 cursor／HTTP，初始共享已读策略待具体设计。0009 保留，0010 未分配。
 
+<a id="be-04-01-reference-create"></a>
+
+#### BE-04-01-REFERENCE-CREATE 既有双入口文本创建接通同 Bot 回复引用
+
+- 类型：有限子叶；状态：`ready`（2026-10-27，总调度采纳独立 Planner 拆分，准备角色 `/root/admin_i01_resume`，Implementer 尚未派发）。依赖[BE-02 限定父组合](COMPLETED.md#g5-be02-compose)和[HISTORY-STORAGE](COMPLETED.md#g5-be04-history-storage)已完成并精确集成至 `6e5ca4b7b7ca8b11d8a550bcf35627499132c1e3`。准备前 root `471e30989dc820afcae6d22e4f52ab9a4270a4fe`，实际实施固定基线为本次纯元数据提交后的准确 HEAD；隔离树 `.worktrees/backend-be04-reference`／分支 `impl/backend-be04-reference-20261027`，源码锁待正式派发。源码尚未实施，Go 编译／测试、独审／精确集成均 **NOT_RUN**。
+- 单目标：既有 Bot API／Android 文本创建支持同 Bot 回复引用，无新路由。首次请求在当前授权、基本校验／原摘要、幂等查询之后验证引用；命中旧 key 原样重放，源删除后旧成功 key 仍返回原 receipt／delivery 且无新增。首次引用在同事务序号分配前校验，双引用列同时写入，message.created 保留 original 引用 ID；两 HTTP 回执复用原 originalID。跨 Bot／合法不存在引用统一 404 RESOURCE_NOT_FOUND，管理员错误白名单须覆盖；新增 UUID 结构／格式按既有400／422规则，不创设新合同。
+- 允许范围：四主文件 `server/internal/messages/{create.go,repository.go,pending.go}` 和 `server/internal/httpapi/messages.go`；必要同包测试、`server/internal/httpapi/messages_test.go`、仅新 `server/cmd/relaynest/message_references_test.go`。SQL／API／依赖／已集成 history及reference／auth／storage／changes／router／main生产与旧 main_test 全部只读；公共 router／main 写锁仍属 HTTP Actor，本叶不得触及其树或 WIP。
+- 验收：原幂等语义、真实 B01 授权、Bot API＋Android 双入口真实 HTTP／SQLite及原子回滚；同 Bot 引用成功、跨 Bot／不存在一致拒绝、源删后幂等重试无新增，回执／delivery／message.created 的 original 引用一致；失败不得写序号／消息／投递／changes／幂等或泄露正文。仅 Bot API／Android 新引用，Webhook identity 新引用仍不支持，不扩大附件／按钮或重写 BE-02 历史完成范围。
+- 限制与后包：引用支持当前仍未完成，父 BE-04-01 继续 running，READ-STORAGE／历史 HTTP／最终父组合另包；共享已读初始策略待具体设计。无需迁移、不占0010，0009永久保留给 push。准备不运行 Go／npm／validator，当前重型窗口归 HTTP 最终 df CI。
+
 <a id="be-04-02"></a>
 
 ### BE-04-02 应用消息 CAS 编辑
