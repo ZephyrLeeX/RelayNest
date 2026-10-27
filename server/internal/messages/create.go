@@ -33,7 +33,7 @@ type Button struct {
 }
 
 // CreateRequest 对应冻结创建载荷，传输层仍须拒绝未知字段及非法 null。
-// 有限文本路径显式拒绝其余非空字段，不静默丢弃未来业务输入。
+// 文本路径支持同 Bot 回复，仍显式拒绝附件、按钮等未接通业务输入。
 type CreateRequest struct {
 	Format           string                `json:"format"`
 	Text             string                `json:"text"`
@@ -65,6 +65,9 @@ func validateCreate(botID, key string, in CreateRequest) error {
 	}
 	if len(in.Text) > 64*1024 {
 		return ErrTooLarge
+	}
+	if in.ReplyToMessageID != nil && !idempotency.ValidKey(*in.ReplyToMessageID) {
+		return ErrInvalid
 	}
 	if (in.Format != "plain" && in.Format != "markdown") || !utf8.ValidString(in.Text) {
 		return ErrInvalid
@@ -143,10 +146,10 @@ func (r *Repository) createIdempotentTx(ctx context.Context, tx *sql.Tx, scope i
 		return original, nil
 	}
 	// 查重后才进入有限业务支持校验；同键不同有效字段必须报冲突。
-	if len(in.Attachments) != 0 || len(in.Buttons) != 0 || in.ReplyToMessageID != nil {
+	if len(in.Attachments) != 0 || len(in.Buttons) != 0 || (scope.Operation == CreateWebhookMessage && in.ReplyToMessageID != nil) {
 		return Created{}, ErrUnsupported
 	}
-	out, err := create(TextInput{BotID: botID, Format: in.Format, Text: in.Text, PushTargets: targets})
+	out, err := create(TextInput{BotID: botID, Format: in.Format, Text: in.Text, ReplyToMessageID: in.ReplyToMessageID, PushTargets: targets})
 	if err != nil {
 		return Created{}, err
 	}

@@ -8,23 +8,25 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"strings"
 	"time"
 	"unicode/utf8"
 
 	"relaynest/server/internal/bots"
 	"relaynest/server/internal/changes"
+	"relaynest/server/internal/idempotency"
 	"relaynest/server/internal/storage"
 )
 
 var (
 	ErrInvalid           = errors.New("messages: invalid input or transaction")
-	ErrUnsupported       = errors.New("messages: attachments and references not supported")
+	ErrUnsupported       = errors.New("messages: unsupported message features")
 	ErrSequenceExhausted = errors.New("messages: bot sequence exhausted")
 	ErrAffectedRows      = errors.New("messages: unexpected affected rows")
 	ErrPushTarget        = errors.New("messages: invalid push target")
 )
 
-// TextInput 仅承接有限文本路径；正式业务校验、幂等及附件/引用由后续任务提供。
+// TextInput 承接文本及同 Bot 回复引用；附件仍由后续任务提供。
 // PushTargets 是调用方已选出的有界目标，不代表订阅或推送注册枚举结果。
 type TextInput struct {
 	BotID            string
@@ -89,6 +91,10 @@ func (r *Repository) CreateApplicationTx(ctx context.Context, tx *sql.Tx, identi
 	if err := bots.AuthorizeTx(ctx, tx, identity, in.BotID, bots.Send); err != nil {
 		return Created{}, err
 	}
+	// Webhook 共用文本 primitive，但本阶段不开放其引用创建。
+	if identity.Kind() == bots.WebhookKey && in.ReplyToMessageID != nil {
+		return Created{}, ErrUnsupported
+	}
 	return r.createTx(ctx, tx, in, Application)
 }
 
@@ -124,11 +130,23 @@ func requireOne(result sql.Result, err error) error {
 }
 
 func (r *Repository) createTx(ctx context.Context, tx *sql.Tx, in TextInput, sender Sender) (Created, error) {
-	if len(in.Attachments) != 0 || in.ReplyToMessageID != nil {
+	if len(in.Attachments) != 0 {
 		return Created{}, ErrUnsupported
 	}
 	if in.BotID == "" || (in.Format != "plain" && in.Format != "markdown") || len(in.Text) == 0 || len(in.Text) > 64*1024 || !utf8.ValidString(in.Text) || len(in.PushTargets) > 100 {
 		return Created{}, ErrInvalid
+	}
+	// 引用检查与序号分配共用写事务，避免源消息删除竞态；幂等层已先完成查重。
+	var reply *string
+	if in.ReplyToMessageID != nil {
+		if !idempotency.ValidKey(*in.ReplyToMessageID) {
+			return Created{}, ErrInvalid
+		}
+		id := strings.ToLower(*in.ReplyToMessageID)
+		if err := r.ValidateReplyTx(ctx, tx, in.BotID, id); err != nil {
+			return Created{}, err
+		}
+		reply = &id
 	}
 	now := r.now().UTC()
 	if now.IsZero() || now.Year() < 1 || now.Year() > 9999 {
@@ -149,9 +167,9 @@ func (r *Repository) createTx(ctx context.Context, tx *sql.Tx, in TextInput, sen
 	if err = requireOne(tx.ExecContext(ctx, "UPDATE bots SET bot_seq=? WHERE id=? AND bot_seq=?", seq+1, in.BotID, seq)); err != nil {
 		return Created{}, err
 	}
-	m := Message{ID: id, BotID: in.BotID, BotSeq: seq + 1, Sender: sender, Revision: 1, Format: in.Format, Text: in.Text, ButtonsJSON: []byte("[]"), CreatedAt: now, UpdatedAt: now}
+	m := Message{ID: id, BotID: in.BotID, BotSeq: seq + 1, Sender: sender, Revision: 1, Format: in.Format, Text: in.Text, ButtonsJSON: []byte("[]"), ReplyToMessageID: reply, OriginalReplyToMessageID: reply, CreatedAt: now, UpdatedAt: now}
 	stamp := now.Format(time.RFC3339Nano)
-	if err = requireOne(tx.ExecContext(ctx, `INSERT INTO messages(id,bot_id,bot_seq,sender,revision,format,text,buttons_json,created_at,updated_at) VALUES(?,?,?,?,1,?,?,'[]',?,?)`, id, in.BotID, m.BotSeq, sender, m.Format, m.Text, stamp, stamp)); err != nil {
+	if err = requireOne(tx.ExecContext(ctx, `INSERT INTO messages(id,bot_id,bot_seq,sender,revision,format,text,buttons_json,reply_to_message_id,original_reply_to_message_id,created_at,updated_at) VALUES(?,?,?,?,1,?,?,'[]',?,?,?,?)`, id, in.BotID, m.BotSeq, sender, m.Format, m.Text, reply, reply, stamp, stamp)); err != nil {
 		return Created{}, err
 	}
 	createdSeq, err := changes.Append(ctx, tx, changes.Metadata{Type: changes.MessageUpsert, EntityID: id, Revision: 1, BotID: &m.BotID, CreatedAt: now})

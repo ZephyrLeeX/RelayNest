@@ -11,7 +11,7 @@ import (
 )
 
 // 快照按冻结 MessageDeliveryEvent 写入全部 Message 键；内部模型不是 HTTP DTO。
-// 有限文本路径固定空附件/按钮和 null 引用，序号保持十进制字符串。
+// 文本路径固定空附件/按钮；引用保留原 ID，源删除不改变快照，序号为十进制字符串。
 type deliveryMessage struct {
 	ID               string     `json:"id"`
 	BotID            string     `json:"bot_id"`
@@ -39,7 +39,7 @@ func (r *Repository) enqueueDelivery(ctx context.Context, tx *sql.Tx, m Message,
 	payload, err := json.Marshal(struct {
 		Type    string          `json:"type"`
 		Message deliveryMessage `json:"message"`
-	}{"message.created", deliveryMessage{m.ID, m.BotID, strconv.FormatInt(m.BotSeq, 10), m.Revision, m.Sender, m.Format, m.Text, []string{}, nil, [][]string{}, m.CreatedAt, m.UpdatedAt}})
+	}{"message.created", deliveryMessage{m.ID, m.BotID, strconv.FormatInt(m.BotSeq, 10), m.Revision, m.Sender, m.Format, m.Text, []string{}, m.OriginalReplyToMessageID, [][]string{}, m.CreatedAt, m.UpdatedAt}})
 	if err != nil {
 		return nil, err
 	}

@@ -63,7 +63,7 @@ func (h *MessageHandler) CreateClientMessage(w http.ResponseWriter, r *http.Requ
 	})
 	if err != nil {
 		switch {
-		case errors.Is(err, bots.ErrForbidden), errors.Is(err, bots.ErrNotFound), errors.Is(err, idempotency.ErrConflict), errors.Is(err, idempotency.ErrExpired), errors.Is(err, messages.ErrTooLarge), errors.Is(err, messages.ErrInvalid), errors.Is(err, messages.ErrUnsupported):
+		case errors.Is(err, bots.ErrForbidden), errors.Is(err, bots.ErrNotFound), errors.Is(err, idempotency.ErrConflict), errors.Is(err, idempotency.ErrExpired), errors.Is(err, messages.ErrTooLarge), errors.Is(err, messages.ErrInvalid), errors.Is(err, messages.ErrUnsupported), errors.Is(err, messages.ErrReplyUnavailable):
 			messageError(w, err)
 		default:
 			access.SessionError(w, err)
@@ -145,7 +145,7 @@ func messageError(w http.ResponseWriter, err error) {
 		botError(w, 401, "UNAUTHORIZED")
 	case errors.Is(err, bots.ErrForbidden):
 		botError(w, 403, "FORBIDDEN")
-	case errors.Is(err, bots.ErrNotFound):
+	case errors.Is(err, bots.ErrNotFound), errors.Is(err, messages.ErrReplyUnavailable):
 		botError(w, 404, "RESOURCE_NOT_FOUND")
 	case errors.Is(err, idempotency.ErrConflict):
 		botError(w, 409, "IDEMPOTENCY_CONFLICT")

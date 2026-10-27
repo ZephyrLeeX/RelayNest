@@ -325,7 +325,7 @@ func TestCreateDigestFieldsAndNormalization(t *testing.T) {
 	}
 	url := "https://example.invalid"
 	callback := "x"
-	reply := "id"
+	reply := "11111111-1111-4111-8111-111111111111"
 	variants := []CreateRequest{base, base, base, base, base, base}
 	variants[0].Text += " "
 	variants[1].Format = "plain"
