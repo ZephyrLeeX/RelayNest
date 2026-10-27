@@ -169,6 +169,52 @@ G1 已批准生命周期：Android 先验证实例 ID 再读取密码/Bearer，�
 
 请求≤256KiB、UUIDv4幂等头；未知/结构400、语义422、超限413、未授权401、能力403、资源域404、异摘要409 IDEMPOTENCY_CONFLICT、墓碑410 RESOURCE_EXPIRED、存储503，遵循冻结Error/request_id/retryable及默认值摘要；日志不含凭据/正文。检查真实路由+SQLite丢首响应/重启同键仍同ID且不增序号/changes/job，并发同键/异内容、commit失败全回滚、API reset新Token同作用域旧Token拒绝、跨Bot不泄漏；当前授权/能力先于查重，实例头缺失/畸形/错误不影响Bot身份。必跑httpapi/messages/idempotency/bots/cmd测试、相关race、go vet ./...；Webhook未接线须记NOT_RUN。
 
+<a id="g5-be02-admin"></a>
+
+### G5 BE-02-ADMIN Android 管理员正式创建 HTTP（有限文本）
+
+- 原 ID：`P05-02-S03`；类型：有限 leaf；状态：`done`（2026-10-27，总调度依据完整 WIP 链 A04 PASS、准确组合全部必检及 I01 精确集成，从 integrating 归档）。仅 ADMIN 叶完成，父 [BE-02 四项组合验收](BACKEND.md#be-02) 尚未闭环，不据子项完成自动记父 done。
+- 完整原始实现／修复链：`a97cfcee014298c64e8468a7b9eb1d007b635e37 → 8ab66c847bf1a6e0c86592f90994679b6685c7e5 → c937602975c232c62a20808f3a376a86b2d84795 → 92404a1d3fee0b2516133867af585e68a94ce772`。最初 `8ab66c8` 仅环境迁移 WIP，不作为验收；后续审计覆盖完整五文件及准确组合，未只审／集成尾提交。
+- 准确组合基线：`f7e9daf415edfa4f051928820098765b04a661c9`，已包含推送 STORAGE／0009 及独立 [STORAGE-BUSY-01](#g5-storage-busy-01) 修复 `8a377840…／8d32f818…`；候选 `.worktrees/backend-admin-i01` / `integrate/backend-admin-i01-20261027@665edd785d8784ae0e3304d3d3bdfed2d474f872`。range-diff 三项均 `=`、无冲突；ADMIN 五文件与原 `92404a1` 逐字节一致，其余 server 与基线一致。明确本组合含九迁移及已审写准入，不将它与原八迁移 source 称为全树相同。
+
+| 原提交 | 准确组合映射 |
+| --- | --- |
+| `8ab66c847bf1a6e0c86592f90994679b6685c7e5` | `6357b706b3ea73786e1b0deb56a7406fd8926b87` |
+| `c937602975c232c62a20808f3a376a86b2d84795` | `76161d62aff9107ec0ec4fd02fd95cb2853d19c3` |
+| `92404a1d3fee0b2516133867af585e68a94ce772` | `665edd785d8784ae0e3304d3d3bdfed2d474f872` |
+
+- 额度中断证据：旧 `/tmp/relaynest-admin-i01-20261027/commands.jsonl` 已有同一 `665edd7` 六组真实 ADMIN HTTP＋SQLite PASS（exit 0／10.522 秒）、原 messages 并发／排队 race 五轮 PASS（exit 0／21.374 秒），准确复用而不冒称新跑。旧 full-test 仅部分包输出且无完整结束／退出码，记 **NOT_RUN（未形成完整结果）**；full-race／vet／build 无完整记录同记 NOT_RUN。额度中断不是开发 FAIL，不覆盖或删除该部分日志。
+- 恢复 Integrator `/root/admin_i01_resume` 在同一固定 `665edd7` 新开 `/tmp/relaynest-admin-i01-resume-20261027-062641/`，实际补齐 **PASS**：`go test -p 1 -count=1 ./...`（exit 0／123.983 秒）；`go test -race -p 1 -count=1 ./...`（exit 0／509.553 秒）；全服 `go vet ./...`（0.732 秒）、`go build ./...`（1.337 秒）；gofmt／diff／来源保护。锁版 Go 1.27.3、Node 22.23.2、npm 10.9.8 实测 PASS；同版 Web tree 与三文件真实 embed SHA256 核验 PASS，复用实际产物而不重复声称新构建。每命令起止、准确 SHA／环境／退出码见新目录 `commands.jsonl`，汇总 `result.json`，差异与保护证明 `source-checks.json`、`inputs.json`；原日志未覆盖。
+- 最终独审 **ADMIN-A04 PASS**：不同 Auditor `/root/admin_a04_resume` 固定 `665edd7`，核完整原 WIP／修复链、三项精确映射及已审 gate 基础；独立六组真实 HTTP＋SQLite PASS（exit 0／8.335 秒），并独立核完整全服普通／race／vet／build 退出 0。`ADMIN-A03-B01` 因准确组合全服 race 通过而关闭；旧 `ADMIN-A01-B01` 监听阻塞、`ADMIN-A02-01` 过期观察者夹具修正的失败与复验事实保留。独立证据 `/tmp/relaynest-admin-a04-resume-20261027-063856/{inputs.json,commands.jsonl,admin-http-independent.log,post.json}`。
+- I01 精确集成 **PASS**：获总调度正式授权后，Integrator `/root/admin_i01_resume` 再核 root 仅未跟踪 `.worktrees/`、候选 clean／同 SHA／同实际构建输入，将权威 `resume/backend-20261026` 从 `f7e9daf…` 安全 ff 到 `665edd785d8784ae0e3304d3d3bdfed2d474f872`。ff 后 root tree 与受审候选精确一致，原迁移／0009／gate 保留，root `go build ./...`、diff 检查 PASS，main ref 仍 `01c74a776b0b76fcc6616f60ae637a5a53f18384`；未重复 cherry-pick、未改业务逻辑。收尾证据 `/tmp/relaynest-admin-i01-final-20261027-064139/{pre.json,commands.jsonl,post.json,target-fast-forward.log,target-build.log}`。
+- 范围与限制：仅 Android AdminBearer 的 plain／markdown 无附件、引用、按钮消息创建；固定 administrator sender、真实 B01 同事务实例／会话／代次复核、当前 Bot receive 权限先于重放、提交后 201／no-store 原回执。回执仅代表持久化，不等于应用 ACK／已读／业务成功。父 BE-02 的 Bot＋Admin 四项组合 R01／独审／精确组合仍另行收口；未来 reset HTTP、完整 CreateMessageRequest／Webhook、附件及 Android／跨端实例门槛不据此完成。Bot Hub 不执行业务命令或 MCP。未 push、部署或创建 `.codex-task-done`。
+
+#### 历史实施、失败与原验收（保留当时结论）
+
+以下 OPEN／NOT_RUN／未集成字样均为当时状态，最终关闭与归档以上方 A04／I01 为准；保留原验收和所有失败，不将历史失败改写为从未发生。
+
+- 调度（2026-10-26）：owner Backend Orchestrator，固定基线 `a97cfcee014298c64e8468a7b9eb1d007b635e37` / 目标 `work`；BE-02-BOT `907c2a4dbf3a8774bcd438fb22b2381def7394a5` 与 PLAN01 精确集成 `50be58eaaba6c8918dbd7642d9ef06125f0dda07` 已验证祖先，完整 BE-01 既定现有后端父范围经 R01／A01／I01 归档，完成快照 `a97cfcee…`，业务组合 `cf2c8b49…`。
+- 派发准备：Backend Implementer，隔离 `/workspace/RelayNest-be02-admin` / `codex/be02-admin-20261026`；仅 httpapi/messages.go／router.go／cmd main.go／必要 messages/create.go 四主文件与相关指定测试，独占本树/index、messages HTTP/router/main 接线，不改 auth／SQL／API／Bot 分支。可与只改新 devices／0009 的推送集成并行；重型检查须等待推送 I01 释放。
+- Agent `/root/admin_message_implement` 已派发，开始隔离准备及实施，尚无新增独审／集成结论。
+- 环境迁移备份：用户已授权保存代码，现有五文件已独立 WIP 提交 `8ab66c847bf1a6e0c86592f90994679b6685c7e5`，远端入口 `recovery/backend-20261026-admin-wip`；不是功能完成提交，无新测试／审计结果。原 worker 不再运行，从现有代码继续，见本文件开头交接。
+
+- Debian 恢复实施：Implementer `/root/admin_implementer` 从 `8ab66c847bf1a6e0c86592f90994679b6685c7e5` 接续，在上述 ADMIN 隔离树提交 checkpoint `c937602975c232c62a20808f3a376a86b2d84795`，树 clean 并释放写权；未重写生产 WIP，仅修正 TLS 丢响应夹具、204 空响应断言并补八项授权失效回归。完整待验收链为 `a97cfcee014298c64e8468a7b9eb1d007b635e37 → 8ab66c8… → c937602…`，五文件整体纳入审计，不能只审尾提交。
+- 权限解除前检查：`go test -p 1 -run '^$' ./...`、全服 vet/build、gofmt/diff、messages/idempotency 普通 PASS；真实 cmd ADMIN 定向测试 FAIL，`go test -p 1 -race -count=1 ./...` 退出 1（240.8 秒），cmd/auth/httpapi 因 socket 权限失败，attachments/bots/changes/devices/health/idempotency/messages/storage/webui race PASS，未见 DATA RACE 报告但不等于全服 race PASS。新增 ADMIN 业务断言及完整真实 HTTP＋SQLite验收 NOT_RUN；尚无正式实施验收交接／精确集成。实际命令与退出码见 `/tmp/relaynest-admin-implementation/final-commands.txt`、`cmd-http.log`、`race-all.log`，这些为本轮临时证据，不冒称随 Git 保存。
+- ADMIN-A01：独立 Auditor `/root/admin_auditor` 固定 `c937602975c232c62a20808f3a376a86b2d84795`，审查上述完整五文件链，结论 **BLOCKED**。稳定阻塞 **ADMIN-A01-B01**：`server/cmd/relaynest/main_test.go:354、1757` 的真实 TLS 服务监听报 `operation not permitted`，业务断言未运行；静态未发现确定业务缺陷不等于 PASS。复验要求：同一固定 SHA 在可监听环境运行全部 ADMIN HTTP＋SQLite、相关普通／race及全服必检，再续独审、必要编号修复／重审和精确集成。
+- 权限解除后 A02／有限修复（2026-10-27，UTC+8）：新 Implementer `/root/admin_retry` 从 `c937602975c232c62a20808f3a376a86b2d84795` 接续；独立 Auditor `/root/admin_a02_retry` 对该 SHA 给出 **CHANGES_REQUIRED**，稳定问题 **ADMIN-A02-01** 为测试夹具使用过期实例观察。仅 `server/cmd/relaynest/main_test.go` 修复后提交 `92404a1d3fee0b2516133867af585e68a94ce772`（parent `c937602…`），未改生产代码／安全策略／冻结接口。完整候选链为 `a97cfcee014298c64e8468a7b9eb1d007b635e37 → 8ab66c847bf1a6e0c86592f90994679b6685c7e5 → c937602975c232c62a20808f3a376a86b2d84795 → 92404a1d3fee0b2516133867af585e68a94ce772`，不得只审或集成尾提交。
+- 本轮实施验证：真实六组 ADMIN HTTP＋SQLite、全服普通、vet/build、gofmt/diff **PASS**；全服串行 race **FAIL**（exit 1，454.120 秒），唯一失败为 `messages/TestIdempotentConcurrentSameKey` 在 `server/internal/messages/create_test.go:130` 报 `SQLITE_BUSY`（SQLite 3.53.4），其他全部包 PASS。无 DATA RACE 报告不等于全服 race PASS，不改既有断言／50ms 超时以制造通过。精确命令／退出码与实际新日志为 `/tmp/relaynest-admin-retry-20261027/commands.txt`、`full-race.log`；旧 socket／夹具失败仍保留。
+- A03 续独审：`/root/admin_a02_retry` 固定 `92404a1…` 审查上述完整链，静态无新增业务发现，独立六组真实 ClientMessage HTTP＋SQLite **PASS**，关闭 **ADMIN-A02-01** 与旧环境 **ADMIN-A01-B01**；但必检阻塞 **ADMIN-A03-B01** 仍 **OPEN**，因上述同键并发测试 SQLITE_BUSY，A03 最终结论为 **BLOCKED**，不能进入精确集成或标 done。独立证据为 `/tmp/relaynest-admin-a03-20261027/evidence.txt`、`client-message-independent.log`。
+- B01 原断言对照：Researcher `/root/permission_verifier` 在 Go 1.27.3／SQLite 3.53.4 下，保留原 50ms BusyTimeout、12 goroutine／双 Store／全部断言，候选 `92404a1…` 五轮 race **4 FAIL／1 PASS**、基线 `15831444e0b616b0b9dadf0cad470741a0ac3eea` **3 FAIL／2 PASS**；基线 stage-only 诊断 overlay 五轮 **4 FAIL／1 PASS**，四次均明确为 **BEGIN IMMEDIATE → SQLITE_BUSY**，不是业务回调或 COMMIT 失败。三组命令均 exit 1，不能将偶发 PASS 算稳定通过；候选／基线相关输入 hash 一致，仅诊断返回错误补阶段名，无 SQL／重试／超时／断言改动。
+- 原同数据库双 Store 写锁根因已由独立 [STORAGE-BUSY-01 修复叶](#g5-storage-busy-01) 完成：完整 `c806fd9… → e0c3631…` 经 A02 PASS、I01 精确合入原根 `8d32f818536e7a237d366afe0be321c69a7700e7`。保留上方原 50ms／12 并发基线失败与 BEGIN 定位事实；本修复完成不自动关闭 **ADMIN-A03-B01**，准确 ADMIN＋fix 全服 race 仍 **NOT_RUN**，需续完整组合验收／独审后决定 ADMIN 状态。
+- 对照实际命令与证据为 `/tmp/relaynest-admin-b01-research-20261027/commands.txt`、`candidate-inputs.json`、`baseline-inputs.json`、`overlay-inputs.json`、`candidate-count5.log`、`baseline-count5.log`、`baseline-diagnostic-count5.log`、`overlay.json`；均为本环境临时证据，不冒称随 Git 保存。尚无全部必检通过的正式 ADMIN 实施验收交接／精确集成，目标集成仓库尚未合入 ADMIN，完整候选 `92404a1…` 保存在既有独立树；BE-10-01-HTTP 隔离准备已完成、阶段 1 实施见该叶当前登记，router/main 锁继续保留给 ADMIN，STORAGE 已完成结论保持。
+- A03 时的历史状态：旧ID `P05-02-S03`；类型：有限 leaf；状态：`running`（2026-10-27，总调度继续保留实施步骤；当前固定候选 `92404a1…` 的真实六组及静态检查已通过，但全服 race 必检 `ADMIN-A03-B01` 未关闭，未进入已通过审计的 integrating，不标 done）。
+- 依赖：[已完成 BE-02-BOT](#g5-be02-bot)、[已完成基线 P05-02-PLAN01](#g3)、[已完成 BE-01 现有后端父范围](#g5-be01)。
+- 门槛：`G-GIT`、`G-API`；条件未实证不记通过。
+
+允许 httpapi/messages.go、router.go、cmd/relaynest/main.go、必要 messages/create.go 四主文件及测试；auth只消费 BE-01 已集成接口。正式 POST /api/v1/client/bots/{id}/messages 仅 Android AdminBearer，固定sender=administrator、Bot启用/receive。S01幂等/消息/投递/changes/待办必须处于 B01 WithAuthorizedWrite 的同一受控事务，先ID再读Bearer，提交前复核ID/会话/代次；不能以M01/BOT01/桩middleware代替完整绑定。
+
+commit后201 ClientMessageReceipt含原message/delivery_id，no-store；同有效管理员换会话仍同作用域，重放前核当前授权。错误同Bot分支并保实例错误，接受G1瞬切字节窗口。检查真实HTTP+SQLite丢响应重试/重新登录同键不增消息/投递/不可变事件/序号/changes/job，异内容409；任一步/commit失败全回滚；缺/重复/畸形/错ID无副作用，事务中ID/会话/代次失效拒绝，probe A切B不认证/不执行；Web/Bot误用及管理/设备/health非回归。必跑httpapi/messages/idempotency/auth/cmd测试、相关race、go vet ./...、go test -race -count=1 ./...。
+
 <a id="g5-be05-storage"></a>
 
 ### G5 BE-05-01-STORAGE 流式持久化状态机准备

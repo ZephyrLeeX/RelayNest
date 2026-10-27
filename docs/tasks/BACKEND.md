@@ -3,9 +3,9 @@
 ## 当前权威恢复入口（2026-10-27）
 
 - 当前唯一推进目标为项目根 `/home/codex/projects/RelayNest` / `resume/backend-20261026`。Integrator `/root/push_i01_retry` 核实原根只有未跟踪 `.worktrees/`、无受控用户修改／路径冲突后，从既有本地克隆执行无 force 的本地 fetch，准确导入 `8a1e875730410be49ae810e9ce5a5b84932085f9`，并已安全 switch 到该 resume 分支；导入时 commit／tree 与克隆完全一致，后续本节元数据提交以实际 HEAD 为准。未从 main 重做、未重复 cherry-pick，`main` ref 仍为 `01c74a776b0b76fcc6616f60ae637a5a53f18384`。
-- ADMIN 候选 ref `work/backend-admin-resume@92404a1d3fee0b2516133867af585e68a94ce772` 也已准确导入原仓库，仅保存候选可达性，**没有合入目标**；ADMIN-A03 最终 BLOCKED，`ADMIN-A03-B01` 仍待准确组合验收；独立 [STORAGE-BUSY-01 修复](COMPLETED.md#g5-storage-busy-01) 已 A02／I01 PASS 并完成。推送 STORAGE 已 done 的原结论不变，其他父／HTTP／跨端门槛不自动通过。
+- ADMIN 完整 WIP／修复链现已在准确 `665edd785d8784ae0e3304d3d3bdfed2d474f872` 组合取得 A04 PASS、全部必检与 I01 安全 ff，由总调度批准[有限叶完成](COMPLETED.md#g5-be02-admin)；原 `work/backend-admin-resume@92404a1…` 仅保留 source 可达性。`ADMIN-A03-B01` 已因准确组合全服 race PASS 关闭；独立 [STORAGE-BUSY-01 修复](COMPLETED.md#g5-storage-busy-01) 与推送 STORAGE 已 done 的结论不变，父 BE-02／HTTP／跨端门槛不自动通过。
 - `.worktrees/backend-local@8a1e875…` 现在仅为历史恢复载体，不再并行推进第二个目标；其 Git/index 未被改写。ADMIN 与 baseline 等现有独立 worktree 路径／归属保持不动，仍按原登记的仓库和固定 SHA 检查。原根未跟踪 `.worktrees/` 不得整体 stage，也不删除或覆盖其中现场。
-- 下次先在项目根核真实分支／HEAD、dirty、refs 与文档中的未闭环证据；不要再次切回默认 main、克隆新目标或重复应用已有代码。需要的源码实现／审计／修复／精确集成仍使用独立 Agent 和排他工作树；用户本轮已明确“同意”同库共享、可取消的写准入修复，有限子叶 `STORAGE-BUSY-01` 已完成两编号修复、A02 PASS 与 I01 精确合入；ADMIN 仍须准确组合检查及续独审，不凭独立修复完成提前关闭其 B01。未 push、部署或创建 `.codex-task-done`；下方旧环境记录保留作历史证据。
+- 下次先在项目根核真实分支／HEAD、dirty、refs 与文档中的未闭环证据；不要再次切回默认 main、克隆新目标或重复应用已有代码。需要的源码实现／审计／修复／精确集成仍使用独立 Agent 和排他工作树；用户本轮已明确“同意”同库共享、可取消的写准入修复，有限子叶 `STORAGE-BUSY-01` 已完成两编号修复、A02 PASS 与 I01 精确合入；ADMIN 已完成准确组合检查、A04 续独审及 I01，父 BE-02 四项组合仍待独立收口。未 push、部署或创建 `.codex-task-done`；下方旧环境记录保留作历史证据。
 
 ## 环境迁移交接（2026-10-26）
 
@@ -76,7 +76,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - 原恢复条件：运行环境允许 loopback 监听后，针对各固定 SHA 重跑真实 HTTP＋SQLite、相关普通／race 与必跑组合；取得独立审计 PASS 后才精确集成 ADMIN，STORAGE I01 全部检查通过后才可完成。若要更新原主仓库，仍须其 `.git` 可写；本轮未 push、部署或发布，未创建 `.codex-task-done`。
 - 续跑核验（2026-10-26T15:45:51Z，Recovery `/root/resume_check`）：原 main 仍为 `01c74a7…`（仅未跟踪 `.worktrees/`），本地集成树 `1fd63700e75810d4c3c99010c44de0b6a31358b4` 与 ADMIN 树 `c937602975c232c62a20808f3a376a86b2d84795` 均 clean、无 Git lock 文件；锁版二进制版本仍为 Go 1.27.3／Node 22.23.2／npm 10.9.8。最小 Python socket bind/listen 实测 `127.0.0.1` 和 `::1` 均 FAIL（errno 1，`Operation not permitted`），故代码及 I01／ADMIN-A01-B01 阻塞结论未变，未重复实施、集成或重跑必然受阻的重型矩阵，不新增 PASS；三个工作目录均无完成标记。
 
-- 权限解除后进展（2026-10-27，UTC+8）：用户放开执行权限，新建 Agent 实测 IPv4／IPv6 loopback 监听 PASS；旧子 Agent 仍可能保留原 sandbox，旧 EPERM 不替代新环境结果。推送 STORAGE 已在 `c4c4603e…`（源码组合 `af84503…`）完成全部必要 I01 复验，结合历史 A02 PASS 由总调度批准完成并[归档证据](COMPLETED.md#g5-be10-storage)；ADMIN 已接续至 `92404a1…`，独立真实 HTTP＋SQLite 六组 PASS，但全服 race 的 `ADMIN-A03-B01` 仍 OPEN；原断言对照已确认基线也在 BEGIN 写锁阶段 SQLITE_BUSY，`STORAGE-BUSY-01` 的跨 Store 写准入修复已获用户明确同意并派发，A03 仍 BLOCKED，独立修复已完成，但 ADMIN 准确组合检查／续独审闭环前尚不能精确集成，详见下方 ADMIN 证据。既有工作树继续复用，原 main 未改；0009 永久占用，未 push 或创建完成标记。
+- 权限解除后进展（2026-10-27，UTC+8）：用户放开权限后，新 Agent 真实 loopback／推送 STORAGE I01 全部通过并完成；ADMIN 原完整 WIP／夹具修复及 SQLITE_BUSY 根因研究均保留在[完成证据](COMPLETED.md#g5-be02-admin)。独立写准入修复已 A02／I01 PASS；额度中断的准确 ADMIN 组合部分日志不冒充 whole PASS，恢复后固定 `665edd7` 全服普通／race／vet／build 完整 PASS，A04 独立六组 PASS、I01 已精确 ff，ADMIN 叶完成而父 BE-02 仍未闭环。0009 永久占用；BE-10-01-HTTP 已有 handler checkpoint，阶段 2 待总调度授予新基线／公共接线锁，未 push 或创建完成标记。
 
 推送分支依赖说明：原 BE-10-03 父依赖字段保留；下游只做框架／FCM 的准备或验证时，执行包必须明确消费 [BE-10-03-FCM](BACKEND.md#be-10-03-fcm) 精确独审已集成子结果，OPPO 外部阻塞不传播至 FCM。全范围最终验收仍须两通道分别有证据，OPPO 缺条件保留 blocked／NOT_RUN，不能以 FCM 代验或将父项标完成。
 
@@ -118,10 +118,11 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 ### BE-02 消息幂等创建和接收回执
 
-- 子项证据：[Bot 有限文本 HTTP 已完成独审与精确集成](COMPLETED.md#g5-be02-bot)；ADMIN 已恢复至未验收 checkpoint，父项原组合验收仍未闭环。
+- 子项证据：[Bot 有限文本 HTTP](COMPLETED.md#g5-be02-bot) 与 [ADMIN 有限文本 HTTP](COMPLETED.md#g5-be02-admin) 均已完成独审及精确集成；父项原四项真实组合验收仍未闭环。
+- 下一有限组合验证 R01 为 `ready`／准备：待总调度向独立 Researcher 正式派发并固定归档后的真实目标 SHA，目前未运行，不凭两个子项 done 标父 done。
 
 - 旧ID：`P05-02`；类型：父收口，不整组派发；状态：进行中（父收口未完成）。
-- 依赖：[已完成基线 P05-01](COMPLETED.md#g2)、[已完成基线 P05-02-PLAN01](COMPLETED.md#g3)、[已完成基线 P05-02-S01](COMPLETED.md#g3)、[已完成 BE-02-BOT](COMPLETED.md#g5-be02-bot)、`BE-02-ADMIN`。
+- 依赖：[已完成基线 P05-01](COMPLETED.md#g2)、[已完成基线 P05-02-PLAN01](COMPLETED.md#g3)、[已完成基线 P05-02-S01](COMPLETED.md#g3)、[已完成 BE-02-BOT](COMPLETED.md#g5-be02-bot)、[已完成 BE-02-ADMIN](COMPLETED.md#g5-be02-admin)。
 - 允许范围：`server/internal/messages/**`、`server/internal/idempotency/**`、`server/migrations/**`，及对应测试。
 - 门槛：`G-GIT`；条件未实证不记通过。
 
@@ -135,29 +136,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 <a id="be-02-admin"></a>
 
-### BE-02-ADMIN Android管理员正式创建HTTP
-
-- 调度（2026-10-26）：owner Backend Orchestrator，固定基线 `a97cfcee014298c64e8468a7b9eb1d007b635e37` / 目标 `work`；BE-02-BOT `907c2a4dbf3a8774bcd438fb22b2381def7394a5` 与 PLAN01 精确集成 `50be58eaaba6c8918dbd7642d9ef06125f0dda07` 已验证祖先，完整 BE-01 既定现有后端父范围经 R01／A01／I01 归档，完成快照 `a97cfcee…`，业务组合 `cf2c8b49…`。
-- 派发准备：Backend Implementer，隔离 `/workspace/RelayNest-be02-admin` / `codex/be02-admin-20261026`；仅 httpapi/messages.go／router.go／cmd main.go／必要 messages/create.go 四主文件与相关指定测试，独占本树/index、messages HTTP/router/main 接线，不改 auth／SQL／API／Bot 分支。可与只改新 devices／0009 的推送集成并行；重型检查须等待推送 I01 释放。
-- Agent `/root/admin_message_implement` 已派发，开始隔离准备及实施，尚无新增独审／集成结论。
-- 环境迁移备份：用户已授权保存代码，现有五文件已独立 WIP 提交 `8ab66c847bf1a6e0c86592f90994679b6685c7e5`，远端入口 `recovery/backend-20261026-admin-wip`；不是功能完成提交，无新测试／审计结果。原 worker 不再运行，从现有代码继续，见本文件开头交接。
-
-- Debian 恢复实施：Implementer `/root/admin_implementer` 从 `8ab66c847bf1a6e0c86592f90994679b6685c7e5` 接续，在上述 ADMIN 隔离树提交 checkpoint `c937602975c232c62a20808f3a376a86b2d84795`，树 clean 并释放写权；未重写生产 WIP，仅修正 TLS 丢响应夹具、204 空响应断言并补八项授权失效回归。完整待验收链为 `a97cfcee014298c64e8468a7b9eb1d007b635e37 → 8ab66c8… → c937602…`，五文件整体纳入审计，不能只审尾提交。
-- 权限解除前检查：`go test -p 1 -run '^$' ./...`、全服 vet/build、gofmt/diff、messages/idempotency 普通 PASS；真实 cmd ADMIN 定向测试 FAIL，`go test -p 1 -race -count=1 ./...` 退出 1（240.8 秒），cmd/auth/httpapi 因 socket 权限失败，attachments/bots/changes/devices/health/idempotency/messages/storage/webui race PASS，未见 DATA RACE 报告但不等于全服 race PASS。新增 ADMIN 业务断言及完整真实 HTTP＋SQLite验收 NOT_RUN；尚无正式实施验收交接／精确集成。实际命令与退出码见 `/tmp/relaynest-admin-implementation/final-commands.txt`、`cmd-http.log`、`race-all.log`，这些为本轮临时证据，不冒称随 Git 保存。
-- ADMIN-A01：独立 Auditor `/root/admin_auditor` 固定 `c937602975c232c62a20808f3a376a86b2d84795`，审查上述完整五文件链，结论 **BLOCKED**。稳定阻塞 **ADMIN-A01-B01**：`server/cmd/relaynest/main_test.go:354、1757` 的真实 TLS 服务监听报 `operation not permitted`，业务断言未运行；静态未发现确定业务缺陷不等于 PASS。复验要求：同一固定 SHA 在可监听环境运行全部 ADMIN HTTP＋SQLite、相关普通／race及全服必检，再续独审、必要编号修复／重审和精确集成。
-- 权限解除后 A02／有限修复（2026-10-27，UTC+8）：新 Implementer `/root/admin_retry` 从 `c937602975c232c62a20808f3a376a86b2d84795` 接续；独立 Auditor `/root/admin_a02_retry` 对该 SHA 给出 **CHANGES_REQUIRED**，稳定问题 **ADMIN-A02-01** 为测试夹具使用过期实例观察。仅 `server/cmd/relaynest/main_test.go` 修复后提交 `92404a1d3fee0b2516133867af585e68a94ce772`（parent `c937602…`），未改生产代码／安全策略／冻结接口。完整候选链为 `a97cfcee014298c64e8468a7b9eb1d007b635e37 → 8ab66c847bf1a6e0c86592f90994679b6685c7e5 → c937602975c232c62a20808f3a376a86b2d84795 → 92404a1d3fee0b2516133867af585e68a94ce772`，不得只审或集成尾提交。
-- 本轮实施验证：真实六组 ADMIN HTTP＋SQLite、全服普通、vet/build、gofmt/diff **PASS**；全服串行 race **FAIL**（exit 1，454.120 秒），唯一失败为 `messages/TestIdempotentConcurrentSameKey` 在 `server/internal/messages/create_test.go:130` 报 `SQLITE_BUSY`（SQLite 3.53.4），其他全部包 PASS。无 DATA RACE 报告不等于全服 race PASS，不改既有断言／50ms 超时以制造通过。精确命令／退出码与实际新日志为 `/tmp/relaynest-admin-retry-20261027/commands.txt`、`full-race.log`；旧 socket／夹具失败仍保留。
-- A03 续独审：`/root/admin_a02_retry` 固定 `92404a1…` 审查上述完整链，静态无新增业务发现，独立六组真实 ClientMessage HTTP＋SQLite **PASS**，关闭 **ADMIN-A02-01** 与旧环境 **ADMIN-A01-B01**；但必检阻塞 **ADMIN-A03-B01** 仍 **OPEN**，因上述同键并发测试 SQLITE_BUSY，A03 最终结论为 **BLOCKED**，不能进入精确集成或标 done。独立证据为 `/tmp/relaynest-admin-a03-20261027/evidence.txt`、`client-message-independent.log`。
-- B01 原断言对照：Researcher `/root/permission_verifier` 在 Go 1.27.3／SQLite 3.53.4 下，保留原 50ms BusyTimeout、12 goroutine／双 Store／全部断言，候选 `92404a1…` 五轮 race **4 FAIL／1 PASS**、基线 `15831444e0b616b0b9dadf0cad470741a0ac3eea` **3 FAIL／2 PASS**；基线 stage-only 诊断 overlay 五轮 **4 FAIL／1 PASS**，四次均明确为 **BEGIN IMMEDIATE → SQLITE_BUSY**，不是业务回调或 COMMIT 失败。三组命令均 exit 1，不能将偶发 PASS 算稳定通过；候选／基线相关输入 hash 一致，仅诊断返回错误补阶段名，无 SQL／重试／超时／断言改动。
-- 原同数据库双 Store 写锁根因已由独立 [STORAGE-BUSY-01 修复叶](COMPLETED.md#g5-storage-busy-01) 完成：完整 `c806fd9… → e0c3631…` 经 A02 PASS、I01 精确合入原根 `8d32f818536e7a237d366afe0be321c69a7700e7`。保留上方原 50ms／12 并发基线失败与 BEGIN 定位事实；本修复完成不自动关闭 **ADMIN-A03-B01**，准确 ADMIN＋fix 全服 race 仍 **NOT_RUN**，需续完整组合验收／独审后决定 ADMIN 状态。
-- 对照实际命令与证据为 `/tmp/relaynest-admin-b01-research-20261027/commands.txt`、`candidate-inputs.json`、`baseline-inputs.json`、`overlay-inputs.json`、`candidate-count5.log`、`baseline-count5.log`、`baseline-diagnostic-count5.log`、`overlay.json`；均为本环境临时证据，不冒称随 Git 保存。尚无全部必检通过的正式 ADMIN 实施验收交接／精确集成，目标集成仓库尚未合入 ADMIN，完整候选 `92404a1…` 保存在既有独立树；BE-10-01-HTTP 隔离准备已完成、阶段 1 实施见该叶当前登记，router/main 锁继续保留给 ADMIN，STORAGE 已完成结论保持。
-- 旧ID：`P05-02-S03`；类型：有限 leaf；状态：`running`（2026-10-27，总调度继续保留实施步骤；当前固定候选 `92404a1…` 的真实六组及静态检查已通过，但全服 race 必检 `ADMIN-A03-B01` 未关闭，未进入已通过审计的 integrating，不标 done）。
-- 依赖：[已完成 BE-02-BOT](COMPLETED.md#g5-be02-bot)、[已完成基线 P05-02-PLAN01](COMPLETED.md#g3)、[已完成 BE-01 现有后端父范围](COMPLETED.md#g5-be01)。
-- 门槛：`G-GIT`、`G-API`；条件未实证不记通过。
-
-允许 httpapi/messages.go、router.go、cmd/relaynest/main.go、必要 messages/create.go 四主文件及测试；auth只消费 BE-01 已集成接口。正式 POST /api/v1/client/bots/{id}/messages 仅 Android AdminBearer，固定sender=administrator、Bot启用/receive。S01幂等/消息/投递/changes/待办必须处于 B01 WithAuthorizedWrite 的同一受控事务，先ID再读Bearer，提交前复核ID/会话/代次；不能以M01/BOT01/桩middleware代替完整绑定。
-
-commit后201 ClientMessageReceipt含原message/delivery_id，no-store；同有效管理员换会话仍同作用域，重放前核当前授权。错误同Bot分支并保实例错误，接受G1瞬切字节窗口。检查真实HTTP+SQLite丢响应重试/重新登录同键不增消息/投递/不可变事件/序号/changes/job，异内容409；任一步/commit失败全回滚；缺/重复/畸形/错ID无副作用，事务中ID/会话/代次失效拒绝，probe A切B不认证/不执行；Web/Bot误用及管理/设备/health非回归。必跑httpapi/messages/idempotency/auth/cmd测试、相关race、go vet ./...、go test -race -count=1 ./...。
+已完成子项：[BE-02-ADMIN 有限文本正式 HTTP 的完整 WIP、A04／I01 与范围证据](COMPLETED.md#g5-be02-admin)。父 BE-02 仍须独立真实 Bot＋Admin 四项组合验收，不能自动完成。
 
 ## BE-03 Bot生命周期和身份权限收口
 
@@ -562,8 +541,8 @@ commit后201 ClientMessageReceipt含原message/delivery_id，no-store；同有�
 ### BE-10-01-HTTP 当前设备注册与偏好真实接线
 
 - 类型：有限 leaf；状态：`running`（2026-10-27，总调度核原依赖及独立 STORAGE-BUSY-01 修复均已完成并派发阶段 1 handler 实施；尚未真实 router/main 组合验收，不标 done）。依赖[已完成 STORAGE](COMPLETED.md#g5-be10-storage)、[已完成 BE-01 现有后端父范围](COMPLETED.md#g5-be01)；写准入修复已[独审及精确集成](COMPLETED.md#g5-storage-busy-01)。
-- 阶段 1 Implementer `/root/push_http_implementer` 已启动，固定基线 `3aec54e04945c9e1a8442f7ca996d2ded15f56e7`，隔离 `.worktrees/backend-push-http` / `impl/backend-push-http-20261027`（已由 `/root/push_i01_retry` 准备并核准确 HEAD／clean）。Implementer 独占本树／index 与 devices handler 两文件及必要测试；公共 router/main 全只读、接线锁仍由 ADMIN 组合排他保留，重型检查须等全局锁授予，不能并跑。
-- 后续首包只允许 `server/internal/devices/{push_http.go,http.go}` 及必要对应测试实现 handler；`server/internal/httpapi/router.go`、`server/cmd/relaynest/main.go` 在 ADMIN 集成释放锁前全只读，由总调度另行放行真实接线。其他生产文件只读；原完整 HTTP 验收仍须最后真实 router＋main＋SQLite，不能以 handler 单测冒充已完成。
+- 阶段 1 原 Implementer `/root/push_http_implementer` 从固定基线 `3aec54e04945c9e1a8442f7ca996d2ded15f56e7` 开始；恢复 owner 为 `/root/push_http_resume`，已保留 checkpoint `1291ea355c3c3f837df56f5d5e1f08d6bc641059`（parent `3aec54e…`），仅 `devices/http.go`、`devices/push_http.go`、`devices/push_http_test.go` 三路径，Go 编译／执行 **NOT_RUN**。隔离 `.worktrees/backend-push-http` / `impl/backend-push-http-20261027`，Implementer 独占本树／index 与 handler 两文件及必要测试；阶段 2 必须接收 ADMIN 完成归档后的最新真实基线并获总调度明确放行，未放行前公共 router/main 仍只读，重型检查须获全局锁。
+- 后续首包只允许 `server/internal/devices/{push_http.go,http.go}` 及必要对应测试实现 handler；`server/internal/httpapi/router.go`、`server/cmd/relaynest/main.go` 目前仍全只读，ADMIN I01 已完成，公共锁由总调度转派并明确放行真实接线，不能自行使用旧基线接线。其他生产文件只读；原完整 HTTP 验收仍须最后真实 router＋main＋SQLite，不能以 handler 单测冒充已完成。
 - 按冻结五 operations 接线 GET/PUT current/push、DELETE current/push/{provider}、GET/PUT current/notifications；真实当前 Android Bearer 与同事务实例门禁，拒 Web/Bot／目标选择器／客户端时间，262144 字节／严格 schema／no-store／无 token。原设备及认证／Bot 路由非回归，真实 router＋main＋SQLite 组合，不以直接 handler 测试冒充。
 - 原 BE-10-01 全部验收及资格边界保留，STORAGE 准备不替代 H01／G1；后端发送适配器及平台实测仍分别归后续任务。
 
