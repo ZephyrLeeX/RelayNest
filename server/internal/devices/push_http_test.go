@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -59,7 +58,9 @@ func (f *pushHTTPFixture) request(method, path, body string, session int, custom
 
 func registrationBody(provider, token string, version, expected int64) string {
 	// 输入类型有主动脱敏的MarshalJSON，测试不得误用它来生成写入凭据。
-	return fmt.Sprintf(`{"provider":%s,"token":%s,"registration_version":%d,"expected_version":%d}`, strconv.Quote(provider), strconv.Quote(token), version, expected)
+	p, _ := json.Marshal(provider)
+	secret, _ := json.Marshal(token)
+	return fmt.Sprintf(`{"provider":%s,"token":%s,"registration_version":%d,"expected_version":%d}`, p, secret, version, expected)
 }
 
 func notificationBody(t *testing.T, in NotificationSettingsUpdate) string {
@@ -363,6 +364,7 @@ func TestPushHTTPStrictBodyAndSemanticErrors(t *testing.T) {
 		t.Fatal("oversized request changed state")
 	}
 	assertPushHTTP(t, f.request("PUT", "push", within, 0, nil), 200, "")
+	assertPushHTTP(t, f.request("PUT", "push", registrationBody("fcm", "\x00opaque α", 2, 1), 0, nil), 200, "")
 }
 
 type unreadPushBody struct{ reads int }

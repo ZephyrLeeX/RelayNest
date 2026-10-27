@@ -39,6 +39,15 @@ type DeviceHandlers interface {
 	RevokeDeviceSession(http.ResponseWriter, *http.Request)
 }
 
+// DevicePushHandlers 独立声明当前Android设备能力，不扩大既有设备路由接口。
+type DevicePushHandlers interface {
+	GetCurrentPush(http.ResponseWriter, *http.Request)
+	PutCurrentPush(http.ResponseWriter, *http.Request)
+	DeleteCurrentPush(http.ResponseWriter, *http.Request)
+	GetCurrentNotifications(http.ResponseWriter, *http.Request)
+	PutCurrentNotifications(http.ResponseWriter, *http.Request)
+}
+
 func New(h *health.Handler, authentication ...AuthHandlers) http.Handler {
 	mux := http.NewServeMux()
 	// 探测不依赖登录能力；未装配持久化存储时也保持失败关闭。
@@ -60,6 +69,13 @@ func New(h *health.Handler, authentication ...AuthHandlers) http.Handler {
 		if d, ok := a.(DeviceHandlers); ok {
 			mux.HandleFunc("GET /api/v1/devices", d.ListDeviceSessions)
 			mux.HandleFunc("DELETE /api/v1/devices/{id}/session", d.RevokeDeviceSession)
+		}
+		if d, ok := a.(DevicePushHandlers); ok {
+			mux.HandleFunc("GET /api/v1/devices/current/push", d.GetCurrentPush)
+			mux.HandleFunc("PUT /api/v1/devices/current/push", d.PutCurrentPush)
+			mux.HandleFunc("DELETE /api/v1/devices/current/push/{provider}", d.DeleteCurrentPush)
+			mux.HandleFunc("GET /api/v1/devices/current/notifications", d.GetCurrentNotifications)
+			mux.HandleFunc("PUT /api/v1/devices/current/notifications", d.PutCurrentNotifications)
 		}
 		if b, ok := a.(BotHandlers); ok {
 			mux.HandleFunc("GET /api/v1/admin/bots", b.ListBots)

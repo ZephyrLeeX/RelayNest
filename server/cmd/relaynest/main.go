@@ -151,8 +151,9 @@ func authenticationDependencies(ctx context.Context, path, externalOrigin string
 		Handler:         auth.NewHandler(store, sessions, policy),
 		InstanceHandler: httpapi.NewInstanceHandler(store),
 		BotHandler:      httpapi.NewBotHandler(bots.New(store), botAuthorization(sessions, security)),
-		DeviceHandler:   devices.NewHandler(sessions, security),
-		MessageHandler:  httpapi.NewMessageHandler(bots.New(store), messages.New(store), clientMessageAuthorization(sessions, security)),
+		// 未装配已核平台资格时仅拒vendor激活；FCM/none偏好与两通道登记仍独立可用。
+		DeviceHandler:  devices.NewHandlerWithPush(sessions, security, devices.NewPushRepository(store, sessions, nil)),
+		MessageHandler: httpapi.NewMessageHandler(bots.New(store), messages.New(store), clientMessageAuthorization(sessions, security)),
 	}, nil
 }
 
@@ -217,4 +218,19 @@ func (h *managementHandlers) ListDeviceSessions(w http.ResponseWriter, r *http.R
 }
 func (h *managementHandlers) RevokeDeviceSession(w http.ResponseWriter, r *http.Request) {
 	h.DeviceHandler.RevokeDeviceSession(w, r)
+}
+func (h *managementHandlers) GetCurrentPush(w http.ResponseWriter, r *http.Request) {
+	h.DeviceHandler.GetCurrentPush(w, r)
+}
+func (h *managementHandlers) PutCurrentPush(w http.ResponseWriter, r *http.Request) {
+	h.DeviceHandler.PutCurrentPush(w, r)
+}
+func (h *managementHandlers) DeleteCurrentPush(w http.ResponseWriter, r *http.Request) {
+	h.DeviceHandler.DeleteCurrentPush(w, r)
+}
+func (h *managementHandlers) GetCurrentNotifications(w http.ResponseWriter, r *http.Request) {
+	h.DeviceHandler.GetCurrentNotifications(w, r)
+}
+func (h *managementHandlers) PutCurrentNotifications(w http.ResponseWriter, r *http.Request) {
+	h.DeviceHandler.PutCurrentNotifications(w, r)
 }

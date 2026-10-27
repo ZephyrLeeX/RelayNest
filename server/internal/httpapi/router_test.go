@@ -137,6 +137,56 @@ func TestExactDeviceRoutes(t *testing.T) {
 	}
 }
 
+type devicePushRouteProbe struct{ deviceRouteProbe }
+
+func (devicePushRouteProbe) GetCurrentPush(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-Route", "push-get")
+	w.WriteHeader(204)
+}
+func (devicePushRouteProbe) PutCurrentPush(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-Route", "push-put")
+	w.WriteHeader(204)
+}
+func (devicePushRouteProbe) DeleteCurrentPush(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-Route", "push-delete")
+	w.Header().Set("X-Provider", r.PathValue("provider"))
+	w.WriteHeader(204)
+}
+func (devicePushRouteProbe) GetCurrentNotifications(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-Route", "notifications-get")
+	w.WriteHeader(204)
+}
+func (devicePushRouteProbe) PutCurrentNotifications(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-Route", "notifications-put")
+	w.WriteHeader(204)
+}
+
+func TestExactCurrentDevicePushRoutes(t *testing.T) {
+	h := New(health.New(nil), devicePushRouteProbe{})
+	for _, tc := range []struct {
+		method, suffix, route string
+		status                int
+	}{
+		{"GET", "push", "push-get", 204}, {"HEAD", "push", "push-get", 204},
+		{"PUT", "push", "push-put", 204}, {"DELETE", "push/fcm", "push-delete", 204},
+		{"GET", "notifications", "notifications-get", 204}, {"HEAD", "notifications", "notifications-get", 204},
+		{"PUT", "notifications", "notifications-put", 204},
+		{"POST", "push", "", 405}, {"DELETE", "push", "", 405}, {"GET", "push/fcm", "", 405},
+		{"POST", "notifications", "", 405}, {"DELETE", "notifications", "", 405},
+		{"GET", "push/extra/segment", "", 404}, {"DELETE", "push/fcm/", "", 404},
+		{"GET", "notifications/extra", "", 404}, {"PUT", "notifications/", "", 404},
+	} {
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest(tc.method, "/api/v1/devices/current/"+tc.suffix, nil))
+		if w.Code != tc.status || w.Header().Get("X-Route") != tc.route || strings.Contains(w.Header().Get("Content-Type"), "text/html") {
+			t.Errorf("%s %s=%d/%q want=%d/%q", tc.method, tc.suffix, w.Code, w.Header().Get("X-Route"), tc.status, tc.route)
+		}
+		if tc.route == "push-delete" && w.Header().Get("X-Provider") != "fcm" {
+			t.Fatal("provider未从正式路由传递")
+		}
+	}
+}
+
 type instanceRouteProbe struct {
 	routeProbe
 	*InstanceHandler
