@@ -177,9 +177,9 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 ### BE-04-01 历史分页引用和共享已读
 
-- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+- 证据与交接：历史仓储首叶已独审／精确集成，见下方完成链接；其余父范围尚待分包和组合验收。
 
-- 旧ID：`P05-03`；类型：有限 leaf；状态：未开始。
+- 旧ID：`P05-03`；类型：有限 leaf；状态：`running`（2026-10-27，首叶已完成，父原验收未完成）。
 - 依赖：[已完成 BE-02 限定父组合](COMPLETED.md#g5-be02-compose)。
 - 允许范围：`server/internal/messages/**`、`server/internal/sync/read*`、`server/migrations/**`，及对应测试。
 - 门槛：`G-GIT`；条件未实证不记通过。
@@ -192,12 +192,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-04-01-HISTORY-STORAGE 历史／详情与同 Bot 引用只读仓储准备
 
-- 类型：有限子叶；状态：`running`（2026-10-27，从 ready 正式派发 Implementer `/root/be04_history_implementer`，父 BE-04-01 原验收整体未完成）。准备角色 `/root/admin_i01_resume`；实际固定实施基线 `a6f4e7da58d198c6fe0744878406e0522aa56e27`；隔离树 `.worktrees/backend-be04-history`／分支 `impl/backend-be04-history-20261027`，本树／index 和本叶 messages 新文件写锁归 Implementer。只读仓储源链 `a6f4e7d… → c15b66e47f3c789877f8842ce74768a5fdf77a1e → 504d74ba91a0a9152a90b417efb6f826a2eac04c → a88ac3a743954385b413b773230a608db3d088d2`，仅六个新增 messages 文件（三主＋三测试），无迁移。独审／精确集成尚 **NOT_RUN**。
-- 实际检查与历史：准确 `a88ac3a…` messages 普通 **PASS**（exit 0，包耗时3.504秒），证据 `/tmp/relaynest-be04-history-short-20261027-202815/{inputs.json,result.json,messages-test.log,post.json}`；`504d74b…` 新授权夹具曾因 Unix 秒／纳秒、旧 Store 实例保护和取消错误分类假设 **FAIL**，仅新 `history_auth_test.go` 修正后复验 PASS，保留旧日志。auth／storage／changes 普通也已完整 exit 0 **PASS**，证据 `/tmp/relaynest-be04-history-validation-20261027-203716/commands.jsonl`；四包 race／vet／build 尚等待或执行、无最终回交，均不记 PASS。
-- 单目标与允许写范围：仅 `server/internal/messages/{history.go,history_models.go,reference.go}` 及对应 `history_test.go`／`reference_test.go`／`history_auth_test.go`，优先复用模型减少文件；实现历史／详情和同 Bot 引用域的只读事务仓储准备。全部消费受信调用方 `*sql.Tx`，拒绝 nil，不自开／提交事务，不造仅凭 Actor 公开字段的授权包装。
-- 原验收中本叶覆盖：`bot_seq DESC`、排他内部边界、有界 limit＋1；同 tx 核 Bot 存在及读取，停用 Bot 历史可读；同 Bot 存在引用接受，跨 Bot／不存在统一不可用；源删不泄正文且保留 originalID。真实 SQLite 覆盖多 Bot 分页、并发新增删改不改变排序、边界／limit、错误无部分结果、引用 FK、真实 RequestSecurity＋B01 授权及伪 Actor／会话／实例代次、取消及最终失败不发布。无 route 不声称 Web／Bot HTTP 完成。
-- 排他边界：`create.go`／`repository.go`／`pending.go` 显式拒引用保持；auth／changes／storage／SQL／API／router／main 与推送 HTTP WIP 全部只读。public DTO、cursor codec、HTTP、创建引用放开及共享 read 表另包；后包初始 readstate version≥1／time 非空规则待具体设计，本叶不实现、不设新外部错误码。
-- 迁移：Planner 已只读核六注册树和三独立 Git 仓库 refs，最高 0009，无 0010＋或未提交迁移；原 0006 已具双引用列、同 Bot 触发器／FK SET NULL，本叶无需迁移、不占 0010。0009 永久由 push 占用；未来 READ-STORAGE 派发时重新核号分配，不以本次扫描预占。
+已完成有限子叶：[完整 source 链、实际检查、A01／I01 映射及范围限制](COMPLETED.md#g5-be04-history-storage)。仅仓储准备已集成；父 BE-04-01 仍 `running`、未完成原历史／引用／共享已读验收，后续 REFERENCE-CREATE／READ-STORAGE／HTTP 分包；不开放创建引用、不增加共享已读／附件投影／公开 cursor／HTTP，初始共享已读策略待具体设计。0009 保留，0010 未分配。
 
 <a id="be-04-02"></a>
 

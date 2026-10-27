@@ -215,6 +215,21 @@ G1 已批准生命周期：Android 先验证实例 ID 再读取密码/Bearer，�
 
 commit后201 ClientMessageReceipt含原message/delivery_id，no-store；同有效管理员换会话仍同作用域，重放前核当前授权。错误同Bot分支并保实例错误，接受G1瞬切字节窗口。检查真实HTTP+SQLite丢响应重试/重新登录同键不增消息/投递/不可变事件/序号/changes/job，异内容409；任一步/commit失败全回滚；缺/重复/畸形/错ID无副作用，事务中ID/会话/代次失效拒绝，probe A切B不认证/不执行；Web/Bot误用及管理/设备/health非回归。必跑httpapi/messages/idempotency/auth/cmd测试、相关race、go vet ./...、go test -race -count=1 ./...。
 
+<a id="g5-be04-history-storage"></a>
+
+### BE-04-01-HISTORY-STORAGE 历史／详情与同 Bot 引用只读仓储准备
+
+- 类型：有限子叶；状态：`done`（2026-10-27，Implementer `/root/be04_history_implementer` 完整源链经不同 A01 PASS 与 I01 精确集成；父 BE-04-01 原验收整体仍未完成）。准备角色 `/root/admin_i01_resume`；实际固定实施基线 `a6f4e7da58d198c6fe0744878406e0522aa56e27`；隔离树 `.worktrees/backend-be04-history`／分支 `impl/backend-be04-history-20261027`，本树／index 和本叶 messages 新文件写锁归 Implementer。只读仓储源链 `a6f4e7d… → c15b66e47f3c789877f8842ce74768a5fdf77a1e → 504d74ba91a0a9152a90b417efb6f826a2eac04c → a88ac3a743954385b413b773230a608db3d088d2`，仅六个新增 messages 文件（三主＋三测试），无迁移。不同 A01 与 I01 均 **PASS**，见下方准确证据。
+- 实际检查与历史：准确 `a88ac3a…` messages 普通 **PASS**（exit 0，包耗时3.504秒），证据 `/tmp/relaynest-be04-history-short-20261027-202815/{inputs.json,result.json,messages-test.log,post.json}`；`504d74b…` 新授权夹具曾因 Unix 秒／纳秒、旧 Store 实例保护和取消错误分类假设 **FAIL**，仅新 `history_auth_test.go` 修正后复验 PASS，保留旧日志。auth／storage／changes 普通也已完整 exit 0 **PASS**，证据 `/tmp/relaynest-be04-history-validation-20261027-203716/commands.jsonl`；四包 race、相关 vet、全服 build、gofmt／diff／clean 后均完整 exit 0 **PASS**，准确 `a88ac3a…` 日志与输入／post hash 均已核验；不外推为全服普通或新 HTTP 通过。
+- 单目标与允许写范围：仅 `server/internal/messages/{history.go,history_models.go,reference.go}` 及对应 `history_test.go`／`reference_test.go`／`history_auth_test.go`，优先复用模型减少文件；实现历史／详情和同 Bot 引用域的只读事务仓储准备。全部消费受信调用方 `*sql.Tx`，拒绝 nil，不自开／提交事务，不造仅凭 Actor 公开字段的授权包装。
+- 原验收中本叶覆盖：`bot_seq DESC`、排他内部边界、有界 limit＋1；同 tx 核 Bot 存在及读取，停用 Bot 历史可读；同 Bot 存在引用接受，跨 Bot／不存在统一不可用；源删不泄正文且保留 originalID。真实 SQLite 覆盖多 Bot 分页、并发新增删改不改变排序、边界／limit、错误无部分结果、引用 FK、真实 RequestSecurity＋B01 授权及伪 Actor／会话／实例代次、取消及最终失败不发布。无 route 不声称 Web／Bot HTTP 完成。
+- 排他边界：`create.go`／`repository.go`／`pending.go` 显式拒引用保持；auth／changes／storage／SQL／API／router／main 与推送 HTTP WIP 全部只读。public DTO、cursor codec、HTTP、创建引用放开及共享 read 表另包；后包初始 readstate version≥1／time 非空规则待具体设计，本叶不实现、不设新外部错误码。
+- 迁移：Planner 已只读核六注册树和三独立 Git 仓库 refs，最高 0009，无 0010＋或未提交迁移；原 0006 已具双引用列、同 Bot 触发器／FK SET NULL，本叶无需迁移、不占 0010。0009 永久由 push 占用；未来 READ-STORAGE 派发时重新核号分配，不以本次扫描预占。
+
+- 独立 `BE-04-01-HISTORY-STORAGE-A01`：固定完整源链至 `a88ac3a743954385b413b773230a608db3d088d2` **PASS**，无待修发现；独立八组测试 exit 0／0.870 秒，前后源码／输入不变。证据 `/tmp/relaynest-be04-history-a01-20261027-2047/` 的 pre／post／command／exit／log hash；stdout SHA256 `fc88544345412ba8374effae5d030031320400442b7780f7af3da2cdcc731b9f`。
+- `BE-04-01-HISTORY-STORAGE-I01` **PASS**：准确目标 `resume/backend-20261026` 从 `a9429ef5cb7c47f72db3a55139b7e26e76da6e9f` 安全 ff 至 `6e5ca4b7b7ca8b11d8a550bcf35627499132c1e3`，候选树 `.worktrees/backend-be04-history-i01`／`integrate/backend-be04-history-i01-20261027`。完整映射 `c15b66e47f3c789877f8842ce74768a5fdf77a1e → f37ffeee487bd26ba878aa317c703aef5d981d8a`、`504d74ba91a0a9152a90b417efb6f826a2eac04c → ff116b7a969f5cdf7c25dde6a8ca8e13ca80b301`、`a88ac3a743954385b413b773230a608db3d088d2 → 6e5ca4b7b7ca8b11d8a550bcf35627499132c1e3`，range-diff 三项 `=`，无冲突／无业务变化；候选 server 与源 a88 tree 完全一致，Web／go.mod／go.sum／九 SQL／真实 embed 与受测输入字节相同，目标文档保留最新元数据。准确复用源必检及 A01，**本 I01 未新跑 Go／npm／validator／build**，不冒新实测；记录 `/tmp/relaynest-be04-history-i01-20261027-124833/{checks.json,post.json}`。main ref 不变，旧 50ms／12 并发断言及其他旧源码未动，无 HTTP 推送产品代码混入。
+- 完成仅为调用方持有事务的历史／详情／引用域存储准备；仍不开放创建引用，无共享已读／附件投影／公开 cursor／HTTP。REFERENCE-CREATE、READ-STORAGE、HTTP 和父原验收另包；初始共享已读策略仍待具体设计。source 504 新夹具失败与 a88 复验事实保留，不记生产失败；未占 0010，未 push／部署／创建完成标记。
+
 <a id="g5-be02-compose"></a>
 
 ### G5 BE-02 正式幂等创建与回执有限父组合

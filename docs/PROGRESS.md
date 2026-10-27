@@ -17,6 +17,8 @@
 - **已完成｜登录局部基础（P08-04-S01～S03）**：HTTPS 网络层与安装身份、加密会话存储、登录 UI 的本地组合分别审计集成。仅为局部基础，不代表完整登录父功能完成。
 - **已完成｜FCM 最小 PoC（P2）**：一加 Ace 3 Pro、Android 16／ColorOS 16 上的 data-only 提示有实测证据；打开应用补偿和 WorkManager 周期调度／模拟落盘已验证。G-FCM 限定放行，非真实 Hub 最终同步或正式 AC-09。见[门槛结论](tasks/COMPLETED.md#a2)及[独立审计](tasks/COMPLETED.md#a2)。
 
+- **已完成｜历史／详情／同 Bot 引用只读事务仓储准备**：[HISTORY-STORAGE](tasks/COMPLETED.md#g5-be04-history-storage) 源必检和独立八组测试 PASS，I01 源码／输入等值复用检查后精确集成；未声称新跑全服普通或提供历史 HTTP。
+
 ### 未完成
 
 - **开发中｜Hub 登录与安全会话父功能（P08-04）**：局部基础已完成；服务端实例绑定、新 G1 探测接入及会话升级、正式组合仍未闭环。
@@ -60,7 +62,7 @@ Debian 恢复：推送 STORAGE、共享写准入修复及 ADMIN 有限文本 HTT
 ### 未完成
 
 - **未开始｜Bot 生命周期与权限收口**：重置／删除正式 HTTP、领取租约／等待请求／投递队列完整联动，以及身份权限整体矩阵（P04-08）。
-- **准备中｜历史仓储首叶**：[BE-04-01-HISTORY-STORAGE](tasks/BACKEND.md#be-04-01-history-storage) running，Implementer `/root/be04_history_implementer` 已从 `a6f4e7d…` 保存至 `a88ac3a…`，仅六新增 messages 文件；messages及 auth／storage／changes 普通 PASS，四包 race／vet／build待完整结果、独审／集成尚 NOT_RUN。仅历史／详情／同 Bot 引用只读事务仓储，无需迁移且不占0010。父历史分页／引用／共享已读及 CAS 编辑、标准 JSON Webhook、按钮回调和综合故障回归仍未完成。
+- **开发中｜历史／引用和共享已读父范围**：历史仓储首叶已 A01／I01 完成，完整源三提交精确合入 `6e5ca4b…`；父范围仍 running，引用创建、共享已读、公开 cursor／HTTP、附件投影及后续组合验收未完成。未分配0010；其他 CAS 编辑、Webhook、按钮回调和故障回归仍待实施。
 - **开发中｜附件功能**：流式持久化准备已完成；真实上传 HTTP／Bot-first／Android／设置路由仍待派发接线及本端点 G1 验收，父 BE-05-01 未完成；关联权限与保护引用、下载／Range、安全响应、启动恢复及孤儿回收仍未开始。
 - **未开始｜投递与清理（P6）**：原子领取、Long Polling、ACK／续约、退避重试、失败管理、历史／墓碑清理、队列生命周期、全局配置及健康投影。
 - **未开始｜Hub 同步运行时**：增量同步、bootstrap 重建、WS 提示及连接撤销。
