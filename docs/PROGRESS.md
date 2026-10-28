@@ -71,6 +71,8 @@ Debian 恢复：推送 STORAGE、共享写准入修复及 ADMIN 有限文本 HTT
 - **未开始｜Hub 同步运行时**：增量同步、bootstrap 重建、WS 提示及连接撤销。
 - **开发中｜正式推送服务端（P9）**：[STORAGE](tasks/COMPLETED.md#g5-be10-storage)、[五端点HTTP](tasks/COMPLETED.md#g5-be10-http)与[限定服务器父组合](tasks/COMPLETED.md#g5-be10-compose)各自独审／精确集成完成，父R01／A01／74e准确I01补齐并发模式、撤销重登旧回调及条件解绑；[PENDING-READ](tasks/BACKEND.md#be-10-02-pending-read)首叶已running，独立 `/root/pending_read_implementer` 在 `.worktrees/backend-be10-pending-read`／`impl/backend-be10-pending-read-20261028@1d1d666…` 持有三新文件未提交WIP，可信Tx现有同步待办只读投影／水位归并；准备完成未验收，gofmt／diff PASS，最小普通七主组＋五身份组PASS（exit0／3.441秒），01／02 embed setup失败及03新fixture CHECK失败→04 PASS保留；现获完整相关普通／race／vet／build窗口、结果在途，独审／集成未完成，不分配迁移、0010已正式占用归READ。完整待办调度的生产HTTP非零接线、DDL／租约、READ提醒过滤及FCM／OPPO Adapter／真机仍未完成；[BE10-PREFLIGHT-A01](tasks/BACKEND.md#be10-preflight-a01)已CHANGES_REQUIRED：真实会话六例2有效PASS／4过期FAIL（编号BE10-PREFLIGHT-A01-01，非零待办秒／纳秒比较）；[F01](tasks/BACKEND.md#be10-preflight-f01)源 `b30504e…` 相关普通／五包race／vet／build PASS，不同A02原六例4.001秒PASS关闭编号-01，F01为review／待准确I01；原A01 FAIL及HTTP nil targets未外发边界保留，修复源码未纳入READ候选，不以Android PoC或准备结果代验。失效token仅按发送快照条件解绑对应注册，不删除设备会话。
 
+- **准备就绪｜JOB-STORAGE有限叶**：[BE-10-02-JOB-STORAGE](tasks/BACKEND.md#be-10-02-job-storage)已ready，固定产品基线 `d4d942e615736bb3aaed0c4f4d14a661f4231994`，已含READ／0010准确集成；总调度正式独占分配 **0011_push_schedule.sql**，0009／0010永久占用保留。仅四主文件兼容扩展现有push_jobs及内部原子租约预留，必要三新测试和三处最新迁移计数fixture最小调整；pending专属legacy并保旧五列INSERT／只读投影，完整sync／alert通过CHECK隔离为queued／leased等集合，不补造资格、不清理历史／新表。可独立实施而不消费PENDING私树API；PENDING精确集成后须以legacy＋sync＋alert真实混合投影取得最终I01兼容证据。F01未集成不冒称root已修，后续真实生产者验收须等其准确集成。本次仅文档与编号锁登记，无DDL／源实现或新增测试PASS；当前heavy仍归PENDING，父BE-10-02及发送／策略／adapter仍未ready／done。
+
 ## 3. Web 管理端
 
 本模块任务：[条目与验收](tasks/WEB.md)。
