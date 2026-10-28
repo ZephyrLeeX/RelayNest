@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"relaynest/server/internal/attachments"
 	"relaynest/server/internal/auth"
 	"relaynest/server/internal/bots"
 	"relaynest/server/internal/devices"
@@ -53,6 +54,10 @@ func runServer(ctx context.Context, args []string) (result error) {
 	addr := flags.String("listen", "127.0.0.1:8080", "HTTP监听地址")
 	db := flags.String("db", "", "数据库文件路径（必填）")
 	externalOrigin := flags.String("external-origin", "", "外部 HTTPS Origin（必填）")
+	attachmentDir := flags.String("attachments-dir", "", "附件卷目录（默认数据库路径加 .attachments，生产应挂载独立持久卷）")
+	limits := attachments.DefaultLimits()
+	flags.Int64Var(&limits.Image, "image-max-bytes", limits.Image, "图片实际字节上限（正 int64）")
+	flags.Int64Var(&limits.File, "file-max-bytes", limits.File, "文件实际字节上限（正 int64）")
 	var proxies proxyFlags
 	flags.Var(&proxies, "trusted-proxy", "可信代理 IP/CIDR（可重复，默认不信任任何代理）")
 	if err := flags.Parse(args); err != nil {
@@ -66,7 +71,7 @@ func runServer(ctx context.Context, args []string) (result error) {
 	if flags.NArg() != 0 {
 		return errors.New("configuration_failed")
 	}
-	if *db == "" || *db == ":memory:" {
+	if *db == "" || *db == ":memory:" || limits.Image <= 0 || limits.File <= 0 {
 		return errors.New("configuration_failed")
 	}
 	// 正常启动可新建文件；在迁移/读取身份之前持共享锁，并晚于 Store 释放。
@@ -88,6 +93,19 @@ func runServer(ctx context.Context, args []string) (result error) {
 			result = errors.Join(result, errors.New("storage_close_failed"))
 		}
 	}()
+	if *attachmentDir == "" {
+		*attachmentDir = *db + ".attachments"
+	}
+	files, err := attachments.OpenFiles(*attachmentDir)
+	if err != nil {
+		return errors.New("attachment_storage_failed")
+	}
+	defer func() {
+		if err := files.Close(); err != nil {
+			result = errors.Join(result, errors.New("attachment_storage_close_failed"))
+		}
+	}()
+	authentication.AttachmentHandler = httpapi.NewAttachmentHandler(store, files, limits, authentication.attachmentAuthorize)
 	ln, err := net.Listen("tcp", *addr)
 	if err != nil {
 		return errors.New("listen_failed")
@@ -152,8 +170,9 @@ func authenticationDependencies(ctx context.Context, path, externalOrigin string
 		InstanceHandler: httpapi.NewInstanceHandler(store),
 		BotHandler:      httpapi.NewBotHandler(bots.New(store), botAuthorization(sessions, security)),
 		// 未装配已核平台资格时仅拒vendor激活；FCM/none偏好与两通道登记仍独立可用。
-		DeviceHandler:  devices.NewHandlerWithPush(sessions, security, devices.NewPushRepository(store, sessions, nil)),
-		MessageHandler: httpapi.NewMessageHandler(bots.New(store), messages.New(store), clientMessageAuthorization(sessions, security)),
+		DeviceHandler:       devices.NewHandlerWithPush(sessions, security, devices.NewPushRepository(store, sessions, nil)),
+		MessageHandler:      httpapi.NewMessageHandler(bots.New(store), messages.New(store), clientMessageAuthorization(sessions, security)),
+		attachmentAuthorize: clientMessageAuthorization(sessions, security),
 	}, nil
 }
 
@@ -209,7 +228,9 @@ type managementHandlers struct {
 	*httpapi.InstanceHandler
 	*httpapi.BotHandler
 	*httpapi.MessageHandler
-	DeviceHandler *devices.Handler
+	*httpapi.AttachmentHandler
+	attachmentAuthorize httpapi.BotAuthorize
+	DeviceHandler       *devices.Handler
 }
 
 // 在装配层适配路由能力，避免 httpapi 反向导入依赖它的 auth/devices。

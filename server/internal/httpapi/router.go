@@ -34,6 +34,10 @@ type ClientMessageHandlers interface {
 	CreateClientMessage(http.ResponseWriter, *http.Request)
 }
 
+type AttachmentHandlers interface {
+	UploadAttachment(http.ResponseWriter, *http.Request)
+}
+
 type DeviceHandlers interface {
 	ListDeviceSessions(http.ResponseWriter, *http.Request)
 	RevokeDeviceSession(http.ResponseWriter, *http.Request)
@@ -62,6 +66,9 @@ func New(h *health.Handler, authentication ...AuthHandlers) http.Handler {
 		}
 		if m, ok := a.(ClientMessageHandlers); ok {
 			mux.HandleFunc("POST /api/v1/client/bots/{id}/messages", m.CreateClientMessage)
+		}
+		if uploads, ok := a.(AttachmentHandlers); ok {
+			mux.HandleFunc("POST /api/v1/attachments", uploads.UploadAttachment)
 		}
 		mux.HandleFunc("POST /api/v1/auth/login", a.Login)
 		mux.HandleFunc("GET /api/v1/auth/session", a.GetSession)
