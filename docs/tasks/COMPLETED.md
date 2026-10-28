@@ -294,6 +294,30 @@ commit后201 ClientMessageReceipt含原message/delivery_id，no-store；同有�
 
 当前有限阶段仅 plain/markdown 文本且无附件/引用/按钮；其他输入显式拒绝并记录未实现，不能吞字段或声称完整 CreateMessageRequest 通过。后续引用、附件、按钮、标准Webhook的阶段门槛分别由 BE-04/05 保留。回执仅代表持久化，不代表应用ACK、已读或业务成功。
 
+<a id="g5-be05-compose"></a>
+
+### BE-05-01 附件流式上传状态机限定父组合
+
+- 完成决定：仅既定上传父范围done；STORAGE与HTTP两子叶已完成后，另经外URL补证、不同Agent固定组合独审及准确root组合核收，未因子项done自动完成。原父要求与历史准备如下保留，不将关联／下载／后台恢复回收／设置API／真机部署或global门槛包含进本父，也不把它们反设为父完成的循环依赖。
+- 完成追加依赖（不改变上述开工依赖）：[已完成 BE-01 现有后端父范围](COMPLETED.md#g5-be01)；基础准备可先进行，真实全范围收口必须满足。
+
+- P01 有限规划（2026-10-26）：owner Backend Orchestrator，Agent `/root/backend_dependency_plan`，基线 `388dd8ae1f3641bdfd26a7a421e4171b8da16971` / `work` 只读；只细化本 leaf 的准确 3～5 主文件工作包及迁移／接口边界，不写文件或预占迁移号。状态仍未开始；BE-01 完整完成追加门槛未满足，不据准备规划放行真实上传验收。
+- P01 已返回有限拆分；R02 `/root/backend_recovery` 验证 P05-01 最终 `ed488e543d892f2353fbc95f72a2f0af98ba9a8d` 为基线祖先，六个 worktree 均无 0008 文件或迁移改动，唯一 HTTP 写入者不改迁移。由调度拆成下列两个执行子包，原完整验收不变；状态转准备中，只有两包和完整 BE-01 门槛全部满足才可收口。
+
+- 子项证据：[STORAGE 已完成独审与精确集成](COMPLETED.md#g5-be05-storage)，源与最终 `064807f9e5e126f48c9360d4d02a40fc209f790e`；[HTTP真实上传接线已完成独审及准确I01](COMPLETED.md#g5-be05-http)；[BE-01 现有后端依赖已完成](COMPLETED.md#g5-be01)，父原上传验收仍待满足。
+
+- 旧ID：`P05-05`；类型：有限分拆收口（不整组派发）；状态：`done`（2026-10-28，总调度依据既定限定上传父验收、R01补证、不同A01及准确Parent-I01 PASS批准完成）。
+- 依赖：[已完成基线 P05-01](COMPLETED.md#g2)。
+- 允许范围：`server/internal/attachments/**`、`server/migrations/**`，及对应测试。
+- 门槛：`G-GIT`；条件未实证不记通过。
+
+补充检查：ready前不能关联；流式内存有界，随机物理路径、字节限制/hash/fsync/rename及幂等一致，URL仅保存不抓取。默认图片10MiB/文件50MiB按已确认配置；不能把默认值当不可配置硬上限。真实上传接线必须依BE-01 runtime及Bot-first附件矩阵，上传流在正确授权后才读取。
+- 覆盖映射：ready前拒绝由attachments.Repository.ReadyTx只查state=ready及staging否定测试证明，仅是上传存储边界，不代表消息附件绑定已实现；真实生产上传HTTP分段读取及提交前重验由HTTP叶准确a647组合覆盖。Files.write固定32KiB、实际字节限额含MaxInt64边界、随机安全物理键／SHA256／file.Sync→同卷Rename→dir.Sync；原名仅显示。存储测试覆盖同键读流摘要／异内容冲突、重开／并发／取消／租约续期及迟到fencing、rename后SQL与真实延迟FK COMMIT失败不发布ready或回执；HTTP原12顶层＋独审新增2顶层承载3场景覆盖Bot-first／Android真实授权先读流、流中凭据／权限／会话／实例失效、最终SQL／COMMIT失败与秘密响应。正int64可注入限额及默认图片10MiB／文件50MiB均核对，未把默认值当写死上限或称全局设置API通过。
+- **BE05-COMPOSE-R01 PASS**：固定技术组合 `a647df879c607d524f58ab058c2537816f372671`，单临时overlay `/tmp/relaynest-be05-compose-r01-20261028/be05_upload_compose_test.go`，SHA256 `dc3b730209b4a14153118dfba701f460cd9f39b52037efae1f1e0822b8dfa879`。真实TLS生产router已挂Uploader／SQLite及实际附件卷，先实际上传建立1附件／1物理文件的有效hash基线；plain文件URL与markdown图片URL分别201／no-store、SQL原文及format不变，本地HTTP counter=0、附件数与卷内hash无新增或变化，不能把URL称新受控附件。普通exit0／4.137秒、race exit0／9.779秒，154输入前后相同。证据 `/tmp/relaynest-be05-compose-r01-20261028/{inputs.json,pre.json,overlay.json,commands.jsonl,ordinary.log,race.log,handoff.json}`；普通日志SHA256 `a67e55e1a229f605f464db49ab3c0c4d2c8502e13673f7ef9566457d1936952c`，race日志 `9a3670b8b87fcec71ac526fce153ec2c5c09d48b660d431a7839b2dcedeef620`。无源码／旧断言／超时修改，无本R01测试FAIL。
+- 不同 **BE05-COMPOSE-A01 PASS**：Auditor `/root/backend_restore_retry` 独立逐文件核上述父映射及源码／日志，固定a647审计树无发现；准确同overlay独立复跑两URL场景普通exit0／4.284秒、154输入含三真实embed前后相同，日志SHA256 `3205a2e26af9cfc7cc9734357b5c969b8f27fa7400ba1ac2152416ee3e5587c6`。证据 `/tmp/relaynest-be05-compose-a01-20261028/{static-evidence.json,inputs.json,overlay.json,independent-ordinary.json,independent-ordinary.log}`，没有机械重复whole／race或边审边修。
+- **BE-05-01-COMPOSE-I01 PASS**：准确目标 `resume/backend-20261026@eeeff77e8e76f5045d248929cbf3182c9100691c` 相对受测a647仅BACKEND／COMPLETED／PROGRESS三doc；server／Web树、154输入含三真实embed及overlay dc3b完全等值，无业务合并。精确复核STORAGE四主＋三测试及0008同受审064807f9、HTTP五路径同受审53427226；R01两日志、A01独立日志及HTTP-I01五阶段共8日志的start-end／exit0／hash／输入全有效。故准确复用已有实际PASS，本Parent-I01 **未新跑Go／whole／race**，无ff／业务提交，不冒新实测。证据 `/tmp/relaynest-be05-compose-i01-20261028/checks.json`，SHA256 `b97643761ddcc940e0c4e764c4888c8e128a97662a9bdf5dbe3ea16a33b041f1`。
+- 复用历史与限制：[STORAGE](COMPLETED.md#g5-be05-storage)及[HTTP](COMPLETED.md#g5-be05-http)完整源链／A／I／配置／合同证据保留；存储早期缺Web dist构建FAIL、HTTP01／02 fixture FAIL、I01汇总误assert15top的非Go计数FAIL及正确14顶层／3新增场景均未删改。API／Web未改，准确复用原输入和真实embed／validator源日志，本次无npm／Python新检查。父仅流式上传完成，消息关联HTTP、下载／Range、后台恢复／孤儿回收、设置API、真机、部署及全局门槛仍各按其任务验收；未push／部署／发布／创建完成标记。
+
 <a id="g5-be05-http"></a>
 
 ### BE-05-01-HTTP 真实上传接线与组合验收

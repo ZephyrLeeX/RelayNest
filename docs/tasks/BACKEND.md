@@ -211,13 +211,14 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 #### BE-04-01-HISTORY-HTTP Android 历史分页与详情真实 HTTP
 
 - 类型：有限子叶；状态：`running`（2026-10-28，总调度批准 ready → running，由不同 Implementer 正式接手；父 BE-04-01 仍 `running`，原验收不变）。owner Backend Orchestrator；准备角色 `/root/history_http_prepare`（Backend Planner／文档 Integrator），本轮仅元数据登记；Implementer `/root/history_http_implementer`，真实隔离树 `.worktrees/backend-be04-history-http`／`impl/backend-be04-history-http-20261028` 从下述 canonical 基线 clean 起步。固定 canonical 产品基线 `613e79e838539154a91df1625ed4ab479095feba`，目标 `resume/backend-20261026`。准备树 `.worktrees/backend-be04-history-http-docs`／`docs/backend-be04-history-http-ready-20261028`；实际实施基线同为 canonical `613e79e…`，root `356ff7801285d3aaae4767e02fb775e70b956ab4` 仅为其纯文档后继，不把文档提交冒充产品变更。
+- 恢复实测：首次最小检查已有 `/tmp/relaynest-history-http-targeted-first.log`（SHA256 `6d32733a09bdf16548c0ebdd1d84058dc41cc22054aed81353f65f3f14654864`），cmd两组QueryAndCredentials／AuthorizationInvalidation **FAIL**（包8.980秒），httpapi **PASS**（0.007秒）、messages **PASS**（0.743秒）；原日志保留。尚缺完整命令／start-end／退出码及受测输入台账，不伪造、不判断产品缺陷已修。总调度现授权Implementer最小核fixture及复验、结果在途，六路径WIP未提交，正式矩阵／独审／I01尚未完成。
 - 已集成依赖：[BE-01](COMPLETED.md#g5-be01)、[BE-02限定父组合](COMPLETED.md#g5-be02-compose)、[HISTORY-STORAGE](COMPLETED.md#g5-be04-history-storage)（最终映射 `6e5ca4b…`）、[REFERENCE-CREATE](COMPLETED.md#g5-be04-reference-create)（`b5fa149…`／准确组合 `74e07f6…`）。[READ-STORAGE](COMPLETED.md#g5-be04-read-storage)（`0a93d6e…`／准确组合 `43e9d63…`）亦已集成，但本历史叶不依赖共享已读 HTTP；上传 HTTP 已准确集成于 canonical 基线，不消费 PENDING／JOB 私树 WIP。
 - 冻结合同：以 `server/api/openapi.yaml` 的 `listClientMessages`、`getClientMessage`、`MessagePage`、`Message` 及 `x-instance-binding` 为准，结合 PRD §3.4／§4.1／§4.2、技术设计 §3／§6。仅实现 `GET /client/bots/{id}/messages` 与 `GET /client/messages/{id}`；不含共享已读 PUT、同步／bootstrap、WS、消息编辑或附件绑定。Android Bearer＋实例头及会话私有绑定；Web Cookie、Bot API Token、Webhook Key 均不可获得正文。停用 Bot 的仍存历史可读；不存在／过期／无权统一既定404，不新设路由或错误码。
 - 允许主文件（4～5）：新增 `server/internal/httpapi/message_history.go`，可选新增 `server/internal/httpapi/message_history_cursor.go`；仅扩展 `server/internal/messages/history.go` 的可信 read tx 详情 helper，按 messageID 在同一事务解析 Bot 后复用 `GetHistoryMessageTx`；`server/internal/httpapi/router.go`；`server/cmd/relaynest/main.go` 最小装配。必要测试限新增 `server/internal/httpapi/message_history*_test.go`、`server/cmd/relaynest/message_history_test.go` 和 `server/internal/messages/history_http_tx_test.go`；不改旧 main_test、auth 生产代码、SQL、API、依赖或其他模块。实际实现如需超出此范围，先报告证据重新分包。
 - 必要授权接线：canonical 的 `clientMessageAuthorization` 当前忽略 read/write、固定 `RequestWrite` 且仅提供 Write 闭包；本叶须最小支持真实 `RequestRead → WithAuthorizedRead`，保留 Android 类型和实例安全入口及原 Write 语义。不得复用允许 Web 的管理端授权作为 Android 历史入口。列表、详情全部在私有真实会话绑定的可信读事务内获取，不能先跨事务查 Bot／正文再拼接授权；详情只接受 messageID，不加公开 bot 选择器。候选响应仅在授权读闭包整体成功后发布，撤销／过期／认证代次／实例变化或最终失败不得泄漏正文、续期或产生业务副作用。
 - 分页与投影验收：`bot_seq DESC`、排他边界、有界 limit＋1、不用 offset；cursor 不透明并绑定 Bot，错 Bot 拒绝，末页 `next_cursor=null` 且 `has_more=false`，编辑不改排序。cursor 编码和不超过仓储200的实际页限为内部实现细节，不引入新签名 key、TTL、同步 H／epoch 或 bootstrap 令牌。冻结 Message 必填字段和类型完整投影，保留已有 `ButtonsJSON`；引用用 originalID，源删除仍保留原 ID且不返回源正文，已删详情404。附件关联投影尚未实现，不能冒称本叶完成实际关联附件显示或擅定新显示策略；如现有模型不足以兑现当前合同，先报告冲突。
 - 真实验收：生产 TLS／HTTP＋SQLite 接线、既有创建及同 Bot 引用后列表／详情；跨 Bot cursor、空页／页限／末页／删除分页边界后继续、并发新增及编辑不乱序、原引用保留／源删详情404；Android／Web／Bot／Webhook、停用 Bot及当前授权失效矩阵。受保护响应固定 `no-store`，实际 JSON 对照冻结 OAS（含序列／版本字符串、UTC时间、必填数组及 null）；错误和日志不得泄漏正文、会话／实例秘密或 SQL。
-- 锁与检查：准备仅写 BACKEND／PROGRESS及准备树/index，root/index 排他锁在本登记完成后释放；公共 main／router 的实现写锁已由总调度仅授予 `/root/history_http_implementer`，连同其实现私树／index及本叶允许路径排他持有。无需迁移；0009／0010 永久原占用，0011 专属 JOB 保留。Go1.27.3 的 messages／httpapi／cmd／auth／storage／changes／bots 相关普通与 race、全服普通／vet／build、gofmt／diff、真实响应合同及精确 main／router 新并集检查须实施后执行；旧测试断言和超时不变，当前 Implementer 读取／实现、gofmt及准备测试；本叶所有 Go 均 NOT_RUN，等待总调度窗口。当前 JOB 私树独占重型窗口，不抢跑。Web／API未改时核锁版输入及真实 embed hash复用，不机械重跑 npm／validator；源单独本地提交后由不同 Agent 固定 SHA 独审及准确 I01，记录命令／hash／退出码，区分 PASS／FAIL／NOT_RUN。
+- 锁与检查：准备仅写 BACKEND／PROGRESS及准备树/index，root/index 排他锁在本登记完成后释放；公共 main／router 的实现写锁已由总调度仅授予 `/root/history_http_implementer`，连同其实现私树／index及本叶允许路径排他持有。无需迁移；0009／0010 永久原占用，0011 专属 JOB 保留。Go1.27.3 的 messages／httpapi／cmd／auth／storage／changes／bots 相关普通与 race、全服普通／vet／build、gofmt／diff、真实响应合同及精确 main／router 新并集检查须实施后执行；旧测试断言和超时不变，当前 Implementer 读取／实现、gofmt及准备测试；本叶首次最小Go已有上述FAIL／局部PASS，当前最小核fixture／复验已获总调度唯一窗口、结果在途；完整矩阵尚未授予，不抢跑。Web／API未改时核锁版输入及真实 embed hash复用，不机械重跑 npm／validator；源单独本地提交后由不同 Agent 固定 SHA 独审及准确 I01，记录命令／hash／退出码，区分 PASS／FAIL／NOT_RUN。
 - 本轮限制：只核 Git／文档／冻结合同与既有最小授权接线，无源码修改、Go／npm／validator或新技术 PASS；不创建 registry／cards／reports、不 push／部署／发布／创建完成标记。历史 HTTP、共享已读 HTTP、附件关联投影和父最终组合在真实完成前均保持未完成。
 
 <a id="be-04-02"></a>
@@ -286,32 +287,19 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 ### BE-05-01 附件流式上传状态机
 
-- 完成追加依赖（不改变上述开工依赖）：[已完成 BE-01 现有后端父范围](COMPLETED.md#g5-be01)；基础准备可先进行，真实全范围收口必须满足。
-
-- P01 有限规划（2026-10-26）：owner Backend Orchestrator，Agent `/root/backend_dependency_plan`，基线 `388dd8ae1f3641bdfd26a7a421e4171b8da16971` / `work` 只读；只细化本 leaf 的准确 3～5 主文件工作包及迁移／接口边界，不写文件或预占迁移号。状态仍未开始；BE-01 完整完成追加门槛未满足，不据准备规划放行真实上传验收。
-- P01 已返回有限拆分；R02 `/root/backend_recovery` 验证 P05-01 最终 `ed488e543d892f2353fbc95f72a2f0af98ba9a8d` 为基线祖先，六个 worktree 均无 0008 文件或迁移改动，唯一 HTTP 写入者不改迁移。由调度拆成下列两个执行子包，原完整验收不变；状态转准备中，只有两包和完整 BE-01 门槛全部满足才可收口。
-
-- 子项证据：[STORAGE 已完成独审与精确集成](COMPLETED.md#g5-be05-storage)，源与最终 `064807f9e5e126f48c9360d4d02a40fc209f790e`；[HTTP真实上传接线已完成独审及准确I01](COMPLETED.md#g5-be05-http)；[BE-01 现有后端依赖已完成](COMPLETED.md#g5-be01)，父原上传验收仍待满足。
-
-- 旧ID：`P05-05`；类型：有限分拆收口（不整组派发）；状态：`running`（STORAGE及有限HTTP叶已完成，父原完整验收／独立组合仍待闭环）。
-- 父收口计划：只读Planner建议以单临时overlay新增“外URL不抓取”的请求计数证明；后续另派R01→不同Auditor→准确I01，当前尚未运行该补证，不因HTTP叶done自动完成父。原验收及范围不变。
-- 依赖：[已完成基线 P05-01](COMPLETED.md#g2)。
-- 允许范围：`server/internal/attachments/**`、`server/migrations/**`，及对应测试。
-- 门槛：`G-GIT`；条件未实证不记通过。
-
-补充检查：ready前不能关联；流式内存有界，随机物理路径、字节限制/hash/fsync/rename及幂等一致，URL仅保存不抓取。默认图片10MiB/文件50MiB按已确认配置；不能把默认值当不可配置硬上限。真实上传接线必须依BE-01 runtime及Bot-first附件矩阵，上传流在正确授权后才读取。
+已完成既定限定上传父范围：[原验收映射、外URL不抓取R01、不同A01及准确Parent-I01](COMPLETED.md#g5-be05-compose)。STORAGE／HTTP及父组合分别闭环；消息关联、下载、后台恢复／回收、设置API、真机部署及global门槛仍未由此验收，不作为本父循环下游依赖。
 
 <a id="be-05-01-storage"></a>
 
 ### BE-05-01-STORAGE 流式持久化状态机准备
 
-已完成子项：[范围、完整验收与独审／精确集成证据](COMPLETED.md#g5-be05-storage)。仅存储准备完成，父 BE-05-01 仍未完成；0008 永久占用、写锁已释放，下一编号 0009 须另核。
+已完成子项：[范围、完整验收与独审／精确集成证据](COMPLETED.md#g5-be05-storage)。仅存储准备完成，父BE-05-01限定上传范围也已另行完成；0008 永久占用、写锁已释放，下一编号 0009 须另核。
 
 <a id="be-05-01-http"></a>
 
 ### BE-05-01-HTTP 真实上传接线与组合验收
 
-已完成有限叶：[完整源链、不同A01、准确a647新组合I01、真实测试计数与范围限制](COMPLETED.md#g5-be05-http)。只完成真实上传HTTP接线及其组合，父BE-05-01仍running，外URL不抓取计数补证／父独立验收待另派，不含下载、绑定、回收、设置HTTP、部署或全局门槛。
+已完成有限叶：[完整源链、不同A01、准确a647新组合I01、真实测试计数与范围限制](COMPLETED.md#g5-be05-http)。只完成真实上传HTTP接线及其组合，[父BE-05-01限定上传组合已完成](COMPLETED.md#g5-be05-compose)，不含下载、绑定、回收、设置HTTP、部署或全局门槛。
 
 <a id="be-05-02"></a>
 
@@ -582,7 +570,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-10-02-JOB-STORAGE 兼容持久模型与原子内部租约预留
 
-- 类型：有限子叶；状态：`running`（2026-10-28，原 `/root/job_storage_implementer` 及fresh接替者因模型capacity失败已撤写权，当前 `/root/read_storage_auditor` 仅任本叶Implementer、不得审自己JOB，固定真实起步 `34b21671a26bcccbe1154b167947dfb4f0ed23fa`）。原产品基线 `d4d942e615736bb3aaed0c4f4d14a661f4231994` 后仅元数据推进；仅四主文件、允许tests及三处计数fixture，0011锁归本叶；同原私树已准备四主文件＋三新测试＋三处计数fixture，旧1～10字节不变，gofmt／diff静态PASS、未正式提交。最小Job tests实际 **PASS**（exit0／3.450秒，12顶层＋2迁移子例，157输入前后不变），证据 `/tmp/relaynest-be10-job-resume-20261028/{minimal-01.json,minimal-01.log}`；完整普通／race／vet／build矩阵／独审／I01仍 **NOT_RUN**，等待总调度窗口，不得把源码准备当验收，不整派父BE-10-02。
+- 类型：有限子叶；状态：`review`（2026-10-28，由running完成源提交转待不同Agent独审，原 `/root/job_storage_implementer` 及fresh接替者因模型capacity失败已撤写权，当前 `/root/read_storage_auditor` 仅任本叶Implementer、不得审自己JOB，固定真实起步 `34b21671a26bcccbe1154b167947dfb4f0ed23fa`）。原产品基线 `d4d942e615736bb3aaed0c4f4d14a661f4231994` 后仅元数据推进；仅四主文件、允许tests及三处计数fixture，0011锁归本叶；同原私树已准备四主文件＋三新测试＋三处计数fixture，旧1～10字节不变，gofmt／diff静态PASS、已正式源提交。最小Job tests实际 **PASS**（exit0／3.450秒，12顶层＋2迁移子例，157输入前后不变），证据 `/tmp/relaynest-be10-job-resume-20261028/{minimal-01.json,minimal-01.log}`；完整源链 `34b21671a26bcccbe1154b167947dfb4f0ed23fa → 74f69ea872425cd863fe466132b9239103d225f0` 单提交十路径（四主／三测试／三计数fixture），工作树clean、旧SQL1～10字节不变。157输入当前与受测前后hash一致，源全服普通 **PASS**（165.197秒）、九包race **PASS**（515.921秒）、全服vet／build **PASS**（2.701／1.560秒），均exit0；handoff `/tmp/relaynest-be10-job-resume-20261028/handoff.json` SHA256 `643bfb6c4e6285465787b8e3f015dc840f2ff478891c4b8ea1767bb663d34b38`。不同JOB-A01下一待派、尚无结论，I01 **NOT_RUN**，0011锁继续保留，不得把源码准备当验收，不整派父BE-10-02。
 - 已集成依赖：[BE-10-01限定服务器父组合](COMPLETED.md#g5-be10-compose)、[P05-01消息事务与待办仓储](COMPLETED.md#g2)、[认证／设备基础](COMPLETED.md#g1)、[READ-STORAGE及0010准确I01](COMPLETED.md#g5-be04-read-storage)和既有storage。root已包含0010，不得回到缺0010的旧基线写0011。沿现表兼容扩展、保留旧hint且禁止补造提醒资格，属于落实既有冻结合同的内部实施；不新增公开接口或架构分层。
 - **迁移排他锁**：总调度2026-10-28正式独占分配 **`0011_push_schedule.sql` → BE-10-02-JOB-STORAGE**，从本登记起持续至准确独审／精确I01核收；其他writer不得占用该号。分配前只读实核root为上述d4基线，根common库51 refs／29注册树、backend-local common库6 refs／3注册树，共57 refs／32树；refs最高分别0010／0009，无0011＋，全部迁移目录无dirty。随后仅新建本叶docs隔离树。0009、0010永久占用；不得修改0001～0010或因旧恢复记录重新分配它们。
 - 单目标与四主文件：只允许新增 `server/migrations/0011_push_schedule.sql`、`server/internal/push/job_models.go`、`server/internal/push/job_repository.go`、`server/internal/push/job_claim.go`。沿既有push_jobs兼容扩展／重建持久字段，提供有界、确定顺序的原子内部租约预留、条件释放及过期接管；预留不是最终发送／提醒资格，不实现实际发送次数扣减、退避或发送结果完整状态机。
@@ -593,7 +581,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - PENDING兼容和符号锁：不消费未验收私树API、不修改 `pending_models.go`／`pending_read.go`／`pending_read_test.go`。新生产符号及测试helper使用Job／job前缀，避开现有ErrPendingInput、ErrPendingData、MaxPendingSessions、PendingSession、PendingDevice、ReadPendingTx及pending测试helper。PENDING实际查询仅筛state=pending，故上述数据库状态隔离保证旧只读投影不吞新alert；无需等待PENDING完成才独立实施。其精确集成后，最终I01必须实测同会话legacy＋完整sync＋完整alert共存时旧投影仅归并legacy、旧五列INSERT仍可投影，不提前宣称组合通过。
 - 来源风险及禁止范围：[F01](COMPLETED.md#g5-be10-preflight-f01)已独立A02／准确I01完成并集成root20f，后续真实生产者验收须消费该修复；JOB当前固定34b私树仍不含F01，不能以DDL代替真实组合验收。禁止修改producer、auth／devices／storage实现、HTTP/router/main、API／依赖／Web；不实现worker、策略过滤、adapter、平台发送、fallback、动态插件、清理任务，不触RelayShelf／MoviePilot。PENDING及父调度保留各自未完成阶段与真实FAIL，不因F01有限修复完成而自动done。
 - 必须真实验证：旧库升级及故障原子回滚、0001～0010 checksum不变、旧五列INSERT／legacy不可领取、完整快照约束／版本0／不可变字段；双Store竞争、同device跨session互斥、不同device独立预留、到期接管／reopen恢复、旧lease CAS；nil／取消／SQL／COMMIT失败无部分发布及秘密边界。完整快照仓储fixture不冒称生产消息HTTP来源；实际混合投影组合按上条等待PENDING准确集成。
-- 必跑检查及收口：固定Go1.27.3，push／messages／devices／auth／storage／changes／sync／attachments相关普通与race、受影响vet、全服build、gofmt／diff；保留既有50ms／12并发及10ms门槛。所有Go按总调度授予重型窗口执行，PENDING源窗口已释放、F01-I01已完成，最小Job tests窗口已释放，当前上传I01独占完整窗口，JOB完整矩阵继续等待调度。Web／API未改时核锁版与真实embed准确复用，不机械重跑npm／validator。本地独立实现提交后交不同Agent固定SHA独审及准确组合I01，记录实际命令／hash／退出码并区分PASS／FAIL／NOT_RUN。本叶私树WIP未正式提交／验收、父BE-10-02仍running且未ready／done，不完成生产接线、共享已读策略、BE-10-03或真机／跨端门槛；不push／部署／创建完成标记。
+- 必跑检查及收口：固定Go1.27.3，push／messages／devices／auth／storage／changes／sync／attachments相关普通与race、受影响vet、全服build、gofmt／diff；保留既有50ms／12并发及10ms门槛。所有Go按总调度授予重型窗口执行，PENDING源窗口已释放、F01-I01已完成，JOB完整源矩阵已PASS并释放窗口，当前HISTORY最小复验独占窗口；JOB独立审计／I01按总调度排队。Web／API未改时核锁版与真实embed准确复用，不机械重跑npm／validator。本地独立实现提交后交不同Agent固定SHA独审及准确组合I01，记录实际命令／hash／退出码并区分PASS／FAIL／NOT_RUN。本叶source已正式提交，独审／准确I01未完成、父BE-10-02仍running且未ready／done，不完成生产接线、共享已读策略、BE-10-03或真机／跨端门槛；不push／部署／创建完成标记。
 
 <a id="be10-preflight-a01"></a>
 
