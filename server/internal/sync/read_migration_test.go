@@ -76,7 +76,7 @@ func TestReadUpgradeNineMigrations(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer s.Close()
-	if scalar(t, s, `SELECT count(*) FROM schema_migrations`) != 10 {
+	if scalar(t, s, `SELECT count(*) FROM schema_migrations`) != 11 {
 		t.Fatal("migration count")
 	}
 	for name, sum := range checks {
