@@ -541,9 +541,9 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 ### BE-10-02 Hub 推送待办合并与调度
 
-- 证据与交接：总调度采纳有限拆分，首叶 [PENDING-READ](#be-10-02-pending-read) 已 running；新增 [JOB-STORAGE](#be-10-02-job-storage) 已 ready、0011正式独占分配，尚未实施。父原完整范围、依赖和验收保留。首叶准备完成并已有私树WIP，尚未验收，无实施提交／独审／集成结果，不将父包或未来发送能力标完成。
+- 证据与交接：总调度采纳有限拆分，首叶 [PENDING-READ](#be-10-02-pending-read) 已 review；新增 [JOB-STORAGE](#be-10-02-job-storage) 已 ready、0011正式独占分配，尚未实施。父原完整范围、依赖和验收保留。首叶已有完整源提交与源检查PASS，尚未取得独审／精确集成结果，不将父包或未来发送能力标完成。
 
-- 旧ID：`P09-02`；类型：有限分拆收口（不整组派发）；状态：`running`（首叶PENDING-READ实施中，父完整运行时尚未完成）。
+- 旧ID：`P09-02`；类型：有限分拆收口（不整组派发）；状态：`running`（首叶PENDING-READ待独审／精确集成，父完整运行时尚未完成）。
 - 依赖：[已完成 BE-10-01 限定服务器父组合](COMPLETED.md#g5-be10-compose)、[已完成基线 P05-01](COMPLETED.md#g2)。[READ-STORAGE事务仓储已独审／精确集成完成](COMPLETED.md#g5-be04-read-storage)，实际共享已读HTTP／策略过滤仍未完成，后包依赖须按真实范围具体核实；此前置完成不自动使整包 ready。
 - 允许范围：`server/internal/push/**`，及对应测试。
 - 门槛：`G-GIT`；条件未实证不记通过。
@@ -556,7 +556,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-10-02-PENDING-READ 现有同步待办可信事务只读投影与水位归并
 
-- 类型：有限子叶；状态：`running`（2026-10-28，总调度由ready转入实施，独立Implementer `/root/pending_read_implementer`；原准备及恢复保存记录见前一文档提交）。固定实施产品基线 `1d1d666eae984768e7fe30685246fe709b7f3682`，后续纯元数据推进不改变此基线；已核真实私树 `.worktrees/backend-be10-pending-read`／`impl/backend-be10-pending-read-20261028` 的HEAD仍为该SHA，三新文件WIP未提交，私树/index及本叶新push文件写锁归Implementer。gofmt／diff检查PASS（实施回交），最小普通实际七主组＋五身份组 **PASS**（exit0／3.441秒）；01／02缺embed的setup FAIL、03新fixture CHECK FAIL→04 PASS均保留。现总调度授该Implementer相关普通／race／vet／build完整重型窗口，结果在途、尚未回交，不猜PASS；准备完成不等于验收，独审／精确集成尚未执行。
+- 类型：有限子叶；状态：`review`（2026-10-28，独立Implementer `/root/pending_read_implementer` 已完成源提交；不同A01／新组合I01尚未完成）。固定实施产品基线 `1d1d666eae984768e7fe30685246fe709b7f3682`，私树 `.worktrees/backend-be10-pending-read`／`impl/backend-be10-pending-read-20261028` 已为单提交 `bc71696224caf8aabb3c879f9d589abec5b79f7f`，准确三新文件、工作树clean。源相关六包普通／六包race／受影响vet／全服build及gofmt／diff均PASS，源在ordinary04后保持不变；最小普通实际为6个顶层TestPending＋5个身份子例（exit0／3.441秒），先前口头“7主”是计数误述，测试PASS不变。01／02缺embed的setup FAIL、03新fixture CHECK FAIL→04 PASS均保留；首次commit缺identity失败后命令级身份重试成功，不改Git配置。证据 `/tmp/be10-pending-read-matrix.json`、`/tmp/be10-pending-read-ordinary-04.log`；重型源窗口已释放，后续按总调度排队。源PASS不等于独审／精确集成，新root／READ／F01组合未测，不提前done。
 - 已集成依赖：[BE-10-01限定服务器注册／偏好／条件解绑父组合](COMPLETED.md#g5-be10-compose)、[P05-01消息事务与非零待办仓储](COMPLETED.md#g2)、[认证／会话／设备与B01基础](COMPLETED.md#g1)及既有storage。现root已含引用与HTTP并集，但本叶固定1d1基线不消费后来已完成的[READ-STORAGE](COMPLETED.md#g5-be04-read-storage)或上传私树WIP。后包可消费已集成READ仓储，完整父调度的真实共享已读策略过滤仍须独立实施／验收，不能因仓储done取消后包门槛。
 - 单目标与允许路径：仅新增两主文件 `server/internal/push/pending_models.go`、`server/internal/push/pending_read.go`，必要新测试 `server/internal/push/pending_read_test.go`；以当前 `push_jobs` 为来源，读取到期同步待办、按设备分组并保留各会话隔离，归并同一设备／会话的最大目标水位，返回有界、确定顺序的只读候选。不得跨会话混成一个可发送身份，不将归并水位称为已领取消费、发送资格或提醒资格。
 - 事务和身份：消费受信调用方持有的 `*sql.Tx`，拒nil，不自开／提交事务、不接受仅凭公开Actor字段的授权包装；同事务核对device/session绑定、Android类型、会话撤销、idle／absolute期限及管理员代次。期限单位沿既有认证纳秒存储，读取时间可控；未来执行时间、取消及SQL错误处理明确，不发布部分结果；不读取或返回token、正文、附件URL／callback或秘密。
@@ -581,7 +581,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - PENDING兼容和符号锁：不消费未验收私树API、不修改 `pending_models.go`／`pending_read.go`／`pending_read_test.go`。新生产符号及测试helper使用Job／job前缀，避开现有ErrPendingInput、ErrPendingData、MaxPendingSessions、PendingSession、PendingDevice、ReadPendingTx及pending测试helper。PENDING实际查询仅筛state=pending，故上述数据库状态隔离保证旧只读投影不吞新alert；无需等待PENDING完成才独立实施。其精确集成后，最终I01必须实测同会话legacy＋完整sync＋完整alert共存时旧投影仅归并legacy、旧五列INSERT仍可投影，不提前宣称组合通过。
 - 来源风险及禁止范围：[F01](#be10-preflight-f01)源b305已不同A02 PASS但尚未准确I01，root生产者期限单位缺陷不因本叶DDL被视为已修；后续真实生产者验收必须消费F01准确集成。禁止修改producer、auth／devices／storage实现、HTTP/router/main、API／依赖／Web；不实现worker、策略过滤、adapter、平台发送、fallback、动态插件、清理任务，不触RelayShelf／MoviePilot。PENDING与F01保留各自阶段及真实FAIL，不自动done。
 - 必须真实验证：旧库升级及故障原子回滚、0001～0010 checksum不变、旧五列INSERT／legacy不可领取、完整快照约束／版本0／不可变字段；双Store竞争、同device跨session互斥、不同device独立预留、到期接管／reopen恢复、旧lease CAS；nil／取消／SQL／COMMIT失败无部分发布及秘密边界。完整快照仓储fixture不冒称生产消息HTTP来源；实际混合投影组合按上条等待PENDING准确集成。
-- 必跑检查及收口：固定Go1.27.3，push／messages／devices／auth／storage／changes／sync／attachments相关普通与race、受影响vet、全服build、gofmt／diff；保留既有50ms／12并发及10ms门槛。所有Go按总调度授予重型窗口执行，当前窗口归PENDING，本登记不跑Go。Web／API未改时核锁版与真实embed准确复用，不机械重跑npm／validator。本地独立实现提交后交不同Agent固定SHA独审及准确组合I01，记录实际命令／hash／退出码并区分PASS／FAIL／NOT_RUN。本叶未实施、父BE-10-02仍running且未ready／done，不完成生产接线、共享已读策略、BE-10-03或真机／跨端门槛；不push／部署／创建完成标记。
+- 必跑检查及收口：固定Go1.27.3，push／messages／devices／auth／storage／changes／sync／attachments相关普通与race、受影响vet、全服build、gofmt／diff；保留既有50ms／12并发及10ms门槛。所有Go按总调度授予重型窗口执行，PENDING源窗口已释放、后续独审／F01-I01等按总调度排队，本登记不跑Go。Web／API未改时核锁版与真实embed准确复用，不机械重跑npm／validator。本地独立实现提交后交不同Agent固定SHA独审及准确组合I01，记录实际命令／hash／退出码并区分PASS／FAIL／NOT_RUN。本叶未实施、父BE-10-02仍running且未ready／done，不完成生产接线、共享已读策略、BE-10-03或真机／跨端门槛；不push／部署／创建完成标记。
 
 <a id="be10-preflight-a01"></a>
 
