@@ -69,7 +69,7 @@ Debian 恢复：推送 STORAGE、共享写准入修复及 ADMIN 有限文本 HTT
 - **开发中｜附件功能**：流式持久化准备已完成；真实上传HTTP已running，独立 `/root/be05_upload_implementer` 在 `.worktrees/be05-http-upload@bd95d01…` 持有五路径未提交WIP及router/main排他锁；gofmt／diff PASS、dist按hash复用，targeted-03实际12项PASS；保留前01字段／MIME及02实例旧Store503夹具FAIL，仅新tests修正；完整普通／race／vet／build仍NOT_RUN等窗口；Bot-first／Android／本端点G1及设置路由仍待验收，父 BE-05-01 未完成；关联权限与保护引用、下载／Range、安全响应、启动恢复及孤儿回收仍未开始。
 - **未开始｜投递与清理（P6）**：原子领取、Long Polling、ACK／续约、退避重试、失败管理、历史／墓碑清理、队列生命周期、全局配置及健康投影。
 - **未开始｜Hub 同步运行时**：增量同步、bootstrap 重建、WS 提示及连接撤销。
-- **开发中｜正式推送服务端（P9）**：[STORAGE](tasks/COMPLETED.md#g5-be10-storage)、[五端点HTTP](tasks/COMPLETED.md#g5-be10-http)与[限定服务器父组合](tasks/COMPLETED.md#g5-be10-compose)各自独审／精确集成完成，父R01／A01／74e准确I01补齐并发模式、撤销重登旧回调及条件解绑；[PENDING-READ](tasks/BACKEND.md#be-10-02-pending-read)首叶已ready，固定 `1d1d666…`、仅新push两主文件及必要测试，可信Tx现有同步待办只读投影／水位归并；实施／检查／独审／集成尚NOT_RUN，不分配迁移、0010仍归READ。完整待办调度的生产HTTP非零接线、DDL／租约、READ提醒过滤及FCM／OPPO Adapter／真机仍未完成；BE10-PREFLIGHT-A01独立核对期限单位疑点，尚未验证，不以Android PoC或准备结果代验。失效token仅按发送快照条件解绑对应注册，不删除设备会话。
+- **开发中｜正式推送服务端（P9）**：[STORAGE](tasks/COMPLETED.md#g5-be10-storage)、[五端点HTTP](tasks/COMPLETED.md#g5-be10-http)与[限定服务器父组合](tasks/COMPLETED.md#g5-be10-compose)各自独审／精确集成完成，父R01／A01／74e准确I01补齐并发模式、撤销重登旧回调及条件解绑；[PENDING-READ](tasks/BACKEND.md#be-10-02-pending-read)首叶已running，独立 `/root/pending_read_implementer` 在 `.worktrees/backend-be10-pending-read`／`impl/backend-be10-pending-read-20261028@1d1d666…` 持有三新文件未提交WIP，可信Tx现有同步待办只读投影／水位归并；准备完成未验收，gofmt／diff PASS、所有Go仍NOT_RUN等窗口，独审／集成未执行，不分配迁移、0010仍归READ。完整待办调度的生产HTTP非零接线、DDL／租约、READ提醒过滤及FCM／OPPO Adapter／真机仍未完成；BE10-PREFLIGHT-A01期限单位疑点的六例材料已准备、实际复现仍NOT_RUN，不以Android PoC或准备结果代验。失效token仅按发送快照条件解绑对应注册，不删除设备会话。
 
 ## 3. Web 管理端
 

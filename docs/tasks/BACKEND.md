@@ -548,9 +548,9 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 ### BE-10-02 Hub 推送待办合并与调度
 
-- 证据与交接：总调度采纳有限拆分，首叶 [PENDING-READ](#be-10-02-pending-read) 已 ready；父原完整范围、依赖和验收保留。首叶仅准备完成，尚无新增实施／独审／集成结果，不将父包或未来发送能力标完成。
+- 证据与交接：总调度采纳有限拆分，首叶 [PENDING-READ](#be-10-02-pending-read) 已 running；父原完整范围、依赖和验收保留。首叶准备完成并已有私树WIP，尚未验收，无实施提交／独审／集成结果，不将父包或未来发送能力标完成。
 
-- 旧ID：`P09-02`；类型：有限分拆收口（不整组派发）；状态：准备中（首叶PENDING-READ ready，父完整运行时尚未实现）。
+- 旧ID：`P09-02`；类型：有限分拆收口（不整组派发）；状态：`running`（首叶PENDING-READ实施中，父完整运行时尚未完成）。
 - 依赖：[已完成 BE-10-01 限定服务器父组合](COMPLETED.md#g5-be10-compose)、[已完成基线 P05-01](COMPLETED.md#g2)。共享已读 READ-STORAGE 正在实施、尚无已集成运行时，已读过滤依赖须在有限规划中具体核实；此前置完成不自动使整包 ready。
 - 允许范围：`server/internal/push/**`，及对应测试。
 - 门槛：`G-GIT`；条件未实证不记通过。
@@ -563,14 +563,14 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-10-02-PENDING-READ 现有同步待办可信事务只读投影与水位归并
 
-- 类型：有限子叶；状态：`ready`（2026-10-28，总调度采纳有限Planner方案，原文档准备Integrator `/root/restore_backend_1028`，恢复保存Integrator `/root/backend_restore_retry`；不同Implementer尚未派发）。固定实施产品基线 `1d1d666eae984768e7fe30685246fe709b7f3682`，后续纯元数据推进不改变此基线；派发时由Implementer核准真实HEAD及可复用输入，独立准备 `.worktrees/backend-be10-pending-read`／`impl/backend-be10-pending-read-20261028`，准备前不得宣称该源码树已存在或占用。源码尚未实施，Go编译／测试、独审／精确集成均 **NOT_RUN**。
+- 类型：有限子叶；状态：`running`（2026-10-28，总调度由ready转入实施，独立Implementer `/root/pending_read_implementer`；原准备及恢复保存记录见前一文档提交）。固定实施产品基线 `1d1d666eae984768e7fe30685246fe709b7f3682`，后续纯元数据推进不改变此基线；已核真实私树 `.worktrees/backend-be10-pending-read`／`impl/backend-be10-pending-read-20261028` 的HEAD仍为该SHA，三新文件WIP未提交，私树/index及本叶新push文件写锁归Implementer。gofmt／diff检查PASS（实施回交），所有Go编译／测试仍 **NOT_RUN**、等待重型窗口；准备完成不等于验收，独审／精确集成尚未执行。
 - 已集成依赖：[BE-10-01限定服务器注册／偏好／条件解绑父组合](COMPLETED.md#g5-be10-compose)、[P05-01消息事务与非零待办仓储](COMPLETED.md#g2)、[认证／会话／设备与B01基础](COMPLETED.md#g1)及既有storage。现root已含引用与HTTP并集，但本叶不要求未完成的READ-STORAGE；不得消费READ／上传私树WIP。完整父调度的共享已读过滤必须等READ独审及精确集成，不能因本叶不依赖READ而取消后包真实门槛。
 - 单目标与允许路径：仅新增两主文件 `server/internal/push/pending_models.go`、`server/internal/push/pending_read.go`，必要新测试 `server/internal/push/pending_read_test.go`；以当前 `push_jobs` 为来源，读取到期同步待办、按设备分组并保留各会话隔离，归并同一设备／会话的最大目标水位，返回有界、确定顺序的只读候选。不得跨会话混成一个可发送身份，不将归并水位称为已领取消费、发送资格或提醒资格。
 - 事务和身份：消费受信调用方持有的 `*sql.Tx`，拒nil，不自开／提交事务、不接受仅凭公开Actor字段的授权包装；同事务核对device/session绑定、Android类型、会话撤销、idle／absolute期限及管理员代次。期限单位沿既有认证纳秒存储，读取时间可控；未来执行时间、取消及SQL错误处理明确，不发布部分结果；不读取或返回token、正文、附件URL／callback或秘密。
-- 只读和锁：不得写／删／领取job、修改attempt／时间／changes或产生网络发送；messages生产者、旧SQL、auth／storage／devices／router／main／API／Web均只读。仅本叶新push文件及私树/index写锁在派发时交Implementer；公共router/main继续由上传Actor持有，重型按总调度排队。**本叶不分配SQL迁移**，0009永久占用，`0010_bot_read_states.sql`仍由READ-STORAGE独占，后续调度DDL重新核号分配。
+- 只读和锁：不得写／删／领取job、修改attempt／时间／changes或产生网络发送；messages生产者、旧SQL、auth／storage／devices／router／main／API／Web均只读。仅本叶新push文件及私树/index写锁已交Implementer；公共router/main继续由上传Actor持有，重型按总调度排队。**本叶不分配SQL迁移**，0009永久占用，`0010_bot_read_states.sql`仍由READ-STORAGE独占，后续调度DDL重新核号分配。
 - 必须真实验证：由既有消息仓储真实事务与合法会话／B01来源生成非零 `push_jobs` 后读取，不能仅用内存桩或把直接造行称生产消息来源；当前正式Bot／Admin消息HTTP仍未接非零targets，须明确测试来源为仓储，不冒称生产HTTP推送接线通过。同会话多job归并、跨设备／会话隔离、空结果／边界／确定顺序／未来执行时间；真实撤销／过期／代次失效／绑定错误过滤；两个Store并发新增与读快照一致，未读到的新增job保留；reopen稳定、重复读取无写入；nil／取消／SQL错误无部分发布。只读前后核job、业务状态、changes及秘密状态hash，不输出原始敏感内容。
 - 必跑检查：固定Go1.27.3，push／messages／auth／devices／storage／changes相关普通与race、受影响vet、全服build、gofmt／diff；沿用原50ms／12并发及10ms门槛，不改旧断言／超时。Web／API不变时核锁版输入与真实embed后准确复用，不机械重跑npm／validator。重型窗口须总调度明确授予，当前 `/root/read_resume_checks` 独占READ补缺窗口，不并行Go；完整本地提交后交不同Agent固定SHA审计及精确I01。命令、input／日志hash、退出码区分PASS／FAIL／NOT_RUN，未测不冒充通过。
-- 来源风险待核：Planner只读发现 `messages/pending.go` 期限比较单位可能与认证存储不一致；总调度已另派独立 **BE10-PREFLIGHT-A01** 静态核对及后续验证。此处仅记录待核，未确认缺陷、不记PASS；本叶不得顺手改messages生产者、旧SQL或认证，也不以该疑点扩大权限。
+- 来源风险待核：Planner只读发现 `messages/pending.go` 期限比较单位可能与认证存储不一致；总调度已另派独立 **BE10-PREFLIGHT-A01** 静态核对及后续验证，六例复现材料已准备、实际Go检查仍 **NOT_RUN**。此处仅记录待核，未确认缺陷、不记PASS；本叶不得顺手改messages生产者、旧SQL或认证，也不以该疑点扩大权限。
 - 父与后包：生产消息HTTP非零待办同事务接线；持久调度DDL／用途sync-alert分离／版本快照／稳定提醒键／期限／设备租约；READ精确集成后的提醒过滤及重试／恢复／迟到结果fencing；假adapter调度与FCM／OPPO平台分别另包。本叶没有DDL、worker、ACK、平台资格或真实发送，不能完成BE-10-02原父、BE-10-03、真机／跨端或全局实例门槛，不创建完成标记。
 
 <a id="be-10-03"></a>
