@@ -310,6 +310,24 @@ commit后201 ClientMessageReceipt含原message/delivery_id，no-store；同有�
 - I01 结果：Agent `/root/attachment_integrate_i01` `PASS`，目标 `work` 无冲突快进 `388dd8ae1f3641bdfd26a7a421e4171b8da16971` → 原受审 `064807f9e5e126f48c9360d4d02a40fc209f790e`，准确九文件、无额外业务修改。附件/storage 普通／race、旧库升级、旧迁移字节/hash、全服普通／vet/build/gofmt 与两树锁版 Node 22.23.2／npm 10.9.8 Web 构建 PASS；目标回归/build PASS。原 BACKEND patch 哈希前后一致，index 空。Git/index/附件/0008 写锁释放，0008 永久占用；HTTP／G1／恢复扫描等 NOT_RUN。生成 Web dist 后全服 build PASS，关闭原缺 dist 构建失败，保留上述历史 FAIL。验收与精确集成证据齐全，仅本 STORAGE 子包完成，父 BE-05-01 不完成。
 - 归档与限制：BE-DOC-S02 `/root/storage_archive_resume` 仅转录主调度完成决定及既有证据。HTTP 授权／Bot-first 实际读流顺序／Android／完整 G1／设置路由／恢复扫描均 NOT_RUN；准备完成不等于真实上传完成。0008 永久占用、写锁已释放；下一迁移 0009 派发前须另核编号及排他锁。
 
+<a id="g5-be10-preflight-f01"></a>
+
+### BE10-PREFLIGHT-F01 非零待办会话期限单位修复及A01编号关闭
+
+- 类型：有限修复叶；状态：`done`（2026-10-28，总调度依据完整源检查、不同A02 PASS、新组合I01 PASS及root准确ff批准；原review→integrating过程保留）。仅处理 **BE10-PREFLIGHT-A01-01**，编号已由独立A02验证关闭并完成准确集成；不完成BE-10-02父调度或真实生产HTTP非零接线。
+- 完整源链：固定产品基线 `1d1d666eae984768e7fe30685246fe709b7f3682 → b30504e2ace54282bc42d44f816df1d0b1678375`，Fixer `/root/push_expiry_fixer`，三路径 `server/internal/messages/pending.go`、`server/internal/messages/repository_test.go`、`server/internal/auth/message_push_expiry_test.go`。只将待办会话有效期比较与认证真实UnixNano存储对齐，必要fixture数据同单位，保留原断言、50ms／12并发及超时；未改SQL／HTTP接线／发送逻辑。
+- 源检查：真实六例PASS（3.876秒）、messages普通PASS（5.924秒）、auth／devices／storage／changes普通PASS（42.071秒）、五包race PASS（122.212秒）、相关vet／全服build PASS（0.592／1.583秒）、gofmt／diff PASS；230跟踪输入及三源文件前后hash一致。证据 `/tmp/relaynest-be10-preflight-f01-20261028/{commands.jsonl,commit-verification.json,source-inputs.before.json,source-inputs.after.json,tracked-inputs.before.json,tracked-inputs.after.json,*log}`。该源命令记录有elapsed／exit／log hash但未记录start／end，不补造时间；首次commit缺默认identity失败后命令级身份重试成功，不算测试失败。
+- 不同 **BE10-PREFLIGHT-A02 PASS**：固定b305新源，使用原A01同六例overlay（SHA256 `00077c663aac1b0cd14d42f7ad6b21ed51d8fec7710f50d45ea3523895634720`），独立exit0／4.001秒，两有效控制与四过期否定均PASS，关闭编号-01。证据 `/tmp/relaynest-be10-preflight-a02-76ui1pvy/{commands.jsonl,independent-six.log,tracked-inputs.before.json,tracked-inputs.after.json}`；日志SHA256 `26e2f8eb36c70102abf3d3c0d457536ff8d5e61ea4f4e6fe905907c91b280282`。
+- **BE10-PREFLIGHT-F01-I01 PASS**：Integrator `/root/backend_restore_retry` 从准确root `resume/backend-20261026@34b21671a26bcccbe1154b167947dfb4f0ed23fa` 在 `.worktrees/backend-be10-preflight-f01-i01`／`integrate/backend-be10-preflight-f01-i01-20261028` 仅一次无冲突重放 `b30504e2ace54282bc42d44f816df1d0b1678375 → e42e7f9df12a16950928380e766bdce0559b8be7`，range-diff单项 `=`，纯两doc提交后准确受测候选 `20f5691aa1c17f181af87b8bcf51f417b2bc7acb`。三路径逐字节同受审源，READ／HISTORY／REF／HTTP、SQL1～10、Web／依赖及其余目标完整保留，未加入UPLOAD／PENDING／JOB源码或SQL11。
+- 仅最终20f实际I01：原六例真实0／31／91天×双入口 **PASS**（4.913秒；2有效各job1，4过期ErrPushTarget、空回执及九项零增量），全服普通 **PASS**（159.039秒，覆盖五包普通及READ／0010启动兼容），相关八包race **PASS**（374.494秒；messages／auth／devices／storage／changes／sync／bots／attachments），全服vet／build **PASS**（2.465／1.618秒）、gofmt／diff **PASS**。全部exit0，固定SHA／版本／start-end／log hash及148产品输入、三真实embed、overlay前后及ff后均一致；此前中断时I01全部NOT_RUN事实保留，未将源／A02日志当新组合实测。已安全ff root `34b2167… → 20f5691…`，main `01c74a7…` 不变。证据 `/tmp/relaynest-be10-preflight-f01-i01-20261028/{inputs.json,plan.json,range-diff.txt,commands.jsonl,post.json,target-fast-forward.log,*log}`；Web／API未改，真实embed核hash复用，本轮npm／validator NOT_RUN。
+- 范围：当前两正式消息HTTP入口仍为nil targets，本修复仅真实仓储非零目标期限，不证明生产HTTP非零接线或平台外发。后包生产接线、待办调度／策略过滤／adapter、全局及跨端门槛继续未完成；历史已完成PASS原范围不改。无新迁移，0009／0010永久占用，0011仍仅JOB私树独占；未push／部署／发布／创建完成标记。
+
+#### 原BE10-PREFLIGHT-A01真实失败与修复前证据（历史保留）
+
+- 当时状态：`changes_requested`；独立审计结论 **CHANGES_REQUIRED**（2026-10-28），固定基线 `1d1d666eae984768e7fe30685246fe709b7f3682`，发现 **BE10-PREFLIGHT-A01-01**：`server/internal/messages/pending.go:69` 以Unix秒比较认证真实写入的Unix纳秒期限，过期会话仍可生成非零待办。触发为合法SessionStore创建后恢复当前时钟、真实过期会话作为非零PushTargets，覆盖application／idempotent两仓储入口；不是平台发送验证。
+- 六例实际结果：0／31／91天 × 两入口，两个有效会话PASS，四个过期会话FAIL；auth Inspect已拒绝过期，但消息入口返回err=nil、job=1且业务状态增加。期望为ErrPushTarget、空回执、零状态增量。日志子例标签31ns／91ns是显示错误，`age_days`与时钟构造实际按天。证据 `/tmp/relaynest-be10-preflight-a01-4qf9ln45/{baseline-test.log,commands.jsonl}`；最终overlay SHA256 `00077c663aac1b0cd14d42f7ad6b21ed51d8fec7710f50d45ea3523895634720`。前两轮缺embed及unused import编译失败分别保留于setup-failed.log／overlay-build-failed.log，不冒充业务结果。
+- 影响边界：当前两条正式消息HTTP入口仍传nil targets，devices现有逻辑已按纳秒过滤；历史已完成PASS保留原范围，不追认其覆盖此次真实非零过期场景。该限制现由上述F01／A02／准确I01闭环，但不扩大本段当时验证范围。
+
 <a id="g5-be10-compose"></a>
 
 ### BE-10-01 Hub 推送注册与设备通知偏好

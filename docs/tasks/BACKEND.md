@@ -563,14 +563,14 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - 只读和锁：不得写／删／领取job、修改attempt／时间／changes或产生网络发送；messages生产者、旧SQL、auth／storage／devices／router／main／API／Web均只读。仅本叶新push文件及私树/index写锁已交Implementer；公共router/main继续由上传Actor持有，重型按总调度排队。**本叶不分配SQL迁移**，0009永久占用，`0010_bot_read_states.sql`已由READ-STORAGE正式永久占用，后续调度DDL重新核号分配。
 - 必须真实验证：由既有消息仓储真实事务与合法会话／B01来源生成非零 `push_jobs` 后读取，不能仅用内存桩或把直接造行称生产消息来源；当前正式Bot／Admin消息HTTP仍未接非零targets，须明确测试来源为仓储，不冒称生产HTTP推送接线通过。同会话多job归并、跨设备／会话隔离、空结果／边界／确定顺序／未来执行时间；真实撤销／过期／代次失效／绑定错误过滤；两个Store并发新增与读快照一致，未读到的新增job保留；reopen稳定、重复读取无写入；nil／取消／SQL错误无部分发布。只读前后核job、业务状态、changes及秘密状态hash，不输出原始敏感内容。
 - 必跑检查：固定Go1.27.3，push／messages／auth／devices／storage／changes相关普通与race、受影响vet、全服build、gofmt／diff；沿用原50ms／12并发及10ms门槛，不改旧断言／超时。Web／API不变时核锁版输入与真实embed后准确复用，不机械重跑npm／validator。重型窗口须总调度明确授予，READ源检查窗口已释放，后续Go须按总调度排队；完整本地提交后交不同Agent固定SHA审计及精确I01。命令、input／日志hash、退出码区分PASS／FAIL／NOT_RUN，未测不冒充通过。
-- 来源风险：独立 [BE10-PREFLIGHT-A01](#be10-preflight-a01) 已真实复现期限单位缺陷、结论 **CHANGES_REQUIRED**，编号 **BE10-PREFLIGHT-A01-01**；F01源已获独立A02 PASS、该编号已关闭，但F01待准确I01，不能据此视为root已修复。本叶仍不得顺手改messages生产者、旧SQL或认证，不以发现扩大权限。
+- 来源风险：独立 [BE10-PREFLIGHT-A01](#be10-preflight-a01) 已真实复现期限单位缺陷、结论 **CHANGES_REQUIRED**，编号 **BE10-PREFLIGHT-A01-01**；F01已获独立A02及准确I01 PASS、编号关闭且root已集成，详见[完成档案](COMPLETED.md#g5-be10-preflight-f01)。本叶仍不得顺手改messages生产者、旧SQL或认证，不以发现扩大权限。
 - 父与后包：生产消息HTTP非零待办同事务接线；持久调度DDL／用途sync-alert分离／版本快照／稳定提醒键／期限／设备租约；READ精确集成后的提醒过滤及重试／恢复／迟到结果fencing；假adapter调度与FCM／OPPO平台分别另包。本叶没有DDL、worker、ACK、平台资格或真实发送，不能完成BE-10-02原父、BE-10-03、真机／跨端或全局实例门槛，不创建完成标记。
 
 <a id="be-10-02-job-storage"></a>
 
 #### BE-10-02-JOB-STORAGE 兼容持久模型与原子内部租约预留
 
-- 类型：有限子叶；状态：`running`（2026-10-28，独立Implementer `/root/job_storage_implementer` 已派，固定真实起步 `34b21671a26bcccbe1154b167947dfb4f0ed23fa`）。原产品基线 `d4d942e615736bb3aaed0c4f4d14a661f4231994` 后仅元数据推进；仅四主文件、允许tests及三处计数fixture，0011锁归本叶，所有Go检查 **NOT_RUN**，不得把源码准备当验收，不整派父BE-10-02。
+- 类型：有限子叶；状态：`running`（2026-10-28，原 `/root/job_storage_implementer` 及fresh接替者因模型capacity失败已撤写权，当前 `/root/read_storage_auditor` 仅任本叶Implementer、不得审自己JOB，固定真实起步 `34b21671a26bcccbe1154b167947dfb4f0ed23fa`）。原产品基线 `d4d942e615736bb3aaed0c4f4d14a661f4231994` 后仅元数据推进；仅四主文件、允许tests及三处计数fixture，0011锁归本叶；同原私树已准备四主文件＋三新测试＋三处计数fixture，旧1～10字节不变，gofmt／diff静态PASS、未正式提交。现获最小Job tests首次编译窗口，结果在途不猜PASS，完整矩阵／独审／I01未执行，不得把源码准备当验收，不整派父BE-10-02。
 - 已集成依赖：[BE-10-01限定服务器父组合](COMPLETED.md#g5-be10-compose)、[P05-01消息事务与待办仓储](COMPLETED.md#g2)、[认证／设备基础](COMPLETED.md#g1)、[READ-STORAGE及0010准确I01](COMPLETED.md#g5-be04-read-storage)和既有storage。root已包含0010，不得回到缺0010的旧基线写0011。沿现表兼容扩展、保留旧hint且禁止补造提醒资格，属于落实既有冻结合同的内部实施；不新增公开接口或架构分层。
 - **迁移排他锁**：总调度2026-10-28正式独占分配 **`0011_push_schedule.sql` → BE-10-02-JOB-STORAGE**，从本登记起持续至准确独审／精确I01核收；其他writer不得占用该号。分配前只读实核root为上述d4基线，根common库51 refs／29注册树、backend-local common库6 refs／3注册树，共57 refs／32树；refs最高分别0010／0009，无0011＋，全部迁移目录无dirty。随后仅新建本叶docs隔离树。0009、0010永久占用；不得修改0001～0010或因旧恢复记录重新分配它们。
 - 单目标与四主文件：只允许新增 `server/migrations/0011_push_schedule.sql`、`server/internal/push/job_models.go`、`server/internal/push/job_repository.go`、`server/internal/push/job_claim.go`。沿既有push_jobs兼容扩展／重建持久字段，提供有界、确定顺序的原子内部租约预留、条件释放及过期接管；预留不是最终发送／提醒资格，不实现实际发送次数扣减、退避或发送结果完整状态机。
@@ -579,24 +579,21 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - 冻结字段与期限：完整快照遵循OpenAPI `x-notification-job-policy`／`NotificationJobSnapshot`及TECH §9.1／9.3，保存session/device、用途、目标水位、provider、注册／配置版本、deployment/message稳定提醒键、bot_id/bot_seq、expiry及alert资格；sync也保留关联稳定键且provider=fcm。settings_version允许虚拟默认0。原创建时间／expiry／稳定键和原事件资格不可因合并、重领或reopen重置；旧行缺可信时间保持legacy，不以升级时间冒充。target watermark不等于message.created序号，管理员路径可能为delivery追加后的最终change水位。
 - 租约和秘密：同device跨session互斥、租约状态／摘要持久，原始租约秘密不持久化；短写事务条件预留，过期接管后旧lease释放／更新必须CAS no-op。nil／context取消／SQL／COMMIT失败不发布部分结果或留下部分修改。job不得持久化注册token、正文、附件URL、callback或凭据；租约秘密仅内部可信句柄使用，不能进入JSON、格式化日志或普通回执，网络等待不得持写事务。内部预留不得绕过后包发送前的会话／注册／配置／DND／READ／期限复核。
 - PENDING兼容和符号锁：不消费未验收私树API、不修改 `pending_models.go`／`pending_read.go`／`pending_read_test.go`。新生产符号及测试helper使用Job／job前缀，避开现有ErrPendingInput、ErrPendingData、MaxPendingSessions、PendingSession、PendingDevice、ReadPendingTx及pending测试helper。PENDING实际查询仅筛state=pending，故上述数据库状态隔离保证旧只读投影不吞新alert；无需等待PENDING完成才独立实施。其精确集成后，最终I01必须实测同会话legacy＋完整sync＋完整alert共存时旧投影仅归并legacy、旧五列INSERT仍可投影，不提前宣称组合通过。
-- 来源风险及禁止范围：[F01](#be10-preflight-f01)源b305已不同A02 PASS但尚未准确I01，root生产者期限单位缺陷不因本叶DDL被视为已修；后续真实生产者验收必须消费F01准确集成。禁止修改producer、auth／devices／storage实现、HTTP/router/main、API／依赖／Web；不实现worker、策略过滤、adapter、平台发送、fallback、动态插件、清理任务，不触RelayShelf／MoviePilot。PENDING与F01保留各自阶段及真实FAIL，不自动done。
+- 来源风险及禁止范围：[F01](COMPLETED.md#g5-be10-preflight-f01)已独立A02／准确I01完成并集成root20f，后续真实生产者验收须消费该修复；JOB当前固定34b私树仍不含F01，不能以DDL代替真实组合验收。禁止修改producer、auth／devices／storage实现、HTTP/router/main、API／依赖／Web；不实现worker、策略过滤、adapter、平台发送、fallback、动态插件、清理任务，不触RelayShelf／MoviePilot。PENDING及父调度保留各自未完成阶段与真实FAIL，不因F01有限修复完成而自动done。
 - 必须真实验证：旧库升级及故障原子回滚、0001～0010 checksum不变、旧五列INSERT／legacy不可领取、完整快照约束／版本0／不可变字段；双Store竞争、同device跨session互斥、不同device独立预留、到期接管／reopen恢复、旧lease CAS；nil／取消／SQL／COMMIT失败无部分发布及秘密边界。完整快照仓储fixture不冒称生产消息HTTP来源；实际混合投影组合按上条等待PENDING准确集成。
-- 必跑检查及收口：固定Go1.27.3，push／messages／devices／auth／storage／changes／sync／attachments相关普通与race、受影响vet、全服build、gofmt／diff；保留既有50ms／12并发及10ms门槛。所有Go按总调度授予重型窗口执行，PENDING源窗口已释放、后续独审／F01-I01等按总调度排队，本登记不跑Go。Web／API未改时核锁版与真实embed准确复用，不机械重跑npm／validator。本地独立实现提交后交不同Agent固定SHA独审及准确组合I01，记录实际命令／hash／退出码并区分PASS／FAIL／NOT_RUN。本叶未实施、父BE-10-02仍running且未ready／done，不完成生产接线、共享已读策略、BE-10-03或真机／跨端门槛；不push／部署／创建完成标记。
+- 必跑检查及收口：固定Go1.27.3，push／messages／devices／auth／storage／changes／sync／attachments相关普通与race、受影响vet、全服build、gofmt／diff；保留既有50ms／12并发及10ms门槛。所有Go按总调度授予重型窗口执行，PENDING源窗口已释放、F01-I01已完成，当前最小Job tests由Implementer独占窗口，本次归档不跑Go。Web／API未改时核锁版与真实embed准确复用，不机械重跑npm／validator。本地独立实现提交后交不同Agent固定SHA独审及准确组合I01，记录实际命令／hash／退出码并区分PASS／FAIL／NOT_RUN。本叶私树WIP未正式提交／验收、父BE-10-02仍running且未ready／done，不完成生产接线、共享已读策略、BE-10-03或真机／跨端门槛；不push／部署／创建完成标记。
 
 <a id="be10-preflight-a01"></a>
 
 #### BE10-PREFLIGHT-A01 非零同步待办的真实会话期限预检
 
-- 状态：`changes_requested`；独立审计结论 **CHANGES_REQUIRED**（2026-10-28），固定基线 `1d1d666eae984768e7fe30685246fe709b7f3682`，发现 **BE10-PREFLIGHT-A01-01**：`server/internal/messages/pending.go:69` 以Unix秒比较认证真实写入的Unix纳秒期限，过期会话仍可生成非零待办。触发为合法SessionStore创建后恢复当前时钟、真实过期会话作为非零PushTargets，覆盖application／idempotent两仓储入口；不是平台发送验证。
-- 六例实际结果：0／31／91天 × 两入口，两个有效会话PASS，四个过期会话FAIL；auth Inspect已拒绝过期，但消息入口返回err=nil、job=1且业务状态增加。期望为ErrPushTarget、空回执、零状态增量。日志子例标签31ns／91ns是显示错误，`age_days`与时钟构造实际按天。证据 `/tmp/relaynest-be10-preflight-a01-4qf9ln45/{baseline-test.log,commands.jsonl}`；最终overlay SHA256 `00077c663aac1b0cd14d42f7ad6b21ed51d8fec7710f50d45ea3523895634720`。前两轮缺embed及unused import编译失败分别保留于setup-failed.log／overlay-build-failed.log，不冒充业务结果。
-- 影响边界：当前两条正式消息HTTP入口仍传nil targets，devices现有逻辑已按纳秒过滤；历史已完成PASS保留原范围，不追认其覆盖此次真实非零过期场景。修复及新源独立复审、准确I01闭环前不记done。
+原CHANGES_REQUIRED及发现 **BE10-PREFLIGHT-A01-01** 已经F01、不同A02及准确I01闭环，编号关闭；[原四过期FAIL、harness失败、真实六例控制与完整关闭证据](COMPLETED.md#g5-be10-preflight-f01)保留。HTTP仍nil targets，无平台外发验收。
 
 <a id="be10-preflight-f01"></a>
 
 #### BE10-PREFLIGHT-F01 修复非零待办的会话期限单位
 
-- 状态：`integrating`（2026-10-28，由review经不同A02 PASS转入准确I01），不同Fixer `/root/push_expiry_fixer` 已提交完整源链 `1d1d666eae984768e7fe30685246fe709b7f3682 → b30504e2ace54282bc42d44f816df1d0b1678375`，仅处理 **BE10-PREFLIGHT-A01-01**。固定产品基线 `1d1d666eae984768e7fe30685246fe709b7f3682`；生产文件仅允许 `server/internal/messages/pending.go`，可加必要真实回归及fixture期限单位数据调整，保留原断言／超时。不得修其他范围、改SQL／HTTP接线或发送，无新迁移分配，0010已正式占用归READ-STORAGE。
-- 验收：真实SessionStore的有效／idle过期／absolute过期 × 两入口六例，有效保留、过期ErrPushTarget空回执零增量；相关检查按总调度窗口执行。源相关普通、五包race、vet／build均 **PASS**；不同BE10-PREFLIGHT-A02对固定新源独立复验原六例 **PASS**（4.001秒），关闭BE10-PREFLIGHT-A01-01，证据 `/tmp/relaynest-be10-preflight-a02-76ui1pvy/{commands.jsonl,independent-six.log}`。保留A01原FAIL及HTTP nil targets、未发生平台发送的边界；原READ受测43e未含此修复；现Integrator `/root/backend_restore_retry` 从准确root `34b21671a26bcccbe1154b167947dfb4f0ed23fa` 在 `.worktrees/backend-be10-preflight-f01-i01`／`integrate/backend-be10-preflight-f01-i01-20261028` 仅一次无冲突重放 `b30504e2ace54282bc42d44f816df1d0b1678375 → e42e7f9`，三路径逐字节同源，其余目标READ／REF／HTTP／SQL1～10／Web／依赖及元数据保留，未加入上传／PENDING／JOB源码或SQL11。I01新组合六例真实会话、全服普通、受影响messages／auth／devices／storage／changes及READ兼容race、全服vet／build／格式检查待执行，全部PASS前不ff root／不done；固定SHA及输入／命令／结果证据 `/tmp/relaynest-be10-preflight-f01-i01-20261028`。PENDING-READ及其他叶保持各自原阶段。
+已完成有限修复叶：[完整源链、A02与准确20f新组合I01、编号关闭及范围限制](COMPLETED.md#g5-be10-preflight-f01)。root已准确集成，后包可消费修复；不完成生产HTTP非零接线、BE-10-02完整调度或平台发送。
 
 <a id="be-10-03"></a>
 
