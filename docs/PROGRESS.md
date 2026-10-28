@@ -65,7 +65,7 @@ Debian 恢复：推送 STORAGE、共享写准入修复及 ADMIN 有限文本 HTT
 ### 未完成
 
 - **未开始｜Bot 生命周期与权限收口**：重置／删除正式 HTTP、领取租约／等待请求／投递队列完整联动，以及身份权限整体矩阵（P04-08）。
-- **开发中｜历史／引用和共享已读父范围**：HISTORY-STORAGE及既有Bot API／Android文本REFERENCE-CREATE已各独审／精确集成，引用源 `65488a5…` 映射 `b5fa149…` 并在准确 `74e07f6…` HTTP＋引用并集通过普通／七包race等检查；父BE-04-01仍未完成历史／共享已读HTTP、附件投影及最终组合。[READ-STORAGE](tasks/BACKEND.md#be-04-01-read-storage)仍running，私有树基线 `8b3c0c9…`，0010专属该叶；new-tests及whole-normal全服普通140.823秒实际PASS，输入／日志hash匹配，相关八包普通由whole覆盖；related-race／vet／build截至恢复核实仍NOT_RUN，现由 `/root/read_resume_checks` 独占重型窗口补缺；正式矩阵收口／本地提交／独审／集成未完成。其他CAS编辑、Webhook、按钮回调和故障回归待实施。
+- **开发中｜历史／引用和共享已读父范围**：HISTORY-STORAGE及既有Bot API／Android文本REFERENCE-CREATE已各独审／精确集成，引用源 `65488a5…` 映射 `b5fa149…` 并在准确 `74e07f6…` HTTP＋引用并集通过普通／七包race等检查；父BE-04-01仍未完成历史／共享已读HTTP、附件投影及最终组合。[READ-STORAGE](tasks/BACKEND.md#be-04-01-read-storage)已review，私有树基线 `8b3c0c9…` 至十文件单提交 `efdae35…` clean，0010仍专属该叶；new-tests／whole-normal140.823秒／related-race358.782秒／vet／build均实际PASS，148输入及日志hash匹配，相关普通由whole覆盖。独立 `/root/read_storage_auditor` 正审完整链、尚无结论，精确集成未执行；旧计数失败轮从未运行，已纠正原误述，非新增测试复验。其他CAS编辑、Webhook、按钮回调和故障回归待实施。
 - **开发中｜附件功能**：流式持久化准备已完成；真实上传HTTP已running，独立 `/root/be05_upload_implementer` 在 `.worktrees/be05-http-upload@bd95d01…` 持有五路径未提交WIP及router/main排他锁；gofmt／diff PASS、dist按hash复用，targeted-03实际12项PASS；保留前01字段／MIME及02实例旧Store503夹具FAIL，仅新tests修正；完整普通／race／vet／build仍NOT_RUN等窗口；Bot-first／Android／本端点G1及设置路由仍待验收，父 BE-05-01 未完成；关联权限与保护引用、下载／Range、安全响应、启动恢复及孤儿回收仍未开始。
 - **未开始｜投递与清理（P6）**：原子领取、Long Polling、ACK／续约、退避重试、失败管理、历史／墓碑清理、队列生命周期、全局配置及健康投影。
 - **未开始｜Hub 同步运行时**：增量同步、bootstrap 重建、WS 提示及连接撤销。
