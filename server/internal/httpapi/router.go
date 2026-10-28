@@ -34,6 +34,11 @@ type ClientMessageHandlers interface {
 	CreateClientMessage(http.ResponseWriter, *http.Request)
 }
 
+type ClientHistoryHandlers interface {
+	ListClientMessages(http.ResponseWriter, *http.Request)
+	GetClientMessage(http.ResponseWriter, *http.Request)
+}
+
 type AttachmentHandlers interface {
 	UploadAttachment(http.ResponseWriter, *http.Request)
 }
@@ -66,6 +71,10 @@ func New(h *health.Handler, authentication ...AuthHandlers) http.Handler {
 		}
 		if m, ok := a.(ClientMessageHandlers); ok {
 			mux.HandleFunc("POST /api/v1/client/bots/{id}/messages", m.CreateClientMessage)
+		}
+		if history, ok := a.(ClientHistoryHandlers); ok {
+			mux.HandleFunc("GET /api/v1/client/bots/{id}/messages", history.ListClientMessages)
+			mux.HandleFunc("GET /api/v1/client/messages/{id}", history.GetClientMessage)
 		}
 		if uploads, ok := a.(AttachmentHandlers); ok {
 			mux.HandleFunc("POST /api/v1/attachments", uploads.UploadAttachment)

@@ -178,12 +178,16 @@ func authenticationDependencies(ctx context.Context, path, externalOrigin string
 
 // clientMessageAuthorization 仅允许 Android Bearer，实例门禁及会话复核沿用公共安全入口。
 func clientMessageAuthorization(sessions *auth.SessionStore, security *auth.RequestSecurity) httpapi.BotAuthorize {
-	return func(w http.ResponseWriter, r *http.Request, _ bool) (httpapi.BotAccess, bool) {
+	return func(w http.ResponseWriter, r *http.Request, write bool) (httpapi.BotAccess, bool) {
 		if len(r.Header.Values("Authorization")) == 0 || len(r.CookiesNamed("relaynest_session")) > 0 {
 			auth.WriteSessionErrorRequired(w, auth.ErrInvalidSession)
 			return httpapi.BotAccess{}, false
 		}
-		actor, ok := security.AuthorizeRequired(w, r, auth.RequestWrite)
+		mode := auth.RequestRead
+		if write {
+			mode = auth.RequestWrite
+		}
+		actor, ok := security.AuthorizeRequired(w, r, mode)
 		if !ok {
 			return httpapi.BotAccess{}, false
 		}
@@ -191,7 +195,10 @@ func clientMessageAuthorization(sessions *auth.SessionStore, security *auth.Requ
 			auth.WriteSessionErrorRequired(w, auth.ErrInvalidSession)
 			return httpapi.BotAccess{}, false
 		}
-		return httpapi.BotAccess{Write: func(ctx context.Context, fn func(*sql.Tx) error) error {
+		return httpapi.BotAccess{Read: func(ctx context.Context, fn func(*sql.Tx) error) error {
+			_, _, err := sessions.WithAuthorizedRead(ctx, actor, fn)
+			return err
+		}, Write: func(ctx context.Context, fn func(*sql.Tx) error) error {
 			return sessions.WithAuthorizedWrite(ctx, actor, fn)
 		}, SessionError: auth.WriteSessionErrorRequired}, true
 	}

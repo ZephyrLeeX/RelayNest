@@ -71,6 +71,22 @@ func (r *Repository) GetHistoryMessageTx(ctx context.Context, tx *sql.Tx, botID,
 	return message, err
 }
 
+// GetHistoryMessageByIDTx 仅供已授权读事务使用；Bot 解析与详情必须共享同一事务，
+// 不向 HTTP 层暴露未经授权的 Bot 选择器，也不预先读取候选正文。
+func (r *Repository) GetHistoryMessageByIDTx(ctx context.Context, tx *sql.Tx, messageID string) (Message, error) {
+	if tx == nil || messageID == "" {
+		return Message{}, ErrInvalid
+	}
+	var botID string
+	if err := tx.QueryRowContext(ctx, `SELECT bot_id FROM messages WHERE id=?`, messageID).Scan(&botID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return Message{}, ErrHistoryNotFound
+		}
+		return Message{}, err
+	}
+	return r.GetHistoryMessageTx(ctx, tx, botID, messageID)
+}
+
 func historyBotTx(ctx context.Context, tx *sql.Tx, botID string) error {
 	var exists int
 	err := tx.QueryRowContext(ctx, `SELECT 1 FROM bots WHERE id=?`, botID).Scan(&exists)
