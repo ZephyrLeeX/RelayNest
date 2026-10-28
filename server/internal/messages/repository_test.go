@@ -60,7 +60,8 @@ func setupMessages(t *testing.T) *fixture {
 		t.Fatal(err)
 	}
 	execMessages(t, f.s, `INSERT INTO administrator VALUES(1,'admin','test-hash',1)`)
-	execMessages(t, f.s, `INSERT INTO sessions VALUES('session',zeroblob(32),1,'android','device','phone',2000000000,2100000000,0)`)
+	// 与真实 SessionStore 一致，期限按纳秒存储；保留原夹具的有效时间。
+	execMessages(t, f.s, `INSERT INTO sessions VALUES('session',zeroblob(32),1,'android','device','phone',?,?,0)`, time.Unix(2000000000, 0).UnixNano(), time.Unix(2100000000, 0).UnixNano())
 	if v, e := f.s.EngineVersion(messageContext); e != nil {
 		t.Fatal(e)
 	} else {

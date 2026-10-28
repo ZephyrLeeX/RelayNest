@@ -64,9 +64,10 @@ func (r *Repository) enqueuePushes(ctx context.Context, tx *sql.Tx, targets []Pu
 		}
 		seen[target.SessionID] = true
 		// 会话表是当前唯一绑定来源。FK 不能代替撤销、期限与管理员代次复核；
-		// 不在这里发明推送注册/偏好选择规则，后续发送时仍须再次校验。
+		// 期限沿用认证会话的纳秒存储单位；后续发送时仍须再次校验。
+		// 不在这里发明推送注册/偏好选择规则。
 		var valid int
-		err := tx.QueryRowContext(ctx, `SELECT 1 FROM sessions s JOIN administrator a ON a.id=1 AND a.auth_generation=s.auth_generation WHERE s.id=? AND s.device_id=? AND s.client_type='android' AND s.revoked=0 AND s.idle_expires_at>? AND s.absolute_expires_at>?`, target.SessionID, target.DeviceID, now.Unix(), now.Unix()).Scan(&valid)
+		err := tx.QueryRowContext(ctx, `SELECT 1 FROM sessions s JOIN administrator a ON a.id=1 AND a.auth_generation=s.auth_generation WHERE s.id=? AND s.device_id=? AND s.client_type='android' AND s.revoked=0 AND s.idle_expires_at>? AND s.absolute_expires_at>?`, target.SessionID, target.DeviceID, now.UnixNano(), now.UnixNano()).Scan(&valid)
 		if err == sql.ErrNoRows {
 			return nil, ErrPushTarget
 		}
