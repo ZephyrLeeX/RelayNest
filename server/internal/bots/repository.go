@@ -79,6 +79,10 @@ func (r *Repository) CreateWithWrite(ctx context.Context, req CreateRequest, wri
 		if _, err := tx.ExecContext(ctx, "INSERT INTO bots(id,name,enabled,can_send,can_receive,version) VALUES(?,?,?,?,?,1)", id, b.Name, b.Enabled, b.Capabilities.Send, b.Capabilities.Receive); err != nil {
 			return err
 		}
+		// 初始已读与 Bot、凭据、BotUpsert 同事务；初始化不产生额外已读事件。
+		if _, err := tx.ExecContext(ctx, "INSERT INTO bot_read_states(bot_id,read_seq,state_version,updated_at) VALUES(?,0,1,?)", id, time.Now().UTC().Format(time.RFC3339Nano)); err != nil {
+			return err
+		}
 		for _, c := range []struct {
 			kind   Kind
 			meta   CredentialMetadata

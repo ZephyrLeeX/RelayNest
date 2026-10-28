@@ -89,7 +89,7 @@ func TestUpgradeSevenMigrationsPreservesChecksums(t *testing.T) {
 			}
 			count++
 		}
-		if count != 9 {
+		if count != 10 {
 			t.Fatal(count)
 		}
 		return rows.Err()
