@@ -61,16 +61,16 @@ CREATE INDEX push_jobs_session ON push_jobs(session_id,device_id);
 CREATE INDEX push_jobs_device_lease ON push_jobs(device_id,state,lease_until_ns);
 -- 部分唯一索引把同设备串行约束落在数据库；过期租约先在同事务释放。
 CREATE UNIQUE INDEX push_jobs_one_lease ON push_jobs(device_id) WHERE state='leased';
--- legacy 永不升级为完整事件；完整事件也不能退回 pending 进入旧同步投影。
+-- legacy 保留旧列更新语义；仅完整事件冻结快照，双方均不得跨类别转换。
 CREATE TRIGGER push_jobs_snapshot_immutable BEFORE UPDATE ON push_jobs
-WHEN NEW.id IS NOT OLD.id OR NEW.session_id IS NOT OLD.session_id OR NEW.device_id IS NOT OLD.device_id
+WHEN (NEW.state='pending')<>(OLD.state='pending')
+ OR (OLD.state<>'pending' AND (NEW.id IS NOT OLD.id OR NEW.session_id IS NOT OLD.session_id OR NEW.device_id IS NOT OLD.device_id
  OR NEW.purpose IS NOT OLD.purpose OR NEW.provider IS NOT OLD.provider
  OR NEW.registration_version IS NOT OLD.registration_version OR NEW.settings_version IS NOT OLD.settings_version
  OR NEW.deployment_id IS NOT OLD.deployment_id OR NEW.message_id IS NOT OLD.message_id
  OR NEW.bot_id IS NOT OLD.bot_id OR NEW.bot_seq IS NOT OLD.bot_seq
  OR NEW.session_generation IS NOT OLD.session_generation OR NEW.created_at_ns IS NOT OLD.created_at_ns
  OR NEW.expires_at_ns IS NOT OLD.expires_at_ns OR NEW.alert_eligible IS NOT OLD.alert_eligible
- OR (NEW.state='pending')<>(OLD.state='pending')
  OR NEW.target_change_seq<OLD.target_change_seq
- OR (OLD.purpose='alert' AND NEW.target_change_seq IS NOT OLD.target_change_seq)
+ OR (OLD.purpose='alert' AND NEW.target_change_seq IS NOT OLD.target_change_seq)))
 BEGIN SELECT RAISE(ABORT,'immutable push job snapshot'); END;

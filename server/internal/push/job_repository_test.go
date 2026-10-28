@@ -445,3 +445,128 @@ func TestJobLegacyWriterAndDatabaseSnapshotChecks(t *testing.T) {
 		}
 	}
 }
+
+// 对照真实旧库与升级库，legacy 旧列仍遵循原 CHECK/FK，而非完整快照冻结规则。
+func TestJobLegacyUpdateCompatibility(t *testing.T) {
+	for _, upgraded := range []bool{false, true} {
+		t.Run(fmt.Sprint(upgraded), func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "legacy.sqlite")
+			jobOldDatabase(t, path, false)
+			if upgraded {
+				s, err := storage.Open(jobContext, storage.Config{Path: path})
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := s.Close(); err != nil {
+					t.Fatal(err)
+				}
+			}
+			db, err := sql.Open("sqlite", path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer db.Close()
+			db.SetMaxOpenConns(1)
+			if _, err := db.Exec(`PRAGMA foreign_keys=ON`); err != nil {
+				t.Fatal(err)
+			}
+			for _, assignment := range []string{
+				"id='renamed-hint'", "session_id='temporarily-unbound'", "device_id='other-device'",
+				"target_change_seq=1", "attempt=5", "next_attempt_at='another-unknown-time'",
+			} {
+				t.Run(assignment, func(t *testing.T) {
+					tx, err := db.BeginTx(jobContext, nil)
+					if err != nil {
+						t.Fatal(err)
+					}
+					defer tx.Rollback()
+					// 与原 PENDING 绑定错配场景一致：事务内延迟 FK，随后回滚。
+					if _, err := tx.Exec(`PRAGMA defer_foreign_keys=ON`); err != nil {
+						t.Fatal(err)
+					}
+					result, err := tx.Exec(`UPDATE push_jobs SET ` + assignment + ` WHERE id='old-hint'`)
+					if err != nil {
+						t.Fatal("legacy update rejected", err)
+					}
+					if n, err := result.RowsAffected(); err != nil || n != 1 {
+						t.Fatal("legacy update did not reach row", n, err)
+					}
+					var n int
+					if err := tx.QueryRow(`SELECT count(*) FROM push_jobs WHERE ` + assignment).Scan(&n); err != nil || n != 1 {
+						t.Fatal("legacy update not visible in transaction", n, err)
+					}
+					if err := tx.Rollback(); err != nil {
+						t.Fatal(err)
+					}
+				})
+			}
+			var n int
+			if err := db.QueryRow(`SELECT count(*) FROM push_jobs WHERE id='old-hint' AND session_id='old-session' AND device_id='old-device' AND target_change_seq=17 AND attempt=4 AND next_attempt_at='unknown-original-time'`).Scan(&n); err != nil || n != 1 {
+				t.Fatal("legacy rollback changed row", n, err)
+			}
+		})
+	}
+}
+
+func TestJobCompleteSnapshotAndCategoryRemainImmutable(t *testing.T) {
+	f := jobSetup(t)
+	session := f.session(t, jobDeviceA)
+	jobSQL(t, f.store, `INSERT INTO push_jobs(id,session_id,device_id,target_change_seq,next_attempt_at) VALUES('legacy-category',?,?,17,'unknown-original-time')`, session.ID, session.DeviceID)
+	for _, purpose := range []string{"sync", "alert"} {
+		t.Run(purpose, func(t *testing.T) {
+			j := f.snapshot(t, session, purpose)
+			jobCreate(t, f, j)
+			before := jobRead(t, f.store, j.ID)
+			for _, assignment := range []string{
+				"id='changed-job'", "session_id='other-session'", "device_id='other-device'",
+				"purpose='" + map[string]string{"sync": "alert", "alert": "sync"}[purpose] + "'",
+				"provider='opush'", "registration_version=2", "settings_version=1",
+				"deployment_id='other-deployment'", "message_id='other-message'", "bot_id='other-bot'", "bot_seq=bot_seq+1",
+				"session_generation=2", "created_at_ns=created_at_ns+1", "expires_at_ns=expires_at_ns+1", "alert_eligible=1-alert_eligible",
+				"target_change_seq=target_change_seq-1",
+			} {
+				err := f.store.Write(jobContext, func(tx *sql.Tx) error {
+					if _, err := tx.Exec(`PRAGMA defer_foreign_keys=ON`); err != nil {
+						return err
+					}
+					_, err := tx.Exec(`UPDATE push_jobs SET `+assignment+` WHERE id=?`, j.ID)
+					return err
+				})
+				if err == nil || !strings.Contains(err.Error(), "immutable push job snapshot") {
+					t.Fatal("complete snapshot not frozen by trigger", assignment, err)
+				}
+			}
+			// 两侧都构造满足目标类别 CHECK 的完整行，防止仅靠不完整输入拒绝转换。
+			cols := strings.Split(strings.ReplaceAll(jobColumns, "\n", ""), ",")
+			var copySnapshot, clearSnapshot []string
+			for _, col := range cols[7:] {
+				col = strings.TrimSpace(col)
+				copySnapshot = append(copySnapshot, col+"=(SELECT "+col+" FROM push_jobs WHERE id=?)")
+				clearSnapshot = append(clearSnapshot, col+"=NULL")
+			}
+			args := make([]any, len(copySnapshot))
+			for i := range args {
+				args[i] = j.ID
+			}
+			queries := []struct {
+				query string
+				args  []any
+			}{
+				{`UPDATE push_jobs SET state='queued',next_attempt_at='` + f.now.Format(jobTimestamp) + `',` + strings.Join(copySnapshot, ",") + ` WHERE id='legacy-category'`, args},
+				{`UPDATE push_jobs SET state='pending',` + strings.Join(clearSnapshot, ",") + ` WHERE id=?`, []any{j.ID}},
+			}
+			for _, q := range queries {
+				err := f.store.Write(jobContext, func(tx *sql.Tx) error { _, err := tx.Exec(q.query, q.args...); return err })
+				if err == nil || !strings.Contains(err.Error(), "immutable push job snapshot") {
+					t.Fatal("category conversion not blocked by trigger", err)
+				}
+			}
+			if jobRead(t, f.store, j.ID) != before {
+				t.Fatal("rejected update changed complete job")
+			}
+		})
+	}
+	if jobCount(t, f.store, `SELECT count(*) FROM push_jobs WHERE id='legacy-category' AND state='pending' AND purpose IS NULL AND created_at_ns IS NULL`) != 1 {
+		t.Fatal("legacy acquired snapshot qualification")
+	}
+}
