@@ -541,9 +541,9 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 ### BE-10-02 Hub 推送待办合并与调度
 
-- 证据与交接：总调度采纳有限拆分，首叶 [PENDING-READ](#be-10-02-pending-read) 已 review；新增 [JOB-STORAGE](#be-10-02-job-storage) 已 ready、0011正式独占分配，尚未实施。父原完整范围、依赖和验收保留。首叶已有完整源提交与源检查PASS，尚未取得独审／精确集成结果，不将父包或未来发送能力标完成。
+- 证据与交接：总调度采纳有限拆分，首叶 [PENDING-READ](#be-10-02-pending-read) 已 review；新增 [JOB-STORAGE](#be-10-02-job-storage) 已running、0011正式独占分配，独立实施中。父原完整范围、依赖和验收保留。首叶已有完整源提交与源检查PASS，已取得独审PASS，尚未取得精确集成结果，不将父包或未来发送能力标完成。
 
-- 旧ID：`P09-02`；类型：有限分拆收口（不整组派发）；状态：`running`（首叶PENDING-READ待独审／精确集成，父完整运行时尚未完成）。
+- 旧ID：`P09-02`；类型：有限分拆收口（不整组派发）；状态：`running`（首叶PENDING-READ独审PASS待精确集成，父完整运行时尚未完成）。
 - 依赖：[已完成 BE-10-01 限定服务器父组合](COMPLETED.md#g5-be10-compose)、[已完成基线 P05-01](COMPLETED.md#g2)。[READ-STORAGE事务仓储已独审／精确集成完成](COMPLETED.md#g5-be04-read-storage)，实际共享已读HTTP／策略过滤仍未完成，后包依赖须按真实范围具体核实；此前置完成不自动使整包 ready。
 - 允许范围：`server/internal/push/**`，及对应测试。
 - 门槛：`G-GIT`；条件未实证不记通过。
@@ -556,7 +556,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-10-02-PENDING-READ 现有同步待办可信事务只读投影与水位归并
 
-- 类型：有限子叶；状态：`review`（2026-10-28，独立Implementer `/root/pending_read_implementer` 已完成源提交；不同A01／新组合I01尚未完成）。固定实施产品基线 `1d1d666eae984768e7fe30685246fe709b7f3682`，私树 `.worktrees/backend-be10-pending-read`／`impl/backend-be10-pending-read-20261028` 已为单提交 `bc71696224caf8aabb3c879f9d589abec5b79f7f`，准确三新文件、工作树clean。源相关六包普通／六包race／受影响vet／全服build及gofmt／diff均PASS，源在ordinary04后保持不变；最小普通实际为6个顶层TestPending＋5个身份子例（exit0／3.441秒），先前口头“7主”是计数误述，测试PASS不变。01／02缺embed的setup FAIL、03新fixture CHECK FAIL→04 PASS均保留；首次commit缺identity失败后命令级身份重试成功，不改Git配置。证据 `/tmp/be10-pending-read-matrix.json`、`/tmp/be10-pending-read-ordinary-04.log`；重型源窗口已释放，后续按总调度排队。源PASS不等于独审／精确集成，新root／READ／F01组合未测，不提前done。
+- 类型：有限子叶；状态：`review`（2026-10-28，独立Implementer `/root/pending_read_implementer` 已完成源提交；不同A01已PASS／新组合I01尚未完成）。固定实施产品基线 `1d1d666eae984768e7fe30685246fe709b7f3682`，私树 `.worktrees/backend-be10-pending-read`／`impl/backend-be10-pending-read-20261028` 已为单提交 `bc71696224caf8aabb3c879f9d589abec5b79f7f`，准确三新文件、工作树clean。源相关六包普通／六包race／受影响vet／全服build及gofmt／diff均PASS，源在ordinary04后保持不变；最小普通实际为6个顶层TestPending＋5个身份子例（exit0／3.441秒），先前口头“7主”是计数误述，测试PASS不变。01／02缺embed的setup FAIL、03新fixture CHECK FAIL→04 PASS均保留；首次commit缺identity失败后命令级身份重试成功，不改Git配置。证据 `/tmp/be10-pending-read-matrix.json`、`/tmp/be10-pending-read-ordinary-04.log`；重型源窗口已释放，后续按总调度排队。不同A01固定完整bc716源链 **PASS**，独立6主组＋5身份子例exit0／6.224秒，146输入前后相同，证据 `/tmp/be10-pending-read-a01/{independent-push.json,independent-push.log,static-evidence.json}`；独立日志SHA256 `bb982a0f9e2efb06225c20f3f4fb60d1d18c750ccd190e8cdfaa93f0f44957bd`。源及独审PASS不等于精确集成，新root／READ／F01组合未测，不提前done。
 - 已集成依赖：[BE-10-01限定服务器注册／偏好／条件解绑父组合](COMPLETED.md#g5-be10-compose)、[P05-01消息事务与非零待办仓储](COMPLETED.md#g2)、[认证／会话／设备与B01基础](COMPLETED.md#g1)及既有storage。现root已含引用与HTTP并集，但本叶固定1d1基线不消费后来已完成的[READ-STORAGE](COMPLETED.md#g5-be04-read-storage)或上传私树WIP。后包可消费已集成READ仓储，完整父调度的真实共享已读策略过滤仍须独立实施／验收，不能因仓储done取消后包门槛。
 - 单目标与允许路径：仅新增两主文件 `server/internal/push/pending_models.go`、`server/internal/push/pending_read.go`，必要新测试 `server/internal/push/pending_read_test.go`；以当前 `push_jobs` 为来源，读取到期同步待办、按设备分组并保留各会话隔离，归并同一设备／会话的最大目标水位，返回有界、确定顺序的只读候选。不得跨会话混成一个可发送身份，不将归并水位称为已领取消费、发送资格或提醒资格。
 - 事务和身份：消费受信调用方持有的 `*sql.Tx`，拒nil，不自开／提交事务、不接受仅凭公开Actor字段的授权包装；同事务核对device/session绑定、Android类型、会话撤销、idle／absolute期限及管理员代次。期限单位沿既有认证纳秒存储，读取时间可控；未来执行时间、取消及SQL错误处理明确，不发布部分结果；不读取或返回token、正文、附件URL／callback或秘密。
@@ -570,7 +570,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-10-02-JOB-STORAGE 兼容持久模型与原子内部租约预留
 
-- 类型：有限子叶；状态：`ready`（2026-10-28，总调度正式批准兼容保留方案及编号锁；尚未派发Implementer、无实现／测试／独审／I01结果）。固定实施产品基线 `d4d942e615736bb3aaed0c4f4d14a661f4231994`；本次仅BACKEND／PROGRESS元数据推进不改变产品基线。派发时另登记独立实施Agent、排他工作树／分支及本叶路径锁，不整派父BE-10-02。
+- 类型：有限子叶；状态：`running`（2026-10-28，独立Implementer `/root/job_storage_implementer` 已派，固定真实起步 `34b21671a26bcccbe1154b167947dfb4f0ed23fa`）。原产品基线 `d4d942e615736bb3aaed0c4f4d14a661f4231994` 后仅元数据推进；仅四主文件、允许tests及三处计数fixture，0011锁归本叶，所有Go检查 **NOT_RUN**，不得把源码准备当验收，不整派父BE-10-02。
 - 已集成依赖：[BE-10-01限定服务器父组合](COMPLETED.md#g5-be10-compose)、[P05-01消息事务与待办仓储](COMPLETED.md#g2)、[认证／设备基础](COMPLETED.md#g1)、[READ-STORAGE及0010准确I01](COMPLETED.md#g5-be04-read-storage)和既有storage。root已包含0010，不得回到缺0010的旧基线写0011。沿现表兼容扩展、保留旧hint且禁止补造提醒资格，属于落实既有冻结合同的内部实施；不新增公开接口或架构分层。
 - **迁移排他锁**：总调度2026-10-28正式独占分配 **`0011_push_schedule.sql` → BE-10-02-JOB-STORAGE**，从本登记起持续至准确独审／精确I01核收；其他writer不得占用该号。分配前只读实核root为上述d4基线，根common库51 refs／29注册树、backend-local common库6 refs／3注册树，共57 refs／32树；refs最高分别0010／0009，无0011＋，全部迁移目录无dirty。随后仅新建本叶docs隔离树。0009、0010永久占用；不得修改0001～0010或因旧恢复记录重新分配它们。
 - 单目标与四主文件：只允许新增 `server/migrations/0011_push_schedule.sql`、`server/internal/push/job_models.go`、`server/internal/push/job_repository.go`、`server/internal/push/job_claim.go`。沿既有push_jobs兼容扩展／重建持久字段，提供有界、确定顺序的原子内部租约预留、条件释放及过期接管；预留不是最终发送／提醒资格，不实现实际发送次数扣减、退避或发送结果完整状态机。
@@ -595,8 +595,8 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE10-PREFLIGHT-F01 修复非零待办的会话期限单位
 
-- 状态：`review`（2026-10-28），不同Fixer `/root/push_expiry_fixer` 已提交完整源链 `1d1d666eae984768e7fe30685246fe709b7f3682 → b30504e2ace54282bc42d44f816df1d0b1678375`，仅处理 **BE10-PREFLIGHT-A01-01**。固定产品基线 `1d1d666eae984768e7fe30685246fe709b7f3682`；生产文件仅允许 `server/internal/messages/pending.go`，可加必要真实回归及fixture期限单位数据调整，保留原断言／超时。不得修其他范围、改SQL／HTTP接线或发送，无新迁移分配，0010已正式占用归READ-STORAGE。
-- 验收：真实SessionStore的有效／idle过期／absolute过期 × 两入口六例，有效保留、过期ErrPushTarget空回执零增量；相关检查按总调度窗口执行。源相关普通、五包race、vet／build均 **PASS**；不同BE10-PREFLIGHT-A02对固定新源独立复验原六例 **PASS**（4.001秒），关闭BE10-PREFLIGHT-A01-01，证据 `/tmp/relaynest-be10-preflight-a02-76ui1pvy/{commands.jsonl,independent-six.log}`。保留A01原FAIL及HTTP nil targets、未发生平台发送的边界；准确I01未执行、任务未done，修复源码未纳入READ候选。PENDING-READ及其他叶保持各自原阶段。
+- 状态：`integrating`（2026-10-28，由review经不同A02 PASS转入准确I01），不同Fixer `/root/push_expiry_fixer` 已提交完整源链 `1d1d666eae984768e7fe30685246fe709b7f3682 → b30504e2ace54282bc42d44f816df1d0b1678375`，仅处理 **BE10-PREFLIGHT-A01-01**。固定产品基线 `1d1d666eae984768e7fe30685246fe709b7f3682`；生产文件仅允许 `server/internal/messages/pending.go`，可加必要真实回归及fixture期限单位数据调整，保留原断言／超时。不得修其他范围、改SQL／HTTP接线或发送，无新迁移分配，0010已正式占用归READ-STORAGE。
+- 验收：真实SessionStore的有效／idle过期／absolute过期 × 两入口六例，有效保留、过期ErrPushTarget空回执零增量；相关检查按总调度窗口执行。源相关普通、五包race、vet／build均 **PASS**；不同BE10-PREFLIGHT-A02对固定新源独立复验原六例 **PASS**（4.001秒），关闭BE10-PREFLIGHT-A01-01，证据 `/tmp/relaynest-be10-preflight-a02-76ui1pvy/{commands.jsonl,independent-six.log}`。保留A01原FAIL及HTTP nil targets、未发生平台发送的边界；原READ受测43e未含此修复；现Integrator `/root/backend_restore_retry` 从准确root `34b21671a26bcccbe1154b167947dfb4f0ed23fa` 在 `.worktrees/backend-be10-preflight-f01-i01`／`integrate/backend-be10-preflight-f01-i01-20261028` 仅一次无冲突重放 `b30504e2ace54282bc42d44f816df1d0b1678375 → e42e7f9`，三路径逐字节同源，其余目标READ／REF／HTTP／SQL1～10／Web／依赖及元数据保留，未加入上传／PENDING／JOB源码或SQL11。I01新组合六例真实会话、全服普通、受影响messages／auth／devices／storage／changes及READ兼容race、全服vet／build／格式检查待执行，全部PASS前不ff root／不done；固定SHA及输入／命令／结果证据 `/tmp/relaynest-be10-preflight-f01-i01-20261028`。PENDING-READ及其他叶保持各自原阶段。
 
 <a id="be-10-03"></a>
 
