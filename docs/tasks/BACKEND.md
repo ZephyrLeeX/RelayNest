@@ -570,8 +570,23 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - 只读和锁：不得写／删／领取job、修改attempt／时间／changes或产生网络发送；messages生产者、旧SQL、auth／storage／devices／router／main／API／Web均只读。仅本叶新push文件及私树/index写锁已交Implementer；公共router/main继续由上传Actor持有，重型按总调度排队。**本叶不分配SQL迁移**，0009永久占用，`0010_bot_read_states.sql`仍由READ-STORAGE独占，后续调度DDL重新核号分配。
 - 必须真实验证：由既有消息仓储真实事务与合法会话／B01来源生成非零 `push_jobs` 后读取，不能仅用内存桩或把直接造行称生产消息来源；当前正式Bot／Admin消息HTTP仍未接非零targets，须明确测试来源为仓储，不冒称生产HTTP推送接线通过。同会话多job归并、跨设备／会话隔离、空结果／边界／确定顺序／未来执行时间；真实撤销／过期／代次失效／绑定错误过滤；两个Store并发新增与读快照一致，未读到的新增job保留；reopen稳定、重复读取无写入；nil／取消／SQL错误无部分发布。只读前后核job、业务状态、changes及秘密状态hash，不输出原始敏感内容。
 - 必跑检查：固定Go1.27.3，push／messages／auth／devices／storage／changes相关普通与race、受影响vet、全服build、gofmt／diff；沿用原50ms／12并发及10ms门槛，不改旧断言／超时。Web／API不变时核锁版输入与真实embed后准确复用，不机械重跑npm／validator。重型窗口须总调度明确授予，READ源检查窗口已释放，后续Go须按总调度排队；完整本地提交后交不同Agent固定SHA审计及精确I01。命令、input／日志hash、退出码区分PASS／FAIL／NOT_RUN，未测不冒充通过。
-- 来源风险待核：Planner只读发现 `messages/pending.go` 期限比较单位可能与认证存储不一致；总调度已另派独立 **BE10-PREFLIGHT-A01** 静态核对及后续验证，六例复现材料已准备、实际Go检查仍 **NOT_RUN**。此处仅记录待核，未确认缺陷、不记PASS；本叶不得顺手改messages生产者、旧SQL或认证，也不以该疑点扩大权限。
+- 来源风险：独立 [BE10-PREFLIGHT-A01](#be10-preflight-a01) 已真实复现期限单位缺陷、结论 **CHANGES_REQUIRED**，编号 **BE10-PREFLIGHT-A01-01**；有限修复F01已另派。本叶仍不得顺手改messages生产者、旧SQL或认证，不以发现扩大权限。
 - 父与后包：生产消息HTTP非零待办同事务接线；持久调度DDL／用途sync-alert分离／版本快照／稳定提醒键／期限／设备租约；READ精确集成后的提醒过滤及重试／恢复／迟到结果fencing；假adapter调度与FCM／OPPO平台分别另包。本叶没有DDL、worker、ACK、平台资格或真实发送，不能完成BE-10-02原父、BE-10-03、真机／跨端或全局实例门槛，不创建完成标记。
+
+<a id="be10-preflight-a01"></a>
+
+#### BE10-PREFLIGHT-A01 非零同步待办的真实会话期限预检
+
+- 状态：`changes_requested`；独立审计结论 **CHANGES_REQUIRED**（2026-10-28），固定基线 `1d1d666eae984768e7fe30685246fe709b7f3682`，发现 **BE10-PREFLIGHT-A01-01**：`server/internal/messages/pending.go:69` 以Unix秒比较认证真实写入的Unix纳秒期限，过期会话仍可生成非零待办。触发为合法SessionStore创建后恢复当前时钟、真实过期会话作为非零PushTargets，覆盖application／idempotent两仓储入口；不是平台发送验证。
+- 六例实际结果：0／31／91天 × 两入口，两个有效会话PASS，四个过期会话FAIL；auth Inspect已拒绝过期，但消息入口返回err=nil、job=1且业务状态增加。期望为ErrPushTarget、空回执、零状态增量。日志子例标签31ns／91ns是显示错误，`age_days`与时钟构造实际按天。证据 `/tmp/relaynest-be10-preflight-a01-4qf9ln45/{baseline-test.log,commands.jsonl}`；最终overlay SHA256 `00077c663aac1b0cd14d42f7ad6b21ed51d8fec7710f50d45ea3523895634720`。前两轮缺embed及unused import编译失败分别保留于setup-failed.log／overlay-build-failed.log，不冒充业务结果。
+- 影响边界：当前两条正式消息HTTP入口仍传nil targets，devices现有逻辑已按纳秒过滤；历史已完成PASS保留原范围，不追认其覆盖此次真实非零过期场景。修复及新源独立复审、准确I01闭环前不记done。
+
+<a id="be10-preflight-f01"></a>
+
+#### BE10-PREFLIGHT-F01 修复非零待办的会话期限单位
+
+- 状态：`running`（2026-10-28），不同Fixer `/root/push_expiry_fixer` 已派发，仅处理 **BE10-PREFLIGHT-A01-01**。固定产品基线 `1d1d666eae984768e7fe30685246fe709b7f3682`；生产文件仅允许 `server/internal/messages/pending.go`，可加必要真实回归及fixture期限单位数据调整，保留原断言／超时。不得修其他范围、改SQL／HTTP接线或发送，无新迁移分配，0010仍归READ-STORAGE。
+- 验收：真实SessionStore的有效／idle过期／absolute过期 × 两入口六例，有效保留、过期ErrPushTarget空回执零增量；相关检查按总调度窗口执行。尚无修复提交SHA或回交Go结果，不预写PASS；新source须由不同Auditor固定SHA复审及精确I01后方可完成。PENDING-READ及其他叶保持各自原阶段。
 
 <a id="be-10-03"></a>
 
