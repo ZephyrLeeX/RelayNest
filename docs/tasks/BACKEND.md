@@ -277,9 +277,10 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - P01 有限规划（2026-10-26）：owner Backend Orchestrator，Agent `/root/backend_dependency_plan`，基线 `388dd8ae1f3641bdfd26a7a421e4171b8da16971` / `work` 只读；只细化本 leaf 的准确 3～5 主文件工作包及迁移／接口边界，不写文件或预占迁移号。状态仍未开始；BE-01 完整完成追加门槛未满足，不据准备规划放行真实上传验收。
 - P01 已返回有限拆分；R02 `/root/backend_recovery` 验证 P05-01 最终 `ed488e543d892f2353fbc95f72a2f0af98ba9a8d` 为基线祖先，六个 worktree 均无 0008 文件或迁移改动，唯一 HTTP 写入者不改迁移。由调度拆成下列两个执行子包，原完整验收不变；状态转准备中，只有两包和完整 BE-01 门槛全部满足才可收口。
 
-- 子项证据：[STORAGE 已完成独审与精确集成](COMPLETED.md#g5-be05-storage)，源与最终 `064807f9e5e126f48c9360d4d02a40fc209f790e`；[HTTP 真实上传接线](#be-05-01-http) 已running、私树WIP未提交；[BE-01 现有后端依赖已完成](COMPLETED.md#g5-be01)，父原上传验收仍待满足。
+- 子项证据：[STORAGE 已完成独审与精确集成](COMPLETED.md#g5-be05-storage)，源与最终 `064807f9e5e126f48c9360d4d02a40fc209f790e`；[HTTP真实上传接线已完成独审及准确I01](COMPLETED.md#g5-be05-http)；[BE-01 现有后端依赖已完成](COMPLETED.md#g5-be01)，父原上传验收仍待满足。
 
-- 旧ID：`P05-05`；类型：有限分拆收口（不整组派发）；状态：准备中（STORAGE 已完成，HTTP 及父验收待闭环，BE-01 现有后端依赖已完成）。
+- 旧ID：`P05-05`；类型：有限分拆收口（不整组派发）；状态：`running`（STORAGE及有限HTTP叶已完成，父原完整验收／独立组合仍待闭环）。
+- 父收口计划：只读Planner建议以单临时overlay新增“外URL不抓取”的请求计数证明；后续另派R01→不同Auditor→准确I01，当前尚未运行该补证，不因HTTP叶done自动完成父。原验收及范围不变。
 - 依赖：[已完成基线 P05-01](COMPLETED.md#g2)。
 - 允许范围：`server/internal/attachments/**`、`server/migrations/**`，及对应测试。
 - 门槛：`G-GIT`；条件未实证不记通过。
@@ -296,10 +297,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 ### BE-05-01-HTTP 真实上传接线与组合验收
 
-- 类型：有限 leaf；状态：`integrating`（2026-10-28，完整源链 `bd95d01462d967b822e6d25bcca365cad387aaa3 → 53427226cf5c3f40ac997d710efc7ba0f7893f3b` 已提交，独立BE05-HTTP-A01 PASS，转入准确I01）；依赖 [已完成 BE-05-01-STORAGE](COMPLETED.md#g5-be05-storage)、[已完成 BE-01 现有后端父范围](COMPLETED.md#g5-be01)，必须分别独审和集成。准备路径为 `server/internal/httpapi/attachments.go`、`router.go`、`server/cmd/relaynest/main.go` 及相关测试，派发前固定真实基线及排他锁。
-- 当前交接：本上传私树及router/main写锁归该Implementer，不分配迁移；gofmt／diff检查PASS，真实Web dist按hash复用。定向 `targeted-03` 实际12项测试 **PASS**；前轮 `targeted-01` 字段／MIME夹具FAIL、`targeted-02` 实例旧Store503夹具FAIL均保留，仅新增tests修正，未据此改生产或弱化断言。完整源普通／race／vet／build均 **PASS**；独立BE05-HTTP-A01 **PASS**（8.473秒），证据 `/tmp/relaynest-be05-http-a01-evidence/{command.json,independent.log,before.json,after.json}`。原READ／REFERENCE-I01候选未含本上传源码；现Integrator `/root/backend_restore_retry` 从准确root `c3bbd66b696089ac6d580ddd0699f72075b48759` 在 `.worktrees/backend-be05-http-i01`／`integrate/backend-be05-http-i01-20261028` 仅一次无冲突重放 `53427226cf5c3f40ac997d710efc7ba0f7893f3b → a9962d4`；五路径同受审源，其余目标READ／F01／REF／HTTP／SQL1～10／Web／依赖保留，无PENDING／JOB源码或SQL11。I01冻结新组合后串行执行原12＋A01新增3例真实HTTP／SQLite／files、全服普通、原六相关包race、全服vet／build及格式，全部PASS前不ff root、不标done；输入／精确映射／命令／结果证据 `/tmp/relaynest-be05-http-i01-20261028`，不以源PASS替代组合实测。
-- 沿用原上传完整验收及冻结 query＋原始二进制流／201/no-store／错误合同；真实 Bot-first 格式及身份发现先于读流，Matched 拒绝不回退、Unavailable 失败关闭、仅 NoMatch 进入 Android 同快照门禁，最终提交重验代次／会话。Web Cookie／Webhook／receive-only 无上传权。
-- 必须真实 HTTP＋SQLite＋文件组合，配置使用实际可注入正 int64 接口，不能默认值写死或宣称未实现的设置路由已生效；STORAGE 测试不能替代真实读流顺序、事务和安全错误验收。完成后父 BE-05-01 仍须核原完整验收，无范围丢失。
+已完成有限叶：[完整源链、不同A01、准确a647新组合I01、真实测试计数与范围限制](COMPLETED.md#g5-be05-http)。只完成真实上传HTTP接线及其组合，父BE-05-01仍running，外URL不抓取计数补证／父独立验收待另派，不含下载、绑定、回收、设置HTTP、部署或全局门槛。
 
 <a id="be-05-02"></a>
 

@@ -294,6 +294,19 @@ commit后201 ClientMessageReceipt含原message/delivery_id，no-store；同有�
 
 当前有限阶段仅 plain/markdown 文本且无附件/引用/按钮；其他输入显式拒绝并记录未实现，不能吞字段或声称完整 CreateMessageRequest 通过。后续引用、附件、按钮、标准Webhook的阶段门槛分别由 BE-04/05 保留。回执仅代表持久化，不代表应用ACK、已读或业务成功。
 
+<a id="g5-be05-http"></a>
+
+### BE-05-01-HTTP 真实上传接线与组合验收
+
+- 类型：有限叶；状态：`done`（2026-10-28，总调度依据完整源检查、不同A01 PASS、准确新组合I01 PASS及root安全ff批准，保留review→integrating过程）。Implementer `/root/be05_upload_implementer`，完整单提交源链 `bd95d01462d967b822e6d25bcca365cad387aaa3 → 53427226cf5c3f40ac997d710efc7ba0f7893f3b`；准确五路径 `server/cmd/relaynest/main.go`、`server/internal/httpapi/router.go`、`server/internal/httpapi/attachments.go`及cmd／httpapi两份attachments_test.go。依赖已完成[STORAGE](COMPLETED.md#g5-be05-storage)及[BE-01现有后端父范围](COMPLETED.md#g5-be01)，本叶无新迁移，router／main实施与集成写锁已释放。
+- 完成范围：冻结query＋原始二进制流上传／201／no-store及错误合同，真实HTTP＋SQLite＋files／生产main接线。真实Bot-first发现先于读流，Matched拒绝不回退、Unavailable失败关闭，仅NoMatch进入Android同快照门禁；提交前重验凭据、权限、会话及实例代次。Web Cookie／Webhook／receive-only无上传权，缺目标／无权限先拒绝再读流。覆盖幂等、实际可配置正int64限额、分段流及截断、流中撤销／模式／实例变化、SQL／COMMIT失败回滚和秘密边界；不能把默认限额当不可配置上限或宣称设置HTTP已完成。
+- 源检查：targeted-03原12顶层Test **PASS**，全服普通 **PASS**（75.797秒）、六相关包race **PASS**（247.718秒）、全服vet／build **PASS**（0.807／1.458秒）、gofmt／diff／clean PASS。证据 `/tmp/relaynest-be05-http-20261028-2my4nzjp/{complete.json,matrix-commands.jsonl,targeted-03.log,ordinary-01.log,race-01.log,vet-01.log,build-01.log}`，源码／输入与日志hash匹配。targeted-01新测试字段／MIME fixture FAIL、targeted-02旧Store实例变化预期409而实际失败关闭503的fixture FAIL保留，只修新增tests，未弱化生产断言；首次commit缺默认identity失败、命令级身份重试成功，不冒充测试失败。
+- 不同 **BE05-HTTP-A01 PASS**：固定完整534源链，原12顶层及新增授权场景真实TLS／SQLite／files独立复验exit0／8.473秒，源码前后不变。新增实际是2个顶层Test，StreamAuthorityChanges下admin-generation／bot-send两子例，加AndroidMissingTargetBeforeRead一例，共3场景；不是新增3个顶层。证据 `/tmp/relaynest-be05-http-a01-evidence/{command.json,independent.log,independent_test.go,before.json,after.json}`，独立日志SHA256 `859d10d01d57f60548b54095a4668abbede954e4791d4be52a11b58180369fec`。
+- **BE-05-01-HTTP-I01 PASS**：Integrator `/root/backend_restore_retry` 从准确root `resume/backend-20261026@c3bbd66b696089ac6d580ddd0699f72075b48759` 在 `.worktrees/backend-be05-http-i01`／`integrate/backend-be05-http-i01-20261028` 仅一次无冲突重放 `53427226cf5c3f40ac997d710efc7ba0f7893f3b → a9962d4b278d6a191ddfbb7d579e31043c98b102`，range-diff单项 `=`；纯两doc提交后固定准确候选 `a647df879c607d524f58ab058c2537816f372671`。五路径逐字节同受审源，其余目标READ／F01／HISTORY／REF／HTTP、SQL1～10、Web／依赖保留，无PENDING／JOB源码或SQL11。原READ／REFERENCE受测候选未含本上传源码，不将旧结果当本次新组合检查。
+- a647新组合实际：原12顶层＋A01新增2顶层承载3场景，共14顶层全 **PASS**（11.410秒）；全服普通 **PASS**（163.768秒），六包race **PASS**（519.789秒；httpapi／cmd／attachments／auth／bots／storage），全服vet／build **PASS**（2.734／1.566秒），gofmt／diff **PASS**，全部exit0。cmd race用时280.551秒，源测试默认10分钟超时原样保留，未改断言／超时。固定SHA／版本／start-end／exit／log hash、151产品输入及三真实embed／overlay前后和ff后全部一致；root已安全ff `c3bbd66… → a647df8…`，main `01c74a7…` 不变。证据 `/tmp/relaynest-be05-http-i01-20261028/{inputs.json,plan.json,range-diff.txt,commands.jsonl,post.json,target-fast-forward.log,*log}`。
+- 计数核验历史：I01最后只读汇总脚本误assert“15个顶层”而发生一次AssertionError；实际按日志名称与父子例复核为原12＋新增2顶层、其中3新增授权场景全部PASS，post.json保留错误计数及正确复核事实。这是汇总计数FAIL，不是Go／产品FAIL；仅纠正汇总断言，未改源码、产品测试断言或重跑已PASS矩阵。
+- 精确复用及限制：API六tracked输入／Web24输入与三真实dist hash、既有validator源日志证据准确复用；source及I01均未改API／Web，本轮npm／Python validator **NOT_RUN**，不冒新实测。父BE-05-01仍running，尚待外URL不抓取计数证明及R01→不同Auditor→准确父I01；下载／关联绑定／后台回收／设置HTTP／部署及全局门槛未由本叶完成。未push／部署／发布／创建完成标记。
+
 <a id="g5-be05-storage"></a>
 
 ### G5 BE-05-01-STORAGE 流式持久化状态机准备
