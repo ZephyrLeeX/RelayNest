@@ -177,7 +177,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 ### BE-04-01 历史分页引用和共享已读
 
-- 证据与交接：HISTORY-STORAGE、REFERENCE-CREATE、READ-STORAGE 已各独审／精确集成，见下方完成链接；[HISTORY-HTTP](#be-04-01-history-http) 已正式 ready，负责既定历史／详情两 GET；共享已读 PUT HTTP、附件关联投影及父最终组合仍另包，父原目标和验收不变。
+- 证据与交接：HISTORY-STORAGE、REFERENCE-CREATE、READ-STORAGE 已各独审／精确集成，见下方完成链接；[HISTORY-HTTP](#be-04-01-history-http) 已正式 running，负责既定历史／详情两 GET；共享已读 PUT HTTP、附件关联投影及父最终组合仍另包，父原目标和验收不变。
 
 - 旧ID：`P05-03`；类型：有限 leaf；状态：`running`（2026-10-27，首叶已完成，父原验收未完成）。
 - 依赖：[已完成 BE-02 限定父组合](COMPLETED.md#g5-be02-compose)。
@@ -192,32 +192,32 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-04-01-HISTORY-STORAGE 历史／详情与同 Bot 引用只读仓储准备
 
-已完成有限子叶：[完整 source 链、实际检查、A01／I01 映射及范围限制](COMPLETED.md#g5-be04-history-storage)。仅仓储准备已集成；父 BE-04-01 仍 `running`、未完成原历史／引用／共享已读验收，REFERENCE-CREATE 已另独审／精确集成，READ-STORAGE已另完成，[HISTORY-HTTP](#be-04-01-history-http) 已另 ready；本仓储叶不增加共享已读／附件投影／公开 cursor／HTTP。0009 保留，0010 已另专属 READ-STORAGE，本 HISTORY 子叶未分配新号。
+已完成有限子叶：[完整 source 链、实际检查、A01／I01 映射及范围限制](COMPLETED.md#g5-be04-history-storage)。仅仓储准备已集成；父 BE-04-01 仍 `running`、未完成原历史／引用／共享已读验收，REFERENCE-CREATE 已另独审／精确集成，READ-STORAGE已另完成，[HISTORY-HTTP](#be-04-01-history-http) 已另 running；本仓储叶不增加共享已读／附件投影／公开 cursor／HTTP。0009 保留，0010 已另专属 READ-STORAGE，本 HISTORY 子叶未分配新号。
 
 <a id="be-04-01-reference-create"></a>
 
 #### BE-04-01-REFERENCE-CREATE 既有双入口文本创建接通同 Bot 回复引用
 
-已完成有限叶：[完整源链、A01／精确I01映射、新HTTP并集实际检查及COMMIT配对限制](COMPLETED.md#g5-be04-reference-create)。只完成既有 Bot API／Android 文本引用；父 BE-04-01 仍 running，READ-STORAGE已另完成，[HISTORY-HTTP](#be-04-01-history-http) 已另 ready，共享已读HTTP、附件投影和父最终组合未完成，Webhook引用／附件／按钮不开放。
+已完成有限叶：[完整源链、A01／精确I01映射、新HTTP并集实际检查及COMMIT配对限制](COMPLETED.md#g5-be04-reference-create)。只完成既有 Bot API／Android 文本引用；父 BE-04-01 仍 running，READ-STORAGE已另完成，[HISTORY-HTTP](#be-04-01-history-http) 已另 running，共享已读HTTP、附件投影和父最终组合未完成，Webhook引用／附件／按钮不开放。
 
 <a id="be-04-01-read-storage"></a>
 
 #### BE-04-01-READ-STORAGE 共享已读事务仓储与原子初始化
 
-已完成有限叶：[完整源链、A01及准确新并集I01、迁移占用与范围限制](COMPLETED.md#g5-be04-read-storage)。仅可信事务仓储／初始化完成，0010正式永久占用、实施／集成锁已释放；父BE-04-01仍running，[HISTORY-HTTP](#be-04-01-history-http) 已另 ready，共享已读HTTP、同步投影／推送过滤及最终组合未完成。
+已完成有限叶：[完整源链、A01及准确新并集I01、迁移占用与范围限制](COMPLETED.md#g5-be04-read-storage)。仅可信事务仓储／初始化完成，0010正式永久占用、实施／集成锁已释放；父BE-04-01仍running，[HISTORY-HTTP](#be-04-01-history-http) 已另 running，共享已读HTTP、同步投影／推送过滤及最终组合未完成。
 
 <a id="be-04-01-history-http"></a>
 
 #### BE-04-01-HISTORY-HTTP Android 历史分页与详情真实 HTTP
 
-- 类型：有限子叶；状态：`ready`（2026-10-28，总调度决定从未登记后包正式准备；父 BE-04-01 仍 `running`，原验收不变）。owner Backend Orchestrator；准备角色 `/root/history_http_prepare`（Backend Planner／文档 Integrator），本轮仅元数据登记；Implementer 尚未派发。固定 canonical 产品基线 `613e79e838539154a91df1625ed4ab479095feba`，目标 `resume/backend-20261026`。准备树 `.worktrees/backend-be04-history-http-docs`／`docs/backend-be04-history-http-ready-20261028`；后续实现须另建隔离树、登记实际基线与 owner，不把后来的文档提交冒充产品变更。
+- 类型：有限子叶；状态：`running`（2026-10-28，总调度批准 ready → running，由不同 Implementer 正式接手；父 BE-04-01 仍 `running`，原验收不变）。owner Backend Orchestrator；准备角色 `/root/history_http_prepare`（Backend Planner／文档 Integrator），本轮仅元数据登记；Implementer `/root/history_http_implementer`，真实隔离树 `.worktrees/backend-be04-history-http`／`impl/backend-be04-history-http-20261028` 从下述 canonical 基线 clean 起步。固定 canonical 产品基线 `613e79e838539154a91df1625ed4ab479095feba`，目标 `resume/backend-20261026`。准备树 `.worktrees/backend-be04-history-http-docs`／`docs/backend-be04-history-http-ready-20261028`；实际实施基线同为 canonical `613e79e…`，root `356ff7801285d3aaae4767e02fb775e70b956ab4` 仅为其纯文档后继，不把文档提交冒充产品变更。
 - 已集成依赖：[BE-01](COMPLETED.md#g5-be01)、[BE-02限定父组合](COMPLETED.md#g5-be02-compose)、[HISTORY-STORAGE](COMPLETED.md#g5-be04-history-storage)（最终映射 `6e5ca4b…`）、[REFERENCE-CREATE](COMPLETED.md#g5-be04-reference-create)（`b5fa149…`／准确组合 `74e07f6…`）。[READ-STORAGE](COMPLETED.md#g5-be04-read-storage)（`0a93d6e…`／准确组合 `43e9d63…`）亦已集成，但本历史叶不依赖共享已读 HTTP；上传 HTTP 已准确集成于 canonical 基线，不消费 PENDING／JOB 私树 WIP。
 - 冻结合同：以 `server/api/openapi.yaml` 的 `listClientMessages`、`getClientMessage`、`MessagePage`、`Message` 及 `x-instance-binding` 为准，结合 PRD §3.4／§4.1／§4.2、技术设计 §3／§6。仅实现 `GET /client/bots/{id}/messages` 与 `GET /client/messages/{id}`；不含共享已读 PUT、同步／bootstrap、WS、消息编辑或附件绑定。Android Bearer＋实例头及会话私有绑定；Web Cookie、Bot API Token、Webhook Key 均不可获得正文。停用 Bot 的仍存历史可读；不存在／过期／无权统一既定404，不新设路由或错误码。
 - 允许主文件（4～5）：新增 `server/internal/httpapi/message_history.go`，可选新增 `server/internal/httpapi/message_history_cursor.go`；仅扩展 `server/internal/messages/history.go` 的可信 read tx 详情 helper，按 messageID 在同一事务解析 Bot 后复用 `GetHistoryMessageTx`；`server/internal/httpapi/router.go`；`server/cmd/relaynest/main.go` 最小装配。必要测试限新增 `server/internal/httpapi/message_history*_test.go`、`server/cmd/relaynest/message_history_test.go` 和 `server/internal/messages/history_http_tx_test.go`；不改旧 main_test、auth 生产代码、SQL、API、依赖或其他模块。实际实现如需超出此范围，先报告证据重新分包。
 - 必要授权接线：canonical 的 `clientMessageAuthorization` 当前忽略 read/write、固定 `RequestWrite` 且仅提供 Write 闭包；本叶须最小支持真实 `RequestRead → WithAuthorizedRead`，保留 Android 类型和实例安全入口及原 Write 语义。不得复用允许 Web 的管理端授权作为 Android 历史入口。列表、详情全部在私有真实会话绑定的可信读事务内获取，不能先跨事务查 Bot／正文再拼接授权；详情只接受 messageID，不加公开 bot 选择器。候选响应仅在授权读闭包整体成功后发布，撤销／过期／认证代次／实例变化或最终失败不得泄漏正文、续期或产生业务副作用。
 - 分页与投影验收：`bot_seq DESC`、排他边界、有界 limit＋1、不用 offset；cursor 不透明并绑定 Bot，错 Bot 拒绝，末页 `next_cursor=null` 且 `has_more=false`，编辑不改排序。cursor 编码和不超过仓储200的实际页限为内部实现细节，不引入新签名 key、TTL、同步 H／epoch 或 bootstrap 令牌。冻结 Message 必填字段和类型完整投影，保留已有 `ButtonsJSON`；引用用 originalID，源删除仍保留原 ID且不返回源正文，已删详情404。附件关联投影尚未实现，不能冒称本叶完成实际关联附件显示或擅定新显示策略；如现有模型不足以兑现当前合同，先报告冲突。
 - 真实验收：生产 TLS／HTTP＋SQLite 接线、既有创建及同 Bot 引用后列表／详情；跨 Bot cursor、空页／页限／末页／删除分页边界后继续、并发新增及编辑不乱序、原引用保留／源删详情404；Android／Web／Bot／Webhook、停用 Bot及当前授权失效矩阵。受保护响应固定 `no-store`，实际 JSON 对照冻结 OAS（含序列／版本字符串、UTC时间、必填数组及 null）；错误和日志不得泄漏正文、会话／实例秘密或 SQL。
-- 锁与检查：准备仅写 BACKEND／PROGRESS及准备树/index，root/index 排他锁在本登记完成后释放；公共 main／router 的实现写锁当前不授予，Implementer 派发时由总调度另行排他登记。无需迁移；0009／0010 永久原占用，0011 专属 JOB 保留。Go1.27.3 的 messages／httpapi／cmd／auth／storage／changes／bots 相关普通与 race、全服普通／vet／build、gofmt／diff、真实响应合同及精确 main／router 新并集检查须实施后执行；旧测试断言和超时不变，所有 Go 按总调度重型窗口排队，当前 JOB 私树独占，不抢跑。Web／API未改时核锁版输入及真实 embed hash复用，不机械重跑 npm／validator；源单独本地提交后由不同 Agent 固定 SHA 独审及准确 I01，记录命令／hash／退出码，区分 PASS／FAIL／NOT_RUN。
+- 锁与检查：准备仅写 BACKEND／PROGRESS及准备树/index，root/index 排他锁在本登记完成后释放；公共 main／router 的实现写锁已由总调度仅授予 `/root/history_http_implementer`，连同其实现私树／index及本叶允许路径排他持有。无需迁移；0009／0010 永久原占用，0011 专属 JOB 保留。Go1.27.3 的 messages／httpapi／cmd／auth／storage／changes／bots 相关普通与 race、全服普通／vet／build、gofmt／diff、真实响应合同及精确 main／router 新并集检查须实施后执行；旧测试断言和超时不变，当前 Implementer 读取／实现、gofmt及准备测试；本叶所有 Go 均 NOT_RUN，等待总调度窗口。当前 JOB 私树独占重型窗口，不抢跑。Web／API未改时核锁版输入及真实 embed hash复用，不机械重跑 npm／validator；源单独本地提交后由不同 Agent 固定 SHA 独审及准确 I01，记录命令／hash／退出码，区分 PASS／FAIL／NOT_RUN。
 - 本轮限制：只核 Git／文档／冻结合同与既有最小授权接线，无源码修改、Go／npm／validator或新技术 PASS；不创建 registry／cards／reports、不 push／部署／发布／创建完成标记。历史 HTTP、共享已读 HTTP、附件关联投影和父最终组合在真实完成前均保持未完成。
 
 <a id="be-04-02"></a>
