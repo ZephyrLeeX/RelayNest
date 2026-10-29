@@ -190,7 +190,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 ### BE-04-02 应用消息 CAS 编辑
 
-- 证据与交接：父[BE-04-01既定后端组合](COMPLETED.md#g5-be04-compose)已done，仅满足该依赖，本CAS仍todo／未ready。Planner已提出完整替换reply_to合同与original_reply SQL immutable约束可能冲突，尚待独立核实及必要语义决策；本轮不修改冻结接口／SQL、不据父完成自动开工。尚无本步骤新增实施／独审／集成证据，派发前仍须固定实际owner／基线／路径锁。
+- 证据与交接：父[BE-04-01既定后端组合](COMPLETED.md#g5-be04-compose)已done，仅满足该依赖，本CAS仍todo／未ready。Planner已提出完整替换reply_to合同与original_reply SQL immutable约束可能冲突，尚待独立核实及必要语义决策；本轮不修改冻结接口／SQL、不据父完成自动开工。尚无本步骤新增实施／独审／集成证据，派发前仍须固定实际owner／基线／路径锁。 [CAS-TEXT-BUTTONS-STORAGE](#be-04-02-cas-text-buttons-storage)仅可信Tx内部文本／按钮CAS已另ready，完整HTTP与reply语义不由此放行。
 
 - 旧ID：`P05-04`；类型：有限 leaf；状态：`todo`（父依赖已满足，完整编辑HTTP语义未闭环，非ready）。
 - 依赖：[已完成BE-04-01既定后端父组合](COMPLETED.md#g5-be04-compose)。
@@ -200,6 +200,18 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 目标：只允许应用编辑自身应用消息；保原bot_seq/创建时间/已读语义，revision CAS；正文/按钮与changes同事务，附件引用在BE-05-02组合。Android及Webhook不可编辑。
 
 验收：旧revision冲突。；Android及Webhook不可编辑。；文本/按钮与变更同事务；附件引用集成由 P05-06 收口验收。 运行上述允许包的共同检查。
+
+<a id="be-04-02-cas-text-buttons-storage"></a>
+
+#### BE-04-02-CAS-TEXT-BUTTONS-STORAGE 可信事务文本／按钮CAS原语
+
+- 类型：有限子叶；状态：`ready`（2026-10-30，总调度在原父BE-04-01准确组合done后授权内部存储分包）。owner Backend Orchestrator；固定已完成父的canonical实施基线 `2e1a62c6615148c80cb6e8e1c0b1a3cc77bd3225`（产品同e8／ad6ce），父依赖见[完成档案](COMPLETED.md#g5-be04-compose)。Implementer／私树／分支尚未派发，源码／Go／独审／I01全部 **NOT_RUN**；正式派发核实际canonical及锁，不能消费未审SYNC私树或把ready当实现完成。
+- 三个新主文件：仅 `server/internal/messages/edit_models.go`、`server/internal/messages/edit_validation.go`、`server/internal/messages/edit_tx.go`，必要新测试限 `server/internal/messages/edit_*_test.go`。只提供消费已有可信 `*sql.Tx` 的native文本／按钮CAS，不自开／提交事务、不持有Tx、不增加公开HTTP或外部错误码。既有messages模型／其他仓储／main／router／create.go／repository.go／auth／bots／changes／SQL／API／依赖均只读；不DDL、不占迁移号、不改reply或附件关系，必要额外路径先报告证据协调。
+- 授权与事务：消费既有bots `Edit` 能力、真实身份及同Tx当前Bot／凭据代次／启用复核，只允许应用编辑本Bot自身application消息；Android／Webhook身份及管理员消息在本native入口拒绝，不冒称未开放的HTTP已验证。expected revision比较、正文／按钮既定限制校验、revision／updated_at和既有changes `MessageUpsert` 追加在同一可信Tx；提交前复核授权，错误完整传播由实际Tx拥有者回滚，候选只在最终提交成功后可发布。具体内部输入／结果与错误分类属实现细节，不在本叶擅定完整替换reply的HTTP语义。
+- 不变量：只修改本叶文本／按钮相关持久内容及编辑版本／时间；保持bot_seq、created_at、原回复／original引用、附件关系、共享read状态／未读含义、原幂等回执及不可变delivery快照。不得触发首次create回调、首次推送待办、sync job、callback事件或网络发送，不执行业务命令。revision冲突、溢出、损坏／SQL／changes／COMMIT或最终授权失败都不部分写入／发事件，不回绕、不吞错误或重放业务callback／COMMIT。
+- 必要验收：真实SQLite可信Tx成功文本／按钮CAS、旧revision冲突、越Bot／非application／Android／Webhook与失效凭据／最终授权拒绝；两Store同revision竞争仅一次成功，序号／创建时间／共享已读／计数及所有不可变引用／回执／delivery不变。覆盖版本边界及耗尽、校验失败、SQL与changes故障、延迟FK提交失败／重开观察全回滚；失败无部分候选发布。使用现有真实身份／事务能力，不凭可伪造公开Actor字段认授权，不用HTTP桩代native事务证明，也不声称完整CAS HTTP或未来回复／附件替换已验收。
+- 四类门槛与锁：①固定父done后基线、三个新文件／自有tests及内部Tx契约；②实际相关messages／bots／changes／auth／storage普通与race、全服普通／vet／build、gofmt／diff和冻结输入核验，保原50ms／12并发／10ms／timeout与旧断言；③单独本地source提交后不同Agent固定完整SHA独审，发现编号修复重审；④准确canonical并集I01及证据齐全再由总调度决定本叶done。Web／API未改时核hash及真实embed精确复用，不冒称新npm／validator。仅这三个新文件和自有tests未来写锁留本叶，不抢SYNC的main／create／repository／push及回调契约；Go按全局唯一窗口串行。
+- 原父边界：完整BE-04-02仍 `todo`／非ready，完整替换reply_to与original_reply SQL immutable语义待独立核实及必要用户决定；原目标、依赖、范围、旧revision冲突／Android及Webhook不可编辑／正文按钮与changes同事务和BE-05-02附件组合验收完整保留。本子叶不代父／HTTP／附件／投递保护／callback／Android应用／WS／平台或global完成；无push／部署／marker。
 
 <a id="be-04-03"></a>
 
