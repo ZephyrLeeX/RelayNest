@@ -177,7 +177,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 ### BE-04-01 历史分页引用和共享已读
 
-- 证据与交接：HISTORY-STORAGE、REFERENCE-CREATE、READ-STORAGE 已各独审／精确集成，见下方完成链接；[HISTORY-HTTP](COMPLETED.md#g5-be04-history-http) 已完成既定历史／详情两GET；[READ-HTTP](#be-04-01-read-http)现ready待派，附件关系读投影及父最终组合仍另包，父原目标和验收不变。
+- 证据与交接：HISTORY-STORAGE、REFERENCE-CREATE、READ-STORAGE 已各独审／精确集成，见下方完成链接；[HISTORY-HTTP](COMPLETED.md#g5-be04-history-http) 已完成既定历史／详情两GET；[READ-HTTP](#be-04-01-read-http)已派running；[ATTACHMENT-READ](#be-04-01-attachment-read)现ready，父最终组合仍另包，父原目标和验收不变。
 
 - 旧ID：`P05-03`；类型：有限 leaf；状态：`running`（2026-10-27，首叶已完成，父原验收未完成）。
 - 依赖：[已完成 BE-02 限定父组合](COMPLETED.md#g5-be02-compose)。
@@ -210,18 +210,32 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-04-01-HISTORY-HTTP Android 历史分页与详情真实 HTTP
 
-已完成有限两GET叶：[完整源链、A01真实FAIL／F01／不同A02关闭-01及准确3e2并集I01](COMPLETED.md#g5-be04-history-http)。原fixture／race FAIL与NOT_RECORDED、动态UUID核对异常、临时原审计fixture格式差异及裁定完整保留；6路径同受审6fa、SQL1～11及其他target保留。父BE04仍running；共享已读PUT由下方READ-HTTP另ready，附件关系读投影与最终组合未完成。
+已完成有限两GET叶：[完整源链、A01真实FAIL／F01／不同A02关闭-01及准确3e2并集I01](COMPLETED.md#g5-be04-history-http)。原fixture／race FAIL与NOT_RECORDED、动态UUID核对异常、临时原审计fixture格式差异及裁定完整保留；6路径同受审6fa、SQL1～11及其他target保留。父BE04仍running；共享已读PUT由下方READ-HTTP另running，附件关系读投影另ready，最终组合未完成。
 
 <a id="be-04-01-read-http"></a>
 
 #### BE-04-01-READ-HTTP Android 共享已读真实HTTP
 
-- 类型：有限子叶；状态：`ready`（2026-10-29，总调度采纳独立Planner与冻结合同核对，HISTORY两GET已独审／准确集成完成）。固定canonical产品基线 `3e2b13a22bfad40efa9b9290ba3d22f4b3e79248`，本轮仅文档登记，Implementer／私树尚未派发，源码／Go／独审／I01全部 **NOT_RUN**。owner Backend Orchestrator；main／router下一个排他实现锁仅保留给本叶后续Implementer，派发时登记真实owner／worktree／branch。SYNC仍todo排队，不抢共享文件；无需额外用户批准。
+- 类型：有限子叶；状态：`running`（2026-10-29，原ready经总调度正式派发）。固定canonical产品基线 `3e2b13a22bfad40efa9b9290ba3d22f4b3e79248`；owner Backend Orchestrator，Implementer `/root/read_http_implementer` 已派，隔离私树正准备从固定3e2起步，实际worktree／branch待准备完成后由总调度补录。main／router／read.go排他实现锁仅授本Implementer。当前仅获代码准备后的首次最小普通Go检查授权，尚无检查回交结果；full／race／独审／I01全部 **NOT_RUN**，不预判源码或测试结果。SYNC仍todo排main；附件读叶可在无重叠路径的私树并行准备，Go检查严格串行。无需额外用户批准。
 - 单目标与允许路径：仅新增 `server/internal/httpapi/read.go`、最小扩展 `server/internal/httpapi/router.go` 和 `server/cmd/relaynest/main.go` 三主文件，必要新 `server/internal/httpapi/read_test.go`／`server/cmd/relaynest/read_test.go`。消费已完成 `sync.AdvanceReadTx`／`GetReadStateTx`，不改storage／sync生产仓储、SQL、冻结API、依赖或其他模块。无DDL，0009～0011永久保留，不占0012。
 - 冻结入口：`PUT /api/v1/client/bots/{id}/read`，仅Android真实client write授权／实例当前会话，在同一可信授权Tx最终复核。公开请求唯一字段 `through_seq`，规范非负int64十进制字符串；严格单object，拒重复／额外字段、尾随内容、错类型，body上限262144字节。200固定no-store，结构 `{read:{bot_id,read_seq字符串,version JSON整数,updated_at UTC},server_time}`，不暴露UnreadCount；不新增合同外路由／错误码／外部接口。
 - 事务与边界：共享max单调，same／old noop不改read版本／时间／事件；上界取bots.bot_seq（含已删除最高消息），超界422 `READ_SEQ_OUT_OF_RANGE`，缺Bot404、停用Bot可推进已读；缺状态行／损坏及前进版本溢出503，MAX版本same／old仍合法noop。所有响应投影及JSON可序列化验证在授权Tx成功前完成；错误／COMMIT／最终权限或绑定失效不续期、不改状态／事件、不部分发布，不跨事务拼授权或暴露秘密。
 - 真实验收及必跑检查：TLS生产router／main＋SQLite、双device／sessions并发max、旧值／边界／停用／删最高／损坏／MAX版本、SQL／changes／COMMIT故障、撤销／期限／代次／实例和最终权限绑定原子；完整响应类型／UTC／no-store／秘密边界。受影响httpapi／cmd／sync／messages／auth／storage／changes／bots相关普通与race，全服普通／vet／build、gofmt／diff及冻结响应合同核验；保原50ms／12并发／10ms／timeout与旧断言。Web／API未改核hash及真实embed准确复用，不冒称新跑npm／validator。实施单独本地commit后不同Agent固定SHA独审、编号修复重审及准确I01，全部收口后由总调度决定done。
-- 父与后包：仅共享已读PUT接线，不实现附件关系读投影／同步投影／推送READ过滤、CAS／Buttons／worker／发送，也不完成BE04父或global。独立附件读投影Planner已确认可按既定TECH的message_attachments关系，以有限五main＋新migration独立补验；无需等未来CAS／Buttons／完整BE05绑定写，本轮仅保后包说明，未核号／分配或预占0012、未实现，不裁父原验收。
+- 父与后包：仅共享已读PUT接线，不实现附件关系读投影／同步投影／推送READ过滤、CAS／Buttons／worker／发送，也不完成BE04父或global。[ATTACHMENT-READ](#be-04-01-attachment-read)已按既定TECH的message_attachments关系另ready并专属分配0012；无需等未来CAS／Buttons／完整BE05绑定写，不裁父原验收。本READ-HTTP自身无DDL、不消费未验收附件私树。
+
+<a id="be-04-01-attachment-read"></a>
+
+#### BE-04-01-ATTACHMENT-READ 附件关系与历史／详情读投影
+
+- 类型：有限后包；状态：`ready`（2026-10-29，总调度正式分配迁移号及有限范围）。owner Backend Orchestrator；Planner／本次纯文档Integrator `/root/read_http_planner`，准备树 `.worktrees/backend-be04-attachment-read-docs`／`docs/backend-be04-attachment-read-ready-20261029`。固定canonical实施基线 `a50972648157eb929c270937125372e8aed4a1a3`（纯文档后继，产品同已验收 `3e2b13a22bfad40efa9b9290ba3d22f4b3e79248`）；不同Implementer尚未派发，实施树／分支待正式派发登记，源码／Go／独审／I01全部 **NOT_RUN**。已有持续授权内有限分包，无新增需求／外部接口或架构决定。
+- 已集成依赖：[HISTORY-STORAGE](COMPLETED.md#g5-be04-history-storage)、[REFERENCE-CREATE](COMPLETED.md#g5-be04-reference-create)、[HISTORY-HTTP](COMPLETED.md#g5-be04-history-http)、[附件STORAGE](COMPLETED.md#g5-be05-storage)及[既定上传父组合](COMPLETED.md#g5-be05-compose)，并复用既有真实Android授权／实例绑定和READ仓储。无需等待READ-HTTP、未来CAS／Buttons／完整BE05绑定写HTTP／下载／保护引用；可信关系夹具不代表这些生产写能力已验收。
+- 五主文件与单目标：新增 `server/migrations/0012_message_attachments.sql`、`server/internal/messages/message_attachment_refs.go`，仅扩展 `server/internal/messages/models.go`、`server/internal/messages/history.go` 和 `server/internal/httpapi/message_history.go`。实现TECH既定message_attachments当前关系（消息／附件ID、引用kind、必要稳定顺序、复合唯一约束及显式外键），可信read Tx内读取及同Bot校验，历史列表／详情投影冻结AttachmentReference。复用现有内部AttachmentReference类型，不修改create.go／messages.go共享DTO、main／router或新增生产绑定入口；不添delivery_attachment_refs／投递保护、下载、GC、命令执行或其他schema需求。若需超允许文件或既定TECH模型，先报告证据协调锁／范围。
+- 迁移号与路径锁：只读核查全部71个common库refs及注册worktrees，最高0011且无0012；总调度本轮正式独占分配 `0012_message_attachments.sql` 给本叶，其他任务不得占用。0009～0011永久原占用、SQL0001～0011逐字节及ledger checksums不改；本次核其同154f，旧11文件checksum manifest SHA256 `e24d884b01410e38deb52ee546ba99a2c37ca928f94c46a76f55ede97e1f295c`，开工／I01须再次核对。0012目录条目、五主文件及下述四个count fixture未来实现写锁仅留本叶；当前没有SQL或源码实施，不把分配视为迁移已落地。
+- 必要测试与精确fixture例外：新增 `server/internal/messages/message_attachment_refs_test.go`、`server/internal/messages/message_attachment_migration_test.go`、`server/internal/httpapi/message_history_attachments_test.go`、`server/cmd/relaynest/message_history_attachments_test.go`。仅额外允许 `server/internal/attachments/schema_test.go:92`、`server/internal/sync/read_migration_test.go:79`、`server/internal/devices/push_repository_test.go:307`、`server/internal/push/job_repository_test.go:311` 四处最新升级总数11→12；定位以基线行为为准，不机械全文替换。job旧十迁移构造len(checks)=10、故障rollback ledger=10及所有旧断言／timeout／50ms／12并发／10ms保持原样；storage动态计数不改。既有共享测试helper只读，确需修改先取得具体文件排他锁。
+- 冻结读语义：只在原已授权read Tx读取消息和关联，不跨事务补查／自开事务；所有附件仅输出 `{id,kind}`，无附件为 `[]`，稳定顺序且不泄露存储键／物理路径／摘要或秘密。跨Bot／坏kind／损坏关系整页失败关闭，不返回部分正文；不能用ReadyTx的ready过滤悄悄删引用，缺物理文件仍保留原引用，下载404与健康／恢复行为由对应后包验收。授权／实例最终失效零正文、零续期，维持no-store及事务内可序列化验证。
+- 真实验收：生产TLS／router＋SQLite先真实上传出ready文件、既有文本创建HTTP生成消息，再以可信Tx测试夹具建立关联，真实Android列表／详情HTTP读出非空附件；覆盖同Bot多附件稳定序、分页／原回复／空附件混合、disabled Bot、删消息、缺物理文件、跨Bot及坏kind关系、权限／实例最终失效和秘密边界。关系夹具仅证明读side，不冒充生产绑定写HTTP。真实旧11→12迁移保已有上传、消息、read、legacy及完整push数据，验证显式FK、故障回滚及旧checksums；不重写旧SQL。
+- 四类门槛与调度：①固定基线／范围／合同／文件及迁移号锁；②真实HTTP及迁移验收、相关messages／httpapi／cmd／attachments／sync／devices／push／auth／storage／changes普通与race、全服普通／vet／build、gofmt／diff，保旧门槛；③独立本地source提交后不同Agent固定SHA独审，编号修复重审；④准确canonical新并集I01及证据齐全后总调度决定done。Web／API未改核hash与真实embed复用，不冒称新跑npm／validator。READ-HTTP优先关键路径，两叶源码可在独立树无重叠路径并行，Go严格按唯一窗口串行；本叶不抢READ-HTTP的main／router／read.go，SYNC仍todo排main。
+- 父范围保留：只补当前关系读投影；父BE04全部原验收及最终组合不裁，CAS／Buttons／BE05生产绑定写／保护引用／下载／GC、同步／推送READ过滤和global门槛仍按原任务独立验收，未实现不记通过。不push／部署／创建registry、报告或完成marker。
 
 <a id="be-04-02"></a>
 
