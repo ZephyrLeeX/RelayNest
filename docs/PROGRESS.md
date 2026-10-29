@@ -65,7 +65,7 @@ Debian 恢复：推送 STORAGE、共享写准入修复及 ADMIN 有限文本 HTT
 ### 未完成
 
 - **未开始｜Bot 生命周期与权限收口**：重置／删除正式 HTTP、领取租约／等待请求／投递队列完整联动，以及身份权限整体矩阵（P04-08）。
-- **开发中｜历史／引用和共享已读父范围**：HISTORY-STORAGE及既有Bot API／Android文本REFERENCE-CREATE已各独审／精确集成，引用源 `65488a5…` 映射 `b5fa149…` 并在准确 `74e07f6…` HTTP＋引用并集通过普通／七包race等检查；父BE-04-01仍未完成历史／共享已读HTTP、附件投影及最终组合。[READ-STORAGE](tasks/COMPLETED.md#g5-be04-read-storage)已done：源 `8b3c0c9… → efdae35…` 全检查及不同A01 5.742秒PASS；准确43e新并集迁移4.823秒／全服普通156.003秒／十包race648.445秒／vet／build／格式hash全PASS，root已安全ff至 `43e9d63…`，十路径同源、其他目标保留。0010正式永久占用；仅仓储／初始化完成，父与HTTP／同步投影／推送过滤仍未完成。旧计数失败轮从未运行、误述已纠正，真实首次new-tests／whole直接PASS。[HISTORY-HTTP](tasks/BACKEND.md#be-04-01-history-http)已integrating：完整613e79e→b5cfe8→6fa97bf，经A01 UTC两GET200空body＋idle续期真实FAIL→不同F01／A02 PASS关闭-01，A02原overlay9顶层／62全例／246输入同。source普通309顶层1397全例99.609秒PASS；原七race331.931秒FAIL及原样单例3.983秒PASS保留不归因环境；同source同测试集仅-p1串行全七包249顶层1163全例616.054秒PASS，动态UUID测试名规范前diff／assert与规范后全集同事实保留。当前从准确154f root隔离候选仅重放本叶完整两源，新SQL11／PENDING实际并集I01检查待执行，未ff／未done，main／router锁仍属本叶；SYNC仍todo待准确集成及锁移交。最早fixture FAIL／NOT_RECORDED及全部旧失败保留，共享已读PUT／附件关联／同步及父最终组合仍另包。其他CAS编辑、Webhook、按钮回调和故障回归待实施。
+- **开发中｜历史／引用和共享已读父范围**：HISTORY-STORAGE、REFERENCE-CREATE、READ-STORAGE和[HISTORY-HTTP两GET](tasks/COMPLETED.md#g5-be04-history-http)均已完成各自闭环；父BE04仍running。HISTORY完整613→b5cfe8→6fa经A01 UTC两GET200空body／idle续期真实FAIL、不同F01／A02关闭-01及准确3e2新并集I01，key16.769秒／whole188.907秒／七包-p1race806.150秒／vet2.942秒／build1.558秒PASS，164输入＋3embed及SQL1～11保留并安全ff；双映射8615df6e／7b60ba9a、最早fixtureFAIL／NOT_RECORDED、source原raceFAIL331.931／单例PASS3.983／同集串行PASS616.054与动态UUID名核对异常均在完成档案保留，不归因环境。产品格式diffPASS、临时原字节审计fixture格式差异／非Go汇总AssertionError与总调度裁定保留。READ-STORAGE原0010及计数误述纠正历史不变，详见[完成档案](tasks/COMPLETED.md#g5-be04-read-storage)。[READ-HTTP](tasks/BACKEND.md#be-04-01-read-http)现ready：固定产品基线3e2、三main、仅Android共享已读PUT；尚未派Implementer，源码／Go／A／I均NOT_RUN，main／router下一锁仅给该叶。附件关系读投影可独立有限五main＋新迁移补TECH原验收，无需等待未来CAS／Buttons／完整BE05写；本轮未分配0012或实现。父最终组合、同步／推送过滤仍未验收。
 - **开发中｜附件功能**：STORAGE、真实上传HTTP叶及[限定上传父组合](tasks/COMPLETED.md#g5-be05-compose)均已done；原a647新组合检查、R01外URL原文保存不抓取／计数0及附件卷无变化补证、不同A01独立4.284秒、准确eeef Parent-I01产品／154输入等值复用全部闭环，I01未新跑Go。原失败及14顶层／3新增授权场景计数更正完整保留。消息关联、下载、后台恢复／回收、设置API、真机部署和global仍未验收。
 - **未开始｜投递与清理（P6）**：原子领取、Long Polling、ACK／续约、退避重试、失败管理、历史／墓碑清理、队列生命周期、全局配置及健康投影。
 - **未开始｜Hub 同步运行时**：增量同步、bootstrap 重建、WS 提示及连接撤销。
@@ -73,7 +73,7 @@ Debian 恢复：推送 STORAGE、共享写准入修复及 ADMIN 有限文本 HTT
 
 - **已完成｜JOB-STORAGE有限叶**：[兼容持久模型＋内部租约预留](tasks/COMPLETED.md#g5-be10-job-storage)完整34b→74f→c145，经原A01需修、不同F01／A02关闭-01及准确0e98新组合I01完成；双映射93040fe5／c5097保留，旧d1全部Go NOT_RUN。新组合原Job14＋Pending6＋新混合1顶层／2purpose共21顶层PASS7.568秒、whole177.913秒／九race539.356秒／vet2.784秒／build1.547秒／格式hash全PASS，161输入＋3embed同并安全ff root0e98。旧SQL1～10不变，0011首次canonical永久占用；真实ReadPendingTx仅legacy、完整sync／alert可内部Reserve而legacy不可、五列writer／高水位隔离／device互斥／reopen均PASS。非最终发送资格，父BE10-02生产非零HTTP／快照形成／DND-READ策略／attempt-retry-late-result／worker／平台及真机global仍未完成。
 
-- **待共享锁｜SYNC-CREATE-HTTP**：[有限后包](tasks/BACKEND.md#be-10-02-sync-create-http)仅todo、非ready暂不开工；依赖已具备，无需求层HISTORY依赖，但须待HISTORY主文件精确集成／main锁移交后重定最终canonical，efe4226仅规划参考。四主文件可信首次Tx回调／完整sync快照接线，无DDL不占0012，不实施策略／worker／发送；全部源码／Go／A／I尚NOT_RUN。
+- **待共享锁｜SYNC-CREATE-HTTP**：[有限后包](tasks/BACKEND.md#be-10-02-sync-create-http)仅todo、非ready暂不开工；依赖已具备，无需求层HISTORY依赖，HISTORY已精确集成于3e2，下一main／router锁保留READ-HTTP，本叶继续排队，待共享main锁移交后重定最终canonical，efe4226仅规划参考。四主文件可信首次Tx回调／完整sync快照接线，无DDL不占0012，不实施策略／worker／发送；全部源码／Go／A／I尚NOT_RUN。
 
 ## 3. Web 管理端
 
