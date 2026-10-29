@@ -187,11 +187,17 @@ func projectHistoryMessage(m messages.Message) (messageResponse, error) {
 	if m.Text == "" && len(buttons) == 0 {
 		return messageResponse{}, errors.New("invalid history content")
 	}
-	return messageResponse{
+	out := messageResponse{
 		ID: m.ID, BotID: m.BotID, BotSeq: strconv.FormatInt(m.BotSeq, 10), Revision: m.Revision,
 		Sender: m.Sender, Format: m.Format, Text: m.Text, Attachments: []messages.AttachmentReference{},
 		Reply: m.OriginalReplyToMessageID, Buttons: buttons, CreatedAt: m.CreatedAt.UTC(), UpdatedAt: m.UpdatedAt.UTC(),
-	}, nil
+	}
+	// 偏移时间虽可解析，转为 UTC 后仍可能越过 JSON 时间的年份边界。
+	// 必须在授权事务内校验候选投影，失败时整页／详情与会话续期一并回滚。
+	if _, err := json.Marshal(out); err != nil {
+		return messageResponse{}, err
+	}
+	return out, nil
 }
 
 // 历史快照也必须满足冻结按钮合同；损坏数据不能成为成功响应。

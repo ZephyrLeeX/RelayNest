@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"strconv"
 	"testing"
 	"time"
@@ -48,5 +49,51 @@ func TestHistoryProjectionRejectsCorruptSnapshot(t *testing.T) {
 				t.Fatalf("accepted %s", buttons)
 			}
 		})
+	}
+}
+
+func TestHistoryProjectionUTCTimeBoundaries(t *testing.T) {
+	for _, timestamp := range []struct {
+		value string
+		valid bool
+	}{
+		{"9999-12-31T23:59:59-08:00", false},
+		{"0000-01-01T00:00:00+08:00", false},
+		{"9999-12-31T23:59:59Z", true},
+		{"0000-01-01T00:00:00Z", true},
+		{"9999-12-31T23:59:59+08:00", true},
+		{"0000-01-01T00:00:00-08:00", true},
+	} {
+		for _, field := range []string{"created_at", "updated_at"} {
+			t.Run(field+"/"+timestamp.value, func(t *testing.T) {
+				parsed, err := time.Parse(time.RFC3339Nano, timestamp.value)
+				if err != nil {
+					t.Fatal(err)
+				}
+				now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+				m := messages.Message{ID: "00000000-0000-4000-8000-000000000001", BotID: "00000000-0000-4000-8000-000000000002", BotSeq: 1, Revision: 1, Sender: messages.Application, Format: "plain", Text: "时间边界", ButtonsJSON: []byte("[]"), CreatedAt: now, UpdatedAt: now}
+				if field == "created_at" {
+					m.CreatedAt = parsed
+				} else {
+					m.UpdatedAt = parsed
+				}
+				out, err := projectHistoryMessage(m)
+				if !timestamp.valid {
+					if err == nil {
+						t.Fatal("接受了 UTC 转换后无法序列化的时间")
+					}
+					return
+				}
+				if err != nil {
+					t.Fatal(err)
+				}
+				if out.CreatedAt.Location() != time.UTC || out.UpdatedAt.Location() != time.UTC || !out.CreatedAt.Equal(m.CreatedAt) || !out.UpdatedAt.Equal(m.UpdatedAt) {
+					t.Fatalf("UTC 投影改变时间: %+v", out)
+				}
+				if _, err := json.Marshal(out); err != nil {
+					t.Fatal(err)
+				}
+			})
+		}
 	}
 }

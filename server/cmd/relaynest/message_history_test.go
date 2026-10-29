@@ -347,3 +347,38 @@ func TestAssembledHistoryCorruptionFailsEntirePage(t *testing.T) {
 		})
 	}
 }
+
+func TestAssembledHistoryUTCSerializationBoundary(t *testing.T) {
+	for _, field := range []string{"created_at", "updated_at"} {
+		for _, timestamp := range []string{"9999-12-31T23:59:59-08:00", "0000-01-01T00:00:00+08:00"} {
+			t.Run(field+"/"+timestamp, func(t *testing.T) {
+				f := botHTTP(t, nil)
+				bot := clientMessageBot(t, f)
+				m := historyCreate(t, f, bot.Bot.ID, "history-time-corrupt", "corrupted-private-text", nil)
+				// 新消息先投影成功，较旧的坏行仍须阻止整页正文发布。
+				historyCreate(t, f, bot.Bot.ID, "history-time-valid", "valid-private-text", nil)
+				f.sql("UPDATE messages SET "+field+"=? WHERE id=?", timestamp, m.ID)
+				// 固定为短于正常续期的有效过期时间，避免零副作用断言偶然通过。
+				f.sql("UPDATE sessions SET idle_expires_at=? WHERE id=?", time.Now().Add(time.Hour).UnixNano(), f.androidID)
+				readIdle := func() int64 {
+					var idle int64
+					if err := f.store.Read(context.Background(), func(tx *sql.Tx) error {
+						return tx.QueryRow("SELECT idle_expires_at FROM sessions WHERE id=?", f.androidID).Scan(&idle)
+					}); err != nil {
+						t.Fatal(err)
+					}
+					return idle
+				}
+				idleBefore := readIdle()
+				before := f.snapshot()
+				for _, path := range []string{"/api/v1/client/bots/" + bot.Bot.ID + "/messages", "/api/v1/client/messages/" + m.ID} {
+					status, raw, h := f.admin("GET", path, "")
+					idleAfter := readIdle()
+					if status != 503 || !strings.Contains(raw, "SERVICE_UNAVAILABLE") || strings.Contains(raw, "private-text") || strings.Contains(raw, "SELECT") || h.Get("Cache-Control") != "no-store" || f.snapshot() != before || idleAfter != idleBefore {
+						t.Fatalf("UTC 边界 %s: status=%d body=%s idle=%d→%d", path, status, raw, idleBefore, idleAfter)
+					}
+				}
+			})
+		}
+	}
+}
