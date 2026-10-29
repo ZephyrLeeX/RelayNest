@@ -244,6 +244,30 @@ commit后201 ClientMessageReceipt含原message/delivery_id，no-store；同有�
 - 验收覆盖双入口实际 TLS／HTTP＋SQLite、12并发同异key、先授权再重放、B01提交前会话／实例失效、删源后的旧回执／delivery不变、跨Bot及不存在404／UUID400422、重开／丢响应／故障全回滚；Webhook引用继续关闭，附件／按钮不开放。HTTP jobs=0，不据此宣称非零正式推送；仓储故障非零待办检查另有实际日志。源码和测试未改旧 main_test 或超时／并发断言；无生产测试 FAIL，首次本地 commit 因 Git identity未配置未创建对象，仅命令级指定身份后成功，不改共享配置。新 npm／API机验 **NOT_RUN**，Web／API未改，真实 embed按hash复用。
 - 限制：上述 COMMIT配对经 A01判断充分，同一次 HTTP内部直接 COMMIT观测仍 **NOT_RUN**。父 BE-04-01 原历史分页／共享已读／最终组合，以及 READ-STORAGE、历史／已读HTTP和附件投影后包仍按各自门槛执行；本叶无迁移、未占0010，未 push／部署／创建完成标记。
 
+<a id="g5-be04-compose"></a>
+
+### BE-04-01 历史分页引用和共享已读
+
+- 证据与交接：HISTORY-STORAGE、REFERENCE-CREATE、READ-STORAGE、HISTORY-HTTP、READ-HTTP及ATTACHMENT-READ均已分别独审／准确集成；本父在准确e8产品完成R01、不同A01及精确适用性I01后由总调度批准既定后端范围完成。原目标、验收及未完成后包边界如下，未削减。
+
+- 旧ID：`P05-03`；类型：有限 leaf；状态：`done`（2026-10-30，原2026-10-27 running，子项闭环后经父R01／不同A01／精确COMPOSE-I01及总调度完成决定归档；只既定现有后端范围）。
+- 依赖：[已完成 BE-02 限定父组合](COMPLETED.md#g5-be02-compose)。
+- 允许范围：`server/internal/messages/**`、`server/internal/sync/read*`、`server/migrations/**`，及对应测试。
+- 门槛：`G-GIT`；本父原后端验收均有实际R01／独审及准确产品证据，不把未测后包记通过。
+
+目标：按bot_seq分页、引用校验、共享已读取max和未读计数；自己的消息与编辑不增未读，旧设备不能倒退。
+
+验收：越 Bot 引用拒绝。；旧设备不倒退。；自己的消息与编辑不增加未读。 运行上述允许包的共同检查。
+
+- 已完成子项与准确产品： [HISTORY-STORAGE](#g5-be04-history-storage)准确6e5ca4b、[REFERENCE-CREATE](#g5-be04-reference-create)准确74e07f6、[READ-STORAGE](#g5-be04-read-storage)准确43e9d63、[HISTORY-HTTP](#g5-be04-history-http)准确3e2、[READ-HTTP](#g5-be04-read-http)映射79b／候选96ce、[ATTACHMENT-READ](#g5-be04-attachment-read)映射1c19687／受测ad6ce／根e8均按各自完整源链、不同独审和准确I01完成。原source FAIL、fixture修正、Git identity失败、动态UUID／race包范围脚本异常及补bots实际race历史均完整保留在各原档案，不重写历史。
+- 父R01：只overlay验证、无产品或tracked变更，准备树 `.worktrees/backend-be04-parent-r01`／`verify/backend-be04-parent-r01-20261029@ad6ceebe99f0f4b4d23c3131bea4b687acd5efac` 与真实canonical `e8f27533d30909c523d98d5f7346fe382fdc24e8` 产品逐字节一致（差异仅三docs）。真实TLS／SQLite组合普通02 **PASS**（1顶层／1全例、2.451秒）、race02 **PASS**（1／1、14.161秒）；命令／cwd／Go1.27.3／start／elapsed／exit0及原始Go JSON时间均有证，独立命令wall-end字段未单独记录，不补造。R01 handoff `/tmp/relaynest-be04-parent-r01-20261029/handoff.json` SHA256 `93d5f395469f403b441803311a9638015f457dbcaac8b258242f9c4f8b2c2e70`；普通log `71f15266723155c7513db8e8aac973e32853a543d773ef233b5fb1779be71398`，race log `b18888ab41844906b839ae29b01b919ae6687f9e55cea5cb84e17bbf9d52f98d`。
+- 原R01失败与修正：ordinary01 **FAIL**（3.046秒、exit1），新Bot fixture把冻结Bot直接Message响应按Android `{message:...}`包装解码导致Sender为空；真实Bot响应及原log SHA256 `4911cc749eaa483ee10fcb0f845aa68ab6b84e2964e14bc767880b7df7975d3b` 保留。只改新overlay的comboApplication为直接Message解码、原断言保留，不改产品／旧测试。原overlay SHA256 `89c487f8778cdc6cf6916513bd8029956eb6e8684e10ccca006f3b97d597ba30`、最终 `376eb22f4e2907857a61ae94a09acf584869005355e8a07107b7daf51da14de4`；race01因首轮fixture失败 **NOT_RUN**，未伪称通过。
+- 原验收实际映射：真实Bot application→Android own→Bot同域回复得到bot_seq1／2／3；另Bot跨域引用404且全库快照不变。真实列表limit2／排他cursor尾页／详情回复，删除源保留原reply ID。两个device_id的有效Android Bearer交错PUT1／0、删最高seq4后PUT4／1，较低值严格noop，PUT5为422且全库快照不变。可信只读Tx GetReadStateTx验证application未读1、own后仍1、application回复后2、read1后1；已读与未读application的受控SQL正文／revision／updated_at更新逐次保证完整ReadState、bot_seq、创建时间、分页顺序／cursor不变，详情返回更新后的内容和版本。SQL变化只证明既有持久内容编辑不增未读，不冒称未来CAS HTTP。
+- 附件与安全组合：两个真实上传handler产出ready及真实文件bytes／hash，再由可信Tx关系夹具按position8／1关联；列表和详情按稳定顺序返回且仅 `{id,kind}`，own消息附件为[]。删物理文件并标missing仍保原引用。停用Bot仍可读列表／详情并PUT；对页／详情／PUT的真实续期后撤销触发器均401/no-store、无正文或read且全库快照不变，移除触发器可正常读。可信关系夹具不等于生产绑定写HTTP；未增加下载／保护／GC能力。
+- 不同A01：独立Auditor固定e8完整审查原→最终overlay，**PASS**、无发现。除复验原R01外，新增校验已读／未读application精确编辑正文与初次read_seq1，并对真正前进的PUT2触发最终续期撤销，断言401／零read／消息事件与会话续期全表快照不变。独立普通 **PASS**（2顶层／2全例、5.125秒、exit0）；A01 `/tmp/relaynest-be04-compose-a01-20261029/handoff.json` SHA256 `53ce97051d2fffd08022626075cb584eacee8f54af3b3c2fcf66e5586aab1b60`，log SHA256 `51617e2bb8a7bbb4dfb65f8f196c052ba74f77b55c08ec368f7acf171841fe15`。本次独审未新跑race／宽矩阵，原R01 race及准确I01宽矩阵实际结果另行核证。
+- 精确COMPOSE-I01：不同Integrator `/root/read_http_planner` 在准确e8建立 `.worktrees/backend-be04-compose-complete-docs`／`docs/backend-be04-compose-complete-20261030`。独立核R01／A01的173个受控product/Web/API＋3真实embed、原／最终R01与原A01 overlay／map字节hash及before/after同值；另核附件I01共用245产品＋3embed＋4原overlay输入与e8完全匹配。实际R01与A01的argv／cwd／start／elapsed或end／exit／log hash／测试身份、原FAIL均核；全服普通343／1526（203.463秒）、十包race312／1375（956.866秒）、补bots单包26／142（82.257秒）、定向42／228（42.106秒）及vet／build／130产品Go文件gofmt／diff准确宽矩阵全部原始log hash、实际test identities和输入均核准。**精确当前产品适用性复用PASS，本父I01未新跑Go／npm／标准API validator**，不把其他产品组合结果冒充当前组合，也不把原临时fixture纳入产品fmt结论。证据 `/tmp/relaynest-be04-compose-i01-20261030/{verification.json,inputs.json,handoff.json}`；最终纯三docs归档候选／root ff SHA及输入再核以实际交接为准，无产品重放。
+- 完成边界与后续：仅原BE-04-01现有后端历史分页／引用／共享已读／未读及当前附件关系读投影父组合完成；原所有验收及范围保留。没有Android应用／WS／真机／平台发送或global完成结论，SYNC策略／worker／发送、未来CAS HTTP、生产附件绑定写／下载／保护／GC继续各自任务验收。BE-04-02只满足此父依赖，完整替换reply_to合同与original_reply SQL immutable约束的Planner疑点仍待独立核实／必要语义决策，不能自动ready。未push／部署／发布／创建完成marker。
+
 <a id="g5-be04-attachment-read"></a>
 
 ### BE-04-01-ATTACHMENT-READ 附件关系与历史／详情读投影

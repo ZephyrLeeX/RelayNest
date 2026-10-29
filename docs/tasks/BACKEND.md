@@ -175,63 +175,25 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 <a id="be-04-01"></a>
 
-### BE-04-01 历史分页引用和共享已读
-
-- 证据与交接：HISTORY-STORAGE、REFERENCE-CREATE、READ-STORAGE 已各独审／精确集成，见下方完成链接；[HISTORY-HTTP](COMPLETED.md#g5-be04-history-http) 已完成既定历史／详情两GET；[READ-HTTP](COMPLETED.md#g5-be04-read-http)已完成有限PUT；[ATTACHMENT-READ](COMPLETED.md#g5-be04-attachment-read)已完成有限关系读投影，父最终组合仍另包，父原目标和验收不变。
-
-- 旧ID：`P05-03`；类型：有限 leaf；状态：`running`（2026-10-27，首叶已完成，父原验收未完成）。
-- 依赖：[已完成 BE-02 限定父组合](COMPLETED.md#g5-be02-compose)。
-- 允许范围：`server/internal/messages/**`、`server/internal/sync/read*`、`server/migrations/**`，及对应测试。
-- 门槛：`G-GIT`；条件未实证不记通过。
-
-目标：按bot_seq分页、引用校验、共享已读取max和未读计数；自己的消息与编辑不增未读，旧设备不能倒退。
-
-验收：越 Bot 引用拒绝。；旧设备不倒退。；自己的消息与编辑不增加未读。 运行上述允许包的共同检查。
+已完成既定后端父组合：[BE-04-01 历史分页引用和共享已读](COMPLETED.md#g5-be04-compose)。子项、原目标／验收、父R01首轮fixture FAIL与修正、不同A01及准确e8产品适用性I01完整归档；Android应用／WS／global及其他独立后包仍未据此完成。
 
 <a id="be-04-01-history-storage"></a>
-
-#### BE-04-01-HISTORY-STORAGE 历史／详情与同 Bot 引用只读仓储准备
-
-已完成有限子叶：[完整 source 链、实际检查、A01／I01 映射及范围限制](COMPLETED.md#g5-be04-history-storage)。仅仓储准备已集成；父 BE-04-01 仍 `running`、未完成原历史／引用／共享已读验收，REFERENCE-CREATE 已另独审／精确集成，READ-STORAGE已另完成，[HISTORY-HTTP](COMPLETED.md#g5-be04-history-http)已完成；本仓储叶不增加共享已读／附件投影／公开 cursor／HTTP。0009 保留，0010 已另专属 READ-STORAGE，本 HISTORY 子叶未分配新号。
-
 <a id="be-04-01-reference-create"></a>
-
-#### BE-04-01-REFERENCE-CREATE 既有双入口文本创建接通同 Bot 回复引用
-
-已完成有限叶：[完整源链、A01／精确I01映射、新HTTP并集实际检查及COMMIT配对限制](COMPLETED.md#g5-be04-reference-create)。只完成既有 Bot API／Android 文本引用；父 BE-04-01 仍 running，READ-STORAGE已另完成，[HISTORY-HTTP](COMPLETED.md#g5-be04-history-http)已完成，共享已读HTTP、附件投影和父最终组合未完成，Webhook引用／附件／按钮不开放。
-
 <a id="be-04-01-read-storage"></a>
-
-#### BE-04-01-READ-STORAGE 共享已读事务仓储与原子初始化
-
-已完成有限叶：[完整源链、A01及准确新并集I01、迁移占用与范围限制](COMPLETED.md#g5-be04-read-storage)。仅可信事务仓储／初始化完成，0010正式永久占用、实施／集成锁已释放；父BE-04-01仍running，[HISTORY-HTTP](COMPLETED.md#g5-be04-history-http)已完成，共享已读HTTP、同步投影／推送过滤及最终组合未完成。
-
 <a id="be-04-01-history-http"></a>
-
-#### BE-04-01-HISTORY-HTTP Android 历史分页与详情真实 HTTP
-
-已完成有限两GET叶：[完整源链、A01真实FAIL／F01／不同A02关闭-01及准确3e2并集I01](COMPLETED.md#g5-be04-history-http)。原fixture／race FAIL与NOT_RECORDED、动态UUID核对异常、临时原审计fixture格式差异及裁定完整保留；6路径同受审6fa、SQL1～11及其他target保留。父BE04仍running；共享已读PUT已由[READ-HTTP](COMPLETED.md#g5-be04-read-http)有限叶完成，附件关系读投影已由[有限叶](COMPLETED.md#g5-be04-attachment-read)完成，最终组合未完成。
-
 <a id="be-04-01-read-http"></a>
-
-#### BE-04-01-READ-HTTP Android 共享已读真实HTTP
-
-已完成有限PUT叶：[完整3e2→7b55源链、原fixture FAIL／修正与Git身份重试、不同A01 PASS及准确79b／96ce产品等值I01](COMPLETED.md#g5-be04-read-http)。仅共享max／read.updated／noop和真实Android授权；146源码／24 Web／6 API／3真实embed与受审source等值，I01核证据精确复用、未新跑Go，root已ff96ce。父BE04仍待附件关系读投影及最终组合；不代同步／策略／发送或global完成，main／router旧writer已释放。
-
 <a id="be-04-01-attachment-read"></a>
 
-#### BE-04-01-ATTACHMENT-READ 附件关系与历史／详情读投影
-
-已完成有限关系读叶：[完整a509→758a源链、source／不同A01及准确1c19687／ad6ce新并集I01、原fixture与收尾脚本异常及补bots race闭环](COMPLETED.md#g5-be04-attachment-read)。仅message_attachments关系及真实Android列表／详情投影；0012本叶准确集成永久占用，旧SQL1～11不改。实际定向42／228、普通343／1526、十race312／1375、补bots26／142、vet／build／产品fmt／合同全PASS，不冒充单次十一包或生产绑定写完成。父BE04仍待最终R01及独立审计、CAS未ready；同步策略／发送／下载／保护及global不据此完成。
+已完成子项：[历史仓储](COMPLETED.md#g5-be04-history-storage)、[文本回复引用](COMPLETED.md#g5-be04-reference-create)、[共享已读仓储](COMPLETED.md#g5-be04-read-storage)、[历史两GET](COMPLETED.md#g5-be04-history-http)、[共享已读PUT](COMPLETED.md#g5-be04-read-http)、[附件关系读投影](COMPLETED.md#g5-be04-attachment-read)。仅保留稳定链接，原完成证据和各自范围不重复维护。
 
 <a id="be-04-02"></a>
 
 ### BE-04-02 应用消息 CAS 编辑
 
-- 证据与交接：尚无本步骤新增实施／独审／集成证据；已有历史或WIP见下文。派发时由调度登记 owner、固定基线、路径／锁、工作树／分支；回交实际检查及未测限制、实现／独审／精确集成 SHA。
+- 证据与交接：父[BE-04-01既定后端组合](COMPLETED.md#g5-be04-compose)已done，仅满足该依赖，本CAS仍todo／未ready。Planner已提出完整替换reply_to合同与original_reply SQL immutable约束可能冲突，尚待独立核实及必要语义决策；本轮不修改冻结接口／SQL、不据父完成自动开工。尚无本步骤新增实施／独审／集成证据，派发前仍须固定实际owner／基线／路径锁。
 
-- 旧ID：`P05-04`；类型：有限 leaf；状态：未开始。
-- 依赖：`BE-04-01`。
+- 旧ID：`P05-04`；类型：有限 leaf；状态：`todo`（父依赖已满足，完整编辑HTTP语义未闭环，非ready）。
+- 依赖：[已完成BE-04-01既定后端父组合](COMPLETED.md#g5-be04-compose)。
 - 允许范围：`server/internal/messages/**`、`server/migrations/**`，及对应测试。
 - 门槛：`G-GIT`；条件未实证不记通过。
 
@@ -571,7 +533,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-10-02-SYNC-CREATE-HTTP 既有双入口首次创建事务生成完整sync待办
 
-- 类型：有限后包；状态：`running`（2026-10-29，原todo／待main锁→ready后总调度正式派发）。owner Backend Orchestrator；固定canonical产品实施基线 `96cefa0afcafe53a95f8df17ee6dbbfe572f9529`，本次归档metadata后继产品相同；`efe4226512f214bffd6200f4bff7b6d777751d08` 仅保留原规划参考历史。产品依赖已具备：[服务器注册／偏好](COMPLETED.md#g5-be10-compose)、既有消息／幂等授权与引用、[期限F01](COMPLETED.md#g5-be10-preflight-f01)、[READ仓储](COMPLETED.md#g5-be04-read-storage)、[PENDING](COMPLETED.md#g5-be10-pending-read)、[JOB／0011](COMPLETED.md#g5-be10-job-storage)均已完成；[HISTORY-HTTP](COMPLETED.md#g5-be04-history-http)与[READ-HTTP](COMPLETED.md#g5-be04-read-http)亦已准确集成，但不新增需求层HISTORY依赖。实际Implementer `/root/sync_create_implementer` 已从固定f2e4fd565bbf426a11cc883a46c4166f014a0d8e（与96ce产品相同）clean创建 `.worktrees/backend-be10-sync-create`／`impl/backend-be10-sync-create-20261029`；main及messages内部回调契约实现锁仅授本Implementer，不改router；并行附件五main／四count／自有tests及0012号锁不受影响。当前已在独立源码树实施；最小第二轮已退出，具体结果按其交接登记。总调度已确认SYNC全服普通自然exit0，具体计数／日志hash待本叶回交，race／独审／I01尚无终态交接，不猜结果。附件I01矩阵及获准补bots单包race均已退出并交还唯一Go窗口供SYNC，后续检查继续串行。
+- 类型：有限后包；状态：`review`（2026-10-30，原todo→ready→running后完整本地source提交，待不同A01最终报告与准确I01）。owner Backend Orchestrator；固定canonical产品实施基线 `96cefa0afcafe53a95f8df17ee6dbbfe572f9529`，本次归档metadata后继产品相同；`efe4226512f214bffd6200f4bff7b6d777751d08` 仅保留原规划参考历史。产品依赖已具备：[服务器注册／偏好](COMPLETED.md#g5-be10-compose)、既有消息／幂等授权与引用、[期限F01](COMPLETED.md#g5-be10-preflight-f01)、[READ仓储](COMPLETED.md#g5-be04-read-storage)、[PENDING](COMPLETED.md#g5-be10-pending-read)、[JOB／0011](COMPLETED.md#g5-be10-job-storage)均已完成；[HISTORY-HTTP](COMPLETED.md#g5-be04-history-http)与[READ-HTTP](COMPLETED.md#g5-be04-read-http)亦已准确集成，但不新增需求层HISTORY依赖。实际Implementer `/root/sync_create_implementer` 已从固定f2e4fd565bbf426a11cc883a46c4166f014a0d8e（与96ce产品相同）clean创建 `.worktrees/backend-be10-sync-create`／`impl/backend-be10-sync-create-20261029`；main及messages内部回调契约实现锁仅授本Implementer，不改router；并行附件五main／四count／自有tests及0012号锁不受影响。完整source `f2e4fd565bbf426a11cc883a46c4166f014a0d8e → 35e93a81c3f503bff166493a0fbca6e1b478cc6e` 已单commit七路径（四main／三新增tests）、source树clean；原实施锁于提交后释放。交接 `/tmp/relaynest-be10-sync-create-20261029/handoff.json` SHA256 `e4f4dfc3e41e209eb9183ab478c35dfbc8dd9cbe45c75f9dd3b32489024e4955`，已核全部source日志hash。min01新fixture错changes主键seq（实际change_seq）及错误在缺幂等头Bot入口断言Android实例门禁FAIL保留，仅新test修正为真实Android入口；生产／旧断言未因fixture更改。min02七顶层／25全例PASS（9.785秒），含补混合隔离的min03同七／25 PASS（9.459秒）；全服普通341／1526、相关race293／1356（937.788秒）、补bots26／142（80.462秒）、vet／build／gofmt／diff均source实际PASS。普通wrapper412.888秒包含Python-only SIGSTOP及等待窗口时间，Go首尾JSON事件跨度约202.185秒，不冒称精确命令运行耗时；normal-exit-observed及pause/resume证据保留。source基线不含后续附件SQL0012，不能以此source CI替代最终canonical并集。不同A01固定35e已派在审，最终报告尚待本任务交接，不记PASS／done；准确I01尚未形成终态，不猜结论，不混入私树或更改原验收。
 - 单目标与四主文件：仅 `server/internal/messages/repository.go`（初始化时可信首次创建Tx回调配置）、`server/internal/messages/create.go`（幂等首次成功创建内调用）、新增 `server/internal/push/sync_enqueue.go`（最小事件输入／同Tx选目标与完整sync快照）、`server/cmd/relaynest/main.go`（composition-root接线）；必要新同包测试限messages首次创建／push快照／cmd真实HTTP组合。main与messages内部回调契约须调度排他登记；不改router、SQL、API、auth／devices实现或其他叶源码。main桥接Created到最小事件，messages／httpapi不直接import push，避免push包内测试→messages／auth→httpapi的测试导入环；不是新增服务分层或外部接口。
 - 冻结事务顺序：保当前入口认证／事务授权→基本校验和原幂等摘要→receipt查重；hit原样复用，**不选择目标、不写／刷新job**。仅Bot API／Android管理员首次文本业务及引用成功，bot_seq／message／changes完成、管理员delivery已追加后，在同一可信Tx回调使用最终 `Created.LastChangeSeq`，不误用较早message-created水位；随后保存原receipt并提交，提交成功才响应。回调不自开／提交Tx、不网络发送；任一选择／第N个job／幂等／SQL／COMMIT失败全回滚，无部分job或回执。不得在回调前跨事务枚举目标，不把当前注册／配置补到旧事件或幂等重放；不扩Webhook、附件、按钮或编辑生产者。两HTTP现有nil PushTargets可保留，不借此走legacy hint旧链。
 - 快照与目标：同Tx从真实有效Android session/device、未撤销／idle及absolute纳秒期限、管理员代次和有效FCM注册选目标，同device多session隔离。固定purpose=sync／provider=fcm／alert_eligible=false；用原事件messageID／BotID／BotSeq／最终水位／创建时间，真实deployment、session代次、registration_version和settings_version（缺配置行虚拟0），按TECH9.1既有24小时默认期限校验无溢出，调用已完成CreateJobTx复核。无有效FCM注册正常消息成功但零完整job，不补造版本或恢复旧事件，数据仍前台／周期补偿；none／vendor／DND不变为本叶alert资格策略，sync不提醒。不得持久化token、正文、附件URL／callback或秘密，不在响应／日志／原receipt加内部资格数据。分页仅控制内存，不套legacy100上限静默丢目标，需验证目标覆盖及事务耗时。
