@@ -172,6 +172,7 @@ func authenticationDependencies(ctx context.Context, path, externalOrigin string
 		// 未装配已核平台资格时仅拒vendor激活；FCM/none偏好与两通道登记仍独立可用。
 		DeviceHandler:       devices.NewHandlerWithPush(sessions, security, devices.NewPushRepository(store, sessions, nil)),
 		MessageHandler:      httpapi.NewMessageHandler(bots.New(store), messages.New(store), clientMessageAuthorization(sessions, security)),
+		ReadHandler:         httpapi.NewReadHandler(clientMessageAuthorization(sessions, security)),
 		attachmentAuthorize: clientMessageAuthorization(sessions, security),
 	}, nil
 }
@@ -235,6 +236,7 @@ type managementHandlers struct {
 	*httpapi.InstanceHandler
 	*httpapi.BotHandler
 	*httpapi.MessageHandler
+	*httpapi.ReadHandler
 	*httpapi.AttachmentHandler
 	attachmentAuthorize httpapi.BotAuthorize
 	DeviceHandler       *devices.Handler
