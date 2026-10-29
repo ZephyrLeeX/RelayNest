@@ -22,6 +22,7 @@ import (
 	"relaynest/server/internal/health"
 	"relaynest/server/internal/httpapi"
 	"relaynest/server/internal/messages"
+	"relaynest/server/internal/push"
 	"relaynest/server/internal/storage"
 )
 
@@ -170,8 +171,10 @@ func authenticationDependencies(ctx context.Context, path, externalOrigin string
 		InstanceHandler: httpapi.NewInstanceHandler(store),
 		BotHandler:      httpapi.NewBotHandler(bots.New(store), botAuthorization(sessions, security)),
 		// 未装配已核平台资格时仅拒vendor激活；FCM/none偏好与两通道登记仍独立可用。
-		DeviceHandler:       devices.NewHandlerWithPush(sessions, security, devices.NewPushRepository(store, sessions, nil)),
-		MessageHandler:      httpapi.NewMessageHandler(bots.New(store), messages.New(store), clientMessageAuthorization(sessions, security)),
+		DeviceHandler: devices.NewHandlerWithPush(sessions, security, devices.NewPushRepository(store, sessions, nil)),
+		MessageHandler: httpapi.NewMessageHandler(bots.New(store), messages.NewWithFirstCreate(store, func(ctx context.Context, tx *sql.Tx, created messages.Created) error {
+			return push.EnqueueSyncTx(ctx, tx, push.SyncEvent{MessageID: created.Message.ID, BotID: created.Message.BotID, BotSeq: created.Message.BotSeq, TargetChangeSeq: int64(created.LastChangeSeq), CreatedAt: created.Message.CreatedAt})
+		}), clientMessageAuthorization(sessions, security)),
 		ReadHandler:         httpapi.NewReadHandler(clientMessageAuthorization(sessions, security)),
 		attachmentAuthorize: clientMessageAuthorization(sessions, security),
 	}, nil

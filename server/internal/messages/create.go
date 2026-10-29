@@ -153,6 +153,12 @@ func (r *Repository) createIdempotentTx(ctx context.Context, tx *sql.Tx, scope i
 	if err != nil {
 		return Created{}, err
 	}
+	// 查重命中已提前返回；管理员 delivery 已追加，使用最终水位快照，不追补旧事件。
+	if r.firstCreate != nil && scope.Operation != CreateWebhookMessage {
+		if err = r.firstCreate(ctx, tx, out); err != nil {
+			return Created{}, err
+		}
+	}
 	data, err := json.Marshal(out)
 	if err != nil {
 		return Created{}, err

@@ -48,13 +48,25 @@ type Created struct {
 }
 
 type Repository struct {
-	store  *storage.Store
-	now    func() time.Time
-	random io.Reader
+	store       *storage.Store
+	now         func() time.Time
+	random      io.Reader
+	firstCreate FirstCreateTx
 }
 
 func New(store *storage.Store) *Repository {
 	return &Repository{store: store, now: time.Now, random: rand.Reader}
+}
+
+// FirstCreateTx 仅接收幂等首次创建后的可信候选；与业务共用事务，错误必须传播回滚。
+// 回调不得自行提交、保留事务、执行网络请求或发布未提交候选。
+type FirstCreateTx func(context.Context, *sql.Tx, Created) error
+
+// NewWithFirstCreate 在初始化时冻结内部回调；普通 New 的既有行为不变。
+func NewWithFirstCreate(store *storage.Store, callback FirstCreateTx) *Repository {
+	r := New(store)
+	r.firstCreate = callback
+	return r
 }
 
 func (r *Repository) uuid() (string, error) {
