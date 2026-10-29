@@ -167,7 +167,7 @@ func historyQuery(raw, bot string) (messages.HistoryQuery, error) {
 }
 
 func projectHistoryMessage(m messages.Message) (messageResponse, error) {
-	// 当前创建明确拒绝附件，仓储没有消息附件关联；不得把 Bot 的独立上传当作消息附件。
+	// 仅投影原授权事务加载的当前关系；独立上传不自动成为消息附件。
 	// 按钮来自已有持久快照，解析失败必须令整页失败，不能默默抹为空数组。
 	if !botID(m.ID) || !botID(m.BotID) || m.BotSeq < 1 || m.Revision < 1 || (m.Sender != messages.Application && m.Sender != messages.Administrator) || (m.Format != "plain" && m.Format != "markdown") || !utf8.ValidString(m.Text) || len(m.Text) > 65536 || !utf8.Valid(m.ButtonsJSON) || (m.OriginalReplyToMessageID != nil && !botID(*m.OriginalReplyToMessageID)) {
 		return messageResponse{}, errors.New("invalid history message")
@@ -184,12 +184,21 @@ func projectHistoryMessage(m messages.Message) (messageResponse, error) {
 	if err := validateHistoryButtons(buttons); err != nil {
 		return messageResponse{}, err
 	}
-	if m.Text == "" && len(buttons) == 0 {
+	attachments := make([]messages.AttachmentReference, 0, len(m.AttachmentRefs))
+	seenAttachments := make(map[string]bool)
+	for _, ref := range m.AttachmentRefs {
+		if !botID(ref.ID) || (ref.Kind != "image" && ref.Kind != "file") || seenAttachments[ref.ID] || len(attachments) >= 10 {
+			return messageResponse{}, errors.New("invalid history attachments")
+		}
+		seenAttachments[ref.ID] = true
+		attachments = append(attachments, ref)
+	}
+	if m.Text == "" && len(buttons) == 0 && len(attachments) == 0 {
 		return messageResponse{}, errors.New("invalid history content")
 	}
 	out := messageResponse{
 		ID: m.ID, BotID: m.BotID, BotSeq: strconv.FormatInt(m.BotSeq, 10), Revision: m.Revision,
-		Sender: m.Sender, Format: m.Format, Text: m.Text, Attachments: []messages.AttachmentReference{},
+		Sender: m.Sender, Format: m.Format, Text: m.Text, Attachments: attachments,
 		Reply: m.OriginalReplyToMessageID, Buttons: buttons, CreatedAt: m.CreatedAt.UTC(), UpdatedAt: m.UpdatedAt.UTC(),
 	}
 	// 偏移时间虽可解析，转为 UTC 后仍可能越过 JSON 时间的年份边界。

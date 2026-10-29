@@ -53,6 +53,11 @@ func (r *Repository) ListHistoryTx(ctx context.Context, tx *sql.Tx, botID string
 	if page.HasMore {
 		page.Items = items[:query.Limit:query.Limit]
 	}
+	for i := range page.Items {
+		if err := historyAttachmentRefsTx(ctx, tx, &page.Items[i]); err != nil {
+			return HistoryPage{}, err
+		}
+	}
 	return page, nil
 }
 
@@ -68,7 +73,13 @@ func (r *Repository) GetHistoryMessageTx(ctx context.Context, tx *sql.Tx, botID,
 	if errors.Is(err, sql.ErrNoRows) {
 		return Message{}, ErrHistoryNotFound
 	}
-	return message, err
+	if err != nil {
+		return Message{}, err
+	}
+	if err := historyAttachmentRefsTx(ctx, tx, &message); err != nil {
+		return Message{}, err
+	}
+	return message, nil
 }
 
 // GetHistoryMessageByIDTx 仅供已授权读事务使用；Bot 解析与详情必须共享同一事务，

@@ -33,6 +33,8 @@ type Message struct {
 	OriginalReplyToMessageID *string
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
+	// AttachmentRefs仅供当前历史读投影，不参与创建摘要、receipt或不可变delivery。
+	AttachmentRefs []AttachmentReference `json:"-"`
 }
 
 // PendingDelivery 仅供 S03 同事务排队；PayloadJSON 是已验证的完整

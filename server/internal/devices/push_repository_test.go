@@ -304,7 +304,7 @@ func TestPushMigrationEightUpgrade(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer f.store.Close()
-	if pushCount(t, f, "SELECT count(*) FROM schema_migrations") != 11 || pushCount(t, f, "SELECT count(*) FROM administrator WHERE username='old-admin'") != 1 {
+	if pushCount(t, f, "SELECT count(*) FROM schema_migrations") != 12 || pushCount(t, f, "SELECT count(*) FROM administrator WHERE username='old-admin'") != 1 {
 		t.Fatal("upgrade lost existing data")
 	}
 	if err = f.store.Read(f.ctx, func(tx *sql.Tx) error {
