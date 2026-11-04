@@ -9,6 +9,7 @@ import (
 
 	"relaynest/server/internal/bots"
 	"relaynest/server/internal/changes"
+	"relaynest/server/internal/idempotency"
 )
 
 // EditApplicationTx消费调用方已持有的短写事务，不开/提交事务，不触发创建回调、
@@ -41,6 +42,10 @@ func (r *Repository) EditApplicationTx(ctx context.Context, tx *sql.Tx, identity
 	if m.Sender != Application {
 		return Edited{}, bots.ErrForbidden
 	}
+	// 原引用按既有创建规则持久化为小写UUIDv4，坏值不能在编辑时修复或清空。
+	if original := m.OriginalReplyToMessageID; original != nil && (!idempotency.ValidKey(*original) || *original != strings.ToLower(*original)) {
+		return Edited{}, ErrInvalid
+	}
 	if m.BotSeq < 1 || m.Revision < 1 || m.CreatedChangeSeq == nil || *m.CreatedChangeSeq < 1 ||
 		m.CreatedAt.IsZero() || m.CreatedAt.UTC().Year() < 1 || m.CreatedAt.UTC().Year() > 9999 ||
 		m.UpdatedAt.IsZero() || m.UpdatedAt.UTC().Year() < 1 || m.UpdatedAt.UTC().Year() > 9999 {
@@ -71,6 +76,18 @@ func (r *Repository) EditApplicationTx(ctx context.Context, tx *sql.Tx, identity
 		Revision: m.Revision + 1, BotID: &m.BotID, CreatedAt: now})
 	if err != nil {
 		return Edited{}, err
+	}
+	// IGNORE可令LastInsertId沿用旧值；本入口须在下一次写入前确认本次插入，
+	// 并验证真实行仍与本次编辑匹配，不能让正文成功而同步变更缺失。
+	var affected int64
+	var matching bool
+	if err := tx.QueryRowContext(ctx, `SELECT changes(),EXISTS(
+        SELECT 1 FROM changes WHERE change_seq=? AND type=? AND entity_id=? AND revision=? AND bot_id=? AND created_at=?)`,
+		seq, string(changes.MessageUpsert), id, m.Revision+1, m.BotID, now.Format(time.RFC3339Nano)).Scan(&affected, &matching); err != nil {
+		return Edited{}, err
+	}
+	if affected != 1 || !matching {
+		return Edited{}, ErrAffectedRows
 	}
 	// SQL触发器等同事务内副作用也不能使已撤销身份带着候选成功返回。
 	if err := bots.AuthorizeTx(ctx, tx, identity, in.BotID, bots.Edit); err != nil {
