@@ -16,6 +16,15 @@ func syncLeaseCurrentSnapshot(ctx context.Context, tx *sql.Tx, j JobSnapshot, no
 	if err != nil {
 		return false, err
 	}
+	// 共享读取保留实例格式及唯一性语义；本叶还须拒绝可被 Scan 转成字符串的 BLOB，
+	// 不能把损坏的部署元数据提升为有效 sync 候选。
+	var deploymentType string
+	if err := tx.QueryRowContext(ctx, `SELECT typeof(instance_id) FROM instance_identity WHERE id=1`).Scan(&deploymentType); err != nil {
+		return false, err
+	}
+	if deploymentType != "text" {
+		return false, ErrJobData
+	}
 	if deployment != j.DeploymentID {
 		return false, nil
 	}
