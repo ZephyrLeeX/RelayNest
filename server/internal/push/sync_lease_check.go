@@ -32,21 +32,25 @@ func CheckSyncLeaseTx(ctx context.Context, tx *sql.Tx, lease JobLease, now time.
 	var storedHash []byte
 	var storedUntil int64
 	var hashType, untilType string
-	var jobIntegerStorage bool
-	// 共享仓储已检查数值范围；本叶在发布候选前另核原存储类，不能让 typed
-	// Scan 将数字 BLOB 转换为看似合法的序号、版本、期限或布尔资格。
+	var jobIntegerStorage, jobTextStorage bool
+	// 共享仓储已检查值域；本叶另核完整快照的原存储类，不能让 typed Scan
+	// 把 BLOB 转成看似合法的数字或文本，使候选资格与 SQL 调度谓词不一致。
 	err = tx.QueryRowContext(ctx, `SELECT lease_hash,lease_until_ns,typeof(lease_hash),typeof(lease_until_ns),
  typeof(target_change_seq)='integer' AND typeof(attempt)='integer'
  AND typeof(registration_version)='integer' AND typeof(settings_version)='integer'
  AND typeof(bot_seq)='integer' AND typeof(session_generation)='integer'
  AND typeof(created_at_ns)='integer' AND typeof(expires_at_ns)='integer'
- AND typeof(alert_eligible)='integer'
+ AND typeof(alert_eligible)='integer',
+ typeof(id)='text' AND typeof(session_id)='text' AND typeof(device_id)='text'
+ AND typeof(state)='text' AND typeof(next_attempt_at)='text'
+ AND typeof(purpose)='text' AND typeof(provider)='text' AND typeof(deployment_id)='text'
+ AND typeof(message_id)='text' AND typeof(bot_id)='text'
  FROM push_jobs WHERE id=?`, lease.jobID).
-		Scan(&storedHash, &storedUntil, &hashType, &untilType, &jobIntegerStorage)
+		Scan(&storedHash, &storedUntil, &hashType, &untilType, &jobIntegerStorage, &jobTextStorage)
 	if err != nil {
 		return nil, err
 	}
-	if !jobIntegerStorage || hashType != "blob" || len(storedHash) != sha256.Size || untilType != "integer" || storedUntil <= 0 || j.NextAttemptAt.Before(j.Snapshot.CreatedAt) {
+	if !jobIntegerStorage || !jobTextStorage || hashType != "blob" || len(storedHash) != sha256.Size || untilType != "integer" || storedUntil <= 0 || j.NextAttemptAt.Before(j.Snapshot.CreatedAt) {
 		return nil, ErrJobData
 	}
 	hash := sha256.Sum256(lease.secret[:])
