@@ -33,11 +33,11 @@ func syncLeaseCurrentSnapshot(ctx context.Context, tx *sql.Tx, j JobSnapshot, no
 	var admin, registration, settings sql.NullInt64
 	var registrationType, settingsType string
 	var hasRegistration, hasSettings, tokenPresent int
-	var currentIntegerStorage bool
+	var currentIntegerStorage, currentClientText bool
 	// token 仅在 SQLite 内判断存在和长度，不读取/返回其原始文本。
 	err = tx.QueryRowContext(ctx, `SELECT s.device_id,s.client_type,s.auth_generation,s.revoked,s.idle_expires_at,s.absolute_expires_at,
  a.auth_generation,r.registration_version,n.settings_version,r.session_id IS NOT NULL,n.device_id IS NOT NULL,
- typeof(r.registration_version),typeof(n.settings_version),
+ typeof(r.registration_version),typeof(n.settings_version),typeof(s.client_type)='text',
  typeof(s.auth_generation)='integer' AND typeof(s.revoked)='integer'
  AND typeof(s.idle_expires_at)='integer' AND typeof(s.absolute_expires_at)='integer'
  AND (a.id IS NULL OR typeof(a.auth_generation)='integer'),
@@ -47,7 +47,7 @@ func syncLeaseCurrentSnapshot(ctx context.Context, tx *sql.Tx, j JobSnapshot, no
  LEFT JOIN device_push_registrations r ON r.session_id=s.id AND r.provider='fcm'
  LEFT JOIN device_notification_settings n ON n.device_id=s.device_id
  WHERE s.id=?`, j.SessionID).Scan(&device, &client, &generation, &revoked, &idle, &absolute,
-		&admin, &registration, &settings, &hasRegistration, &hasSettings, &registrationType, &settingsType, &currentIntegerStorage, &tokenPresent)
+		&admin, &registration, &settings, &hasRegistration, &hasSettings, &registrationType, &settingsType, &currentClientText, &currentIntegerStorage, &tokenPresent)
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil
 	}
@@ -65,7 +65,8 @@ func syncLeaseCurrentSnapshot(ctx context.Context, tx *sql.Tx, j JobSnapshot, no
 	if hasSettings != 0 {
 		version = settings.Int64
 	}
-	return device == j.DeviceID && client == "android" && revoked == 0 && admin.Valid && admin.Int64 == generation && generation == j.SessionGeneration &&
+	// client_type 同值 BLOB 也能被 Scan 转成 android；只有原 TEXT 可获得 Android 资格。
+	return device == j.DeviceID && currentClientText && client == "android" && revoked == 0 && admin.Valid && admin.Int64 == generation && generation == j.SessionGeneration &&
 		idle > now.UnixNano() && absolute > now.UnixNano() && registration.Valid && registration.Int64 == j.RegistrationVersion &&
 		tokenPresent == 1 && version == j.SettingsVersion, nil
 }
