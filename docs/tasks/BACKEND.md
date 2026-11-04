@@ -510,7 +510,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 ### BE-10-02 Hub 推送待办合并与调度
 
-- 证据与交接：总调度采纳有限拆分，首叶 [PENDING-READ](COMPLETED.md#g5-be10-pending-read) 已done；[JOB-STORAGE](COMPLETED.md#g5-be10-job-storage) 兼容模型／内部预留亦已done、0011永久占用；[SYNC-CREATE-HTTP](COMPLETED.md#g5-be10-sync-create-http)真实生产者亦已done；[SYNC-LEASE-CHECK](#be-10-02-sync-lease-check)可信Tx只读复核已done；[SYNC-ATTEMPT-RESULT](#be-10-02-sync-attempt-result)有限内部尝试／结果叶已ready；完整调度／发送等父范围仍未完成。父原完整范围、依赖和验收保留。首叶已完成源检查／不同独审及准确新组合I01，不将父包或未来发送能力标完成。
+- 证据与交接：总调度采纳有限拆分，首叶 [PENDING-READ](COMPLETED.md#g5-be10-pending-read) 已done；[JOB-STORAGE](COMPLETED.md#g5-be10-job-storage) 兼容模型／内部预留亦已done、0011永久占用；[SYNC-CREATE-HTTP](COMPLETED.md#g5-be10-sync-create-http)真实生产者亦已done；[SYNC-LEASE-CHECK](#be-10-02-sync-lease-check)可信Tx只读复核已done；[SYNC-ATTEMPT-RESULT](#be-10-02-sync-attempt-result)有限内部尝试／结果叶已running；完整调度／发送等父范围仍未完成。父原完整范围、依赖和验收保留。首叶已完成源检查／不同独审及准确新组合I01，不将父包或未来发送能力标完成。
 
 - 旧ID：`P09-02`；类型：有限分拆收口（不整组派发）；状态：`running`（首叶PENDING-READ有限legacy只读已done，其余父验收仍未完成，父完整运行时尚未完成）。
 - 依赖：[已完成 BE-10-01 限定服务器父组合](COMPLETED.md#g5-be10-compose)、[已完成基线 P05-01](COMPLETED.md#g2)。[READ-STORAGE事务仓储已独审／精确集成完成](COMPLETED.md#g5-be04-read-storage)，实际共享已读HTTP已在[BE04父组合](COMPLETED.md#g5-be04-compose)完成；推送策略过滤仍未完成，后包依赖须按真实范围具体核实；此前置完成不自动使整包 ready。
@@ -543,20 +543,20 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-10-02-SYNC-LEASE-CHECK 已预留完整sync租约的可信事务只读复核
 
-已完成有限只读复核叶：[完整八节点源链、A01～A07／F1～F6闭环及准确含CAS组合I01](COMPLETED.md#g5-be10-sync-lease-check)。最终source `b13d82aa85ffe1c9c54fa8518f6d6460dbc359ed`，七源提交准确映射后候选 `4289bebb713bd22fd193dc9e32a93b3e8daf61a1`，I01最小21／97、全服386／1750、四包race155／564、新cmd定向race2／6及vet／build／格式全部PASS；196产品＋3真实embed／五份原overlay及联合夹具前后同值。只读Check不是最终发送资格，不领取／续租／扣attempt／发送，无DDL；DND／READ／源清理不擅作silent sync禁令。父BE10-02策略／attempt-result／worker／adapter／平台与Android global仍未完成，CAS完整HTTP／reply仍待用户决定；下一[ATTEMPT-RESULT](#be-10-02-sync-attempt-result)已由总调度登记ready并排他分配0013；本只读叶不占迁移号。Go及本叶产品锁已释放。
+已完成有限只读复核叶：[完整八节点源链、A01～A07／F1～F6闭环及准确含CAS组合I01](COMPLETED.md#g5-be10-sync-lease-check)。最终source `b13d82aa85ffe1c9c54fa8518f6d6460dbc359ed`，七源提交准确映射后候选 `4289bebb713bd22fd193dc9e32a93b3e8daf61a1`，I01最小21／97、全服386／1750、四包race155／564、新cmd定向race2／6及vet／build／格式全部PASS；196产品＋3真实embed／五份原overlay及联合夹具前后同值。只读Check不是最终发送资格，不领取／续租／扣attempt／发送，无DDL；DND／READ／源清理不擅作silent sync禁令。父BE10-02策略／attempt-result／worker／adapter／平台与Android global仍未完成，CAS完整HTTP／reply仍待用户决定；下一[ATTEMPT-RESULT](#be-10-02-sync-attempt-result)已由总调度登记running并排他分配0013；本只读叶不占迁移号。Go及本叶产品锁已释放。
 
 <a id="be-10-02-sync-attempt-result"></a>
 
 #### BE-10-02-SYNC-ATTEMPT-RESULT 完整sync内部尝试与typed结果的有界重试持久闭环
 
-- 状态：`ready`；2026-11-05由总调度在前叶A07／精确I01闭环后首次登记，仅本有限叶ready；父BE-10-02仍running／未done。实现owner、agent/session、工作树／分支待总调度正式派发，不预填、不提前running。
-- 固定依赖／产品基线：`c09d4a5734dfce0fcdc26e7adf7f57424514b433`（受测产品 `4289bebb713bd22fd193dc9e32a93b3e8daf61a1`，之后仅归档docs差异）；实际实施从本次ready元数据准确集成后的最终root SHA建隔离树，派发时填写实际SHA。消费已准确集成的Reserve／CheckSyncLeaseTx；前叶完整证据见[SYNC-LEASE-CHECK归档](COMPLETED.md#g5-be10-sync-lease-check)，本叶尚无实施／审计／集成PASS。
+- 状态：`running`；2026-11-05由总调度在前叶A07／精确I01闭环后首次登记ready，同日正式派发后由ready→running，实施进行中；父BE-10-02仍running／未done。实现owner／agent：`/root/sync_attempt_result_implementer`；隔离工作树：`/home/codex/projects/RelayNest/.worktrees/backend-be10-sync-attempt-result`；分支：`impl/backend-be10-sync-attempt-result-20261105`。调度恢复核实私树已创建且当时clean、尚未Go／npm、无遗留进程；开始Repo-owned Begin／Apply设计，尚无source提交或验证终态，检查NOT_RUN／待冻结，不据此推断当前代码或0013是否落盘。只读兼容迁移研究owner：`/root/attempt_migration_researcher`，不写码、不争用0013；0013继续由本叶排他保留。
+- 固定依赖／产品基线：`c09d4a5734dfce0fcdc26e7adf7f57424514b433`（受测产品 `4289bebb713bd22fd193dc9e32a93b3e8daf61a1`，之后仅归档docs差异）；实际实施起点：`dc02505b4df8eb9b3bbe373afbbe276b7da9cfb1`（ready元数据已准确集成），按该SHA创建上述隔离树。消费已准确集成的Reserve／CheckSyncLeaseTx；前叶完整证据见[SYNC-LEASE-CHECK归档](COMPLETED.md#g5-be10-sync-lease-check)，本叶尚无实施／审计／集成PASS。
 - 路径／锁：仅5个主要实现文件：`server/migrations/0013_push_attempt_results.sql`、`server/internal/push/job_models.go`、`server/internal/push/job_repository.go`、新增`server/internal/push/sync_attempt.go`、`server/internal/push/sync_result.go`。必要push／auth／devices／storage及cmd真实入口测试、确有必要的迁移总数fixture另计；不扩main／router或其他模块。总调度排他分配迁移**0013**给本叶，其他后端writer禁止复用；登记前已即时核98个注册worktree无0013+实际文件、BACKEND无既有预留竞争，本次只登记锁、不写SQL。SQL1～12逐字节不变，兼容扩原push_jobs，不新增伴生任务状态库；旧五列legacy writer／完整快照及设备租约互斥保留。Go重型窗口仍由总调度排他调度。
 - 单一目标：仅sync内部尝试／typed结果／有界重试持久闭环。短事务真实复核，且同lease Begin至多扣一次；仅COMMIT成功后发布内部脱敏attempt票据，错误或COMMIT失败无票据、无部分修改。结果以job＋原lease摘要／原期限＋attempt＋完整身份版本快照fence；接管、释放、轮换、撤销后的旧结果no-op，不影响新租约或注册。
 - 冻结边界：默认最多8次／原24h有效期，created_at与稳定键不重置，next_attempt不越原expiry。accepted仅平台受理，非展示／已读；unknown不删注册、不跨通道补响；耗尽仅push降级，不入业务failed、不保护普通历史。退避基数／抖动仅有界内部参数，须明确并测试边界，不把delivery的5s／30min公式称为冻结push参数。
 - 禁止扩展：不实现worker／adapter／外网发送，不含alert、DND／READ策略或注册清理；不代表最终发送资格、FCM／OPPO平台验收。原父所有剩余范围、依赖和原验收保留；CAS内部核心已完成，但完整CAS公开HTTP／reply契约仍待用户决定，Android／global门槛不变。
 - 必须验收：真实TLS非零完整sync job→真实Reserve→修后Check→Begin→假typed outcome；同lease重复扣次、双Store接管／reopen、重复／迟到结果、原版本与lease fencing；SQL及真实COMMIT故障零部分票据／写入；8次／TTL／overflow／未来retry不早发；legacy＋sync＋alert混合隔离、稳定快照及旧receipt／message／read保持。
-- 检查／闭环：required source全普通、相关push／auth／devices／storage全race＋新增cmd真实入口定向race；旧cmd无变化则不重复宽矩阵但须静态证明。vet／build／gofmt／diff均必需；不删旧断言或改timeout，PASS／FAIL／NOT_RUN分明。本地提交→不同agent固定全链A01→编号修复重审→精确I01→done归档；所有实现与检查待正式派发执行，本次仅文档核验，不冒充产品验收。
+- 检查／闭环：required source全普通、相关push／auth／devices／storage全race＋新增cmd真实入口定向race；旧cmd无变化则不重复宽矩阵但须静态证明。vet／build／gofmt／diff均必需；不删旧断言或改timeout，PASS／FAIL／NOT_RUN分明。本地提交→不同agent固定全链A01→编号修复重审→精确I01→done归档；实施已正式派发；检查NOT_RUN／待冻结，本次仅文档核验，不冒充产品验收。
 
 <a id="be10-preflight-a01"></a>
 
