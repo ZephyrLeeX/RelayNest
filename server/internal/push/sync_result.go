@@ -108,6 +108,15 @@ func (r *JobRepository) ApplySyncResult(ctx context.Context, ticket SyncAttempt,
 		if err = updateSyncJob(ctx, tx, j, state, next, &outcome, &now, &meta); err != nil {
 			return err
 		}
+		// 结果写入可能触发同事务身份变更；以原快照最终复核，失效必须报错回滚。
+		// 此时已清除 lease 并更新状态，不能再要求完整 leased 投影。
+		valid, err = syncLeaseCurrentSnapshot(ctx, tx, j.Snapshot, now)
+		if err != nil {
+			return err
+		}
+		if !valid {
+			return ErrJobData
+		}
 		changed = true
 		return ctx.Err()
 	})

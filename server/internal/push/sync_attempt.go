@@ -53,7 +53,18 @@ func (r *JobRepository) BeginSync(ctx context.Context, lease JobLease, now time.
 		}
 		if j.Attempt == MaxSyncAttempts {
 			// 最后一次派发崩溃后重领仍不取得第九次资格；耗尽只在 push 内降级。
-			return updateSyncJob(ctx, tx, j, "degraded", j.NextAttemptAt, nil, nil, nil)
+			if err = updateSyncJob(ctx, tx, j, "degraded", j.NextAttemptAt, nil, nil, nil); err != nil {
+				return err
+			}
+			// 降级已清除 lease；仍按原快照核对写后身份，失败须回滚整个耗尽更新。
+			valid, err := syncLeaseCurrentSnapshot(ctx, tx, j.Snapshot, now)
+			if err != nil {
+				return err
+			}
+			if !valid {
+				return ErrJobData
+			}
+			return ctx.Err()
 		}
 		ticket = &SyncAttempt{snapshot: j.Snapshot, leaseHash: hash, leaseUntil: lease.until, attempt: j.Attempt + 1, startedAt: now}
 		expected := j
