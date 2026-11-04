@@ -94,7 +94,7 @@ func jobScan(row jobScanner) (Job, error) {
 	j.Snapshot.CreatedAt = time.Unix(0, created).UTC()
 	j.Snapshot.ExpiresAt = time.Unix(0, expires).UTC()
 	j.NextAttemptAt, err = time.Parse(jobTimestamp, stamp)
-	if err != nil || !j.Snapshot.valid() || (j.State != "queued" && j.State != "leased") || j.Attempt < 0 {
+	if err != nil || !j.Snapshot.valid() || (j.State != "queued" && j.State != "leased" && j.State != "accepted" && j.State != "degraded") || j.Attempt < 0 {
 		return Job{}, ErrJobData
 	}
 	return j, nil

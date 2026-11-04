@@ -105,7 +105,14 @@ func attachmentOldDigest(t *testing.T, path string) [32]byte {
 	defer db.Close()
 	var all []any
 	for _, table := range []string{"bots", "messages", "attachments", "bot_read_states", "push_jobs", "sessions", "administrator"} {
-		rows, e := db.Query(`SELECT * FROM ` + table + ` ORDER BY 1`)
+		columns := "*"
+		if table == "push_jobs" {
+			// 0013 增加尝试列；逐列保留全部旧21列比较，不能把新增NULL误作历史数据改变。
+			columns = `id,session_id,device_id,target_change_seq,state,attempt,next_attempt_at,purpose,provider,
+ registration_version,settings_version,deployment_id,message_id,bot_id,bot_seq,session_generation,
+ created_at_ns,expires_at_ns,alert_eligible,lease_hash,lease_until_ns`
+		}
+		rows, e := db.Query(`SELECT ` + columns + ` FROM ` + table + ` ORDER BY 1`)
 		if e != nil {
 			t.Fatal(e)
 		}
@@ -183,8 +190,17 @@ func TestMessageAttachmentMigrationElevenToTwelve(t *testing.T) {
 				if e := tx.QueryRow(`SELECT count(*) FROM schema_migrations`).Scan(&n); e != nil {
 					return e
 				}
-				if n != 12 {
+				if n != 13 {
 					t.Fatal(n)
+				}
+				// 新列只能保持空值，迁移不得替原legacy或完整job补造派发/结果。
+				if e := tx.QueryRow(`SELECT count(*) FROM push_jobs WHERE attempt_lease_hash IS NOT NULL
+ OR attempt_lease_until_ns IS NOT NULL OR attempt_started_at_ns IS NOT NULL
+ OR result_kind IS NOT NULL OR result_at_ns IS NOT NULL`).Scan(&n); e != nil {
+					return e
+				}
+				if n != 0 {
+					t.Fatal("migration manufactured attempt data", n)
 				}
 				for name, want := range checks {
 					var got string
