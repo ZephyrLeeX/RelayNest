@@ -10,8 +10,9 @@ import (
 )
 
 // CheckSyncLeaseTx 在调用方的可信事务中仅读复核完整 sync 租约及当前快照。
-// 旧、过期、已释放、非 sync 或版本失配返回 nil,nil；输入、SQL 或坏数据
-// 返回错误且没有候选。不自开/提交事务，不领取、续期或推进任何状态。
+// 租约或当前快照不具资格（包括当前会话不满足原始 TEXT Android 类型）时返回 nil,nil；
+// 输入、SQL 错误或受保护快照的显式数据校验失败返回错误且没有候选。
+// 不自开/提交事务，不领取、续期或推进任何状态。
 func CheckSyncLeaseTx(ctx context.Context, tx *sql.Tx, lease JobLease, now time.Time) (*SyncLeaseSnapshot, error) {
 	if err := jobTxInput(ctx, tx); err != nil {
 		return nil, err
