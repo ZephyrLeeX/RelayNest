@@ -510,7 +510,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 ### BE-10-02 Hub 推送待办合并与调度
 
-- 证据与交接：总调度采纳有限拆分，首叶 [PENDING-READ](COMPLETED.md#g5-be10-pending-read) 已done；[JOB-STORAGE](COMPLETED.md#g5-be10-job-storage) 兼容模型／内部预留亦已done、0011永久占用；[SYNC-CREATE-HTTP](COMPLETED.md#g5-be10-sync-create-http)真实生产者亦已done；[SYNC-LEASE-CHECK](#be-10-02-sync-lease-check)可信Tx只读复核已done；[SYNC-ATTEMPT-RESULT](#be-10-02-sync-attempt-result)有限内部尝试／结果叶已done；[SYNC-POSTCOMMIT-ATTEMPT-CHECK](#be-10-02-sync-postcommit-attempt-check)只读叶ready；完整调度／发送等父范围仍未完成。父原完整范围、依赖和验收保留。首叶已完成源检查／不同独审及准确新组合I01，不将父包或未来发送能力标完成。
+- 证据与交接：总调度采纳有限拆分，首叶 [PENDING-READ](COMPLETED.md#g5-be10-pending-read) 已done；[JOB-STORAGE](COMPLETED.md#g5-be10-job-storage) 兼容模型／内部预留亦已done、0011永久占用；[SYNC-CREATE-HTTP](COMPLETED.md#g5-be10-sync-create-http)真实生产者亦已done；[SYNC-LEASE-CHECK](#be-10-02-sync-lease-check)可信Tx只读复核已done；[SYNC-ATTEMPT-RESULT](#be-10-02-sync-attempt-result)有限内部尝试／结果叶已done；[SYNC-POSTCOMMIT-ATTEMPT-CHECK](#be-10-02-sync-postcommit-attempt-check)只读叶running；完整调度／发送等父范围仍未完成。父原完整范围、依赖和验收保留。首叶已完成源检查／不同独审及准确新组合I01，不将父包或未来发送能力标完成。
 
 - 旧ID：`P09-02`；类型：有限分拆收口（不整组派发）；状态：`running`（首叶PENDING-READ有限legacy只读已done，其余父验收仍未完成，父完整运行时尚未完成）。
 - 依赖：[已完成 BE-10-01 限定服务器父组合](COMPLETED.md#g5-be10-compose)、[已完成基线 P05-01](COMPLETED.md#g2)。[READ-STORAGE事务仓储已独审／精确集成完成](COMPLETED.md#g5-be04-read-storage)，实际共享已读HTTP已在[BE04父组合](COMPLETED.md#g5-be04-compose)完成；推送策略过滤仍未完成，后包依赖须按真实范围具体核实；此前置完成不自动使整包 ready。
@@ -555,11 +555,11 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-10-02-SYNC-POSTCOMMIT-ATTEMPT-CHECK 已提交sync attempt的只读即时复核
 
-- 状态：`ready`（2026-11-05，总调度在ATTEMPT-RESULT独审／精确I01完成后登记）；owner／agent、工作树／分支待正式派发，不提前running。固定产品／依赖基线：`0e01b88aa7e93af899b7534208ff0e251f4a4760`；实际实施从本次文档准确集成后的最终root SHA建隔离树，派发时填写。依赖：[ATTEMPT-RESULT已完成](COMPLETED.md#g5-be10-sync-attempt-result)、[SYNC-LEASE-CHECK已完成](COMPLETED.md#g5-be10-sync-lease-check)、已集成JOB-STORAGE／SYNC-CREATE-HTTP；不以父done为前置。
+- 状态：`running`（2026-11-05，总调度在ATTEMPT-RESULT独审／精确I01完成后登记ready，同日真实开工后ready→running）。实现owner／agent：`/root/sync_attempt_check_implementer`；隔离工作树：`/tmp/relaynest-be10-sync-attempt-check`；分支：`impl/backend-be10-sync-attempt-check-20261105`。固定产品／依赖基线：`0e01b88aa7e93af899b7534208ff0e251f4a4760`；实际实施起点：`3188cdb52abd49a7f0fa2631ecc9593daffb6638`，已按该SHA创建独立树。依赖：[ATTEMPT-RESULT已完成](COMPLETED.md#g5-be10-sync-attempt-result)、[SYNC-LEASE-CHECK已完成](COMPLETED.md#g5-be10-sync-lease-check)、已集成JOB-STORAGE／SYNC-CREATE-HTTP；不以父done为前置。
 - 原验收依据：父BE-10-02“重试前复核当前配置／注册／期限、模式或注册变化隔离旧job、同设备租约及条件状态防双worker／迟到结果污染”。仅收口已COMMIT内部attempt票据在当前时点的只读复核；父原完整范围、依赖与验收保留。
-- 允许路径／锁：仅新增`server/internal/push/sync_attempt_check.go`及必要自有测试（真实入口测试确有必要时另计）；研究推荐方案为repository自有短只读事务，校验原lease＋ticket完整绑定、当前身份／配置／注册／期限、结果仍为空，通过仅在事务成功完成后公布。现有Begin／Apply／Check、共享文件、SQL1～13、main／router及其他模块只读；无DDL／迁移号申请，0013永久占用。本次仅任务元数据登记，无实现写锁已派发。
+- 允许路径／锁：仅新增`server/internal/push/sync_attempt_check.go`及必要自有测试（真实入口测试确有必要时另计）；研究推荐方案为repository自有短只读事务，校验原lease＋ticket完整绑定、当前身份／配置／注册／期限、结果仍为空，通过仅在事务成功完成后公布。现有Begin／Apply／Check、共享文件、SQL1～13、main／router及其他模块只读；无DDL／迁移号申请，0013永久占用。已向上述Implementer排他派发3条新增路径：`server/internal/push/sync_attempt_check.go`、`server/internal/push/sync_attempt_check_test.go`、`server/cmd/relaynest/sync_attempt_check_production_test.go`，唯一Go窗口归该实施者；其他路径仍只读。
 - 不变量／禁止：只读前后全表digest相同，无写入／领取／续租／释放／扣次／结果更新；不暴露secrets、原lease、token、正文或URL。不含adapter／network／worker、alert／DND／READ政策，不称最终发送资格或发送原子性；事务完成后的外部变化与已外发残余不能由本地检查消除。scoped-reserve→worker留后续，不先领alert再release。
-- 必须验收：真实TLS完整sync job→真实Reserve→Begin COMMIT→此只读检查；原lease与票据各绑定字段失配、已写结果、释放／接管／轮换／撤销／配置或身份版本变化、原期限／租约期限／future边界及reopen均失效关闭；legacy／alert混合不混入，错误／事务完成失败不公布通过，所有表无部分写入／秘密泄漏。保留旧断言／timeout，必要普通／race／真实入口定向及vet／build／gofmt／diff、冻结输入／精确组合核验；由实现提交→不同固定全链A01→编号修复重审→精确I01后总调度才决定done。具体检查命令及边界在正式派发固定，当前全部NOT_RUN，无实施／审计／集成PASS。
+- 必须验收：真实TLS完整sync job→真实Reserve→Begin COMMIT→此只读检查；原lease与票据各绑定字段失配、已写结果、释放／接管／轮换／撤销／配置或身份版本变化、原期限／租约期限／future边界及reopen均失效关闭；legacy／alert混合不混入，错误／事务完成失败不公布通过，所有表无部分写入／秘密泄漏。保留旧断言／timeout，必要普通／race／真实入口定向及vet／build／gofmt／diff、冻结输入／精确组合核验；由实现提交→不同固定全链A01→编号修复重审→精确I01后总调度才决定done。实施进行中，检查未完成；代码本地提交、独立审计及I01均NOT_RUN，尚无正式检查终态，不记实施／审计／集成PASS。
 
 <a id="be10-preflight-a01"></a>
 
