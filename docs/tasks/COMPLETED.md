@@ -28,6 +28,34 @@
 
 ## Go 后端（Bot Hub）
 
+<a id="g5-be10-alert-policy-reason"></a>
+
+### BE-10-02-ALERT-POLICY-REASON 保持bool兼容的内部typed策略原因
+
+- 终态：`done`（2026-11-05），总调度依据source正式交接、不同A01完整链PASS无发现及准确I01 PASS决定。仅内部typed原因前置，原bool/error wrapper与单一判断实现等价；dnd只说明前置配置通过且此时命中，不证明后置source／read通过，不是缓存票据／跨Tx许可或永久丢资格操作。父BE-10-02仍running／未完，global／真实send／CAS待决不变。
+- source完整链`b4585905616ddea133097ee91a8abf0283aeef29`→`55e0890b6ffcb23f88fb1ac254ac6ab43e3c1bb4`，2路径；I01从目标`a0d12060c8696569480d68086ebc1ce4e6f3d54b`准确映射source→`d4a7c0f07feb36d38dd58d38018e0120bd385a95`，-x及完整binary patch相同，无冲突／新业务改动，root安全ff。219输入冻结`ac2d3029557e6afea0d0bd4e4cc0e06c6ca8fefdf5c701b9a2b1917af0bc5f81`同值，对被审source完整tracked tree仅BACKEND元数据不同；SQL1～13／HTTP／worker／旧测试不变，0013永久占用。
+- 正式证据：source `/tmp/relaynest-be10-alert-policy-reason-evidence/handoff.json` SHA256 `98115be78c9ff22e357f0862134da061297af2d9341d3c2b16e3a4bdd2c392c0`；A01 `/tmp/relaynest-be10-alert-policy-reason-audit-evidence/handoff.json` SHA256 `a615923cf6cebbec70f89990b4c7c4c637eade446891b5551847668d1e4e3ab6`；I01 `/tmp/relaynest-be10-alert-policy-reason-i01-evidence/handoff.json` SHA256 `6841cb1894ae48c282f5ffd920ee2d516c9b1406ac37669107c49e1316251812`，归档前实际hash、PASS／无发现及准确映射字段核实。
+- source min16 top／128 all、whole432／2154、四包定向race43／248及vet／build／fmt PASS，新9／72身份全包含。A01独立普通与race各18／132 PASS，逐分支wrapper等价、DND先后顺序／错误分类与只读快照边界通过，无新发现。I01新候选min16／128 PASS（9.378s，log SHA256 `97b13fa87abb95d44fa2c1ef16604a824e1a7087580e380e06a5a778fa7806eb`），版本／diff-range PASS；source whole／定向race／vet／build／fmt与A01普通／race为精确复用PASS，非I01新跑，219输入／原flags／测试身份核同值，required本地任务检查满足。
+- 充分性及历史：impact及独审确认无新生产调用者、bool wrapper仅委托同一判断；本叶完整push慢例NOT_RUN，旧470.55s仅精确引用未影响范围，不冒本轮新跑。前叶两300s命令FAIL、独立预算报告／恢复原argv授权、历史GOFLAGS未知、首次Git身份exit128等保留；本叶无测试FAIL。npm build／API validator、完整hosted CI／全包race／CGO_ENABLED=0空缓存-trimpath构建、平台真机／部署与全父验收NOT_RUN，不扩既有scope。原范围／验收与过程原文如下。
+- 实施／审计／集成产品写锁及Go窗口释放；0013永久占用。下一ALERT-LEASE-CHECK只登记ready，terminal/drop迁移仍后续非ready，不占0014；冻结HTTP／CAS及平台全局门槛保持。
+
+#### 归档前原范围、验收与过程原文（历史状态不代表当前终态）
+
+<a id="be-10-02-alert-policy-reason"></a>
+
+#### BE-10-02-ALERT-POLICY-REASON 保持bool兼容的内部typed策略原因
+
+- 状态：`review`（2026-11-05，typed reason前置登记ready后正式派发，ready→running；固定source正式交接及检查完成后running→review，独立A01待结论）；实现owner／agent：`/root/alert_policy_reason_implementer`，隔离树：`/tmp/relaynest-be10-alert-policy-reason`，分支：`impl/backend-be10-alert-policy-reason-20261105`。固定业务基线：`2e8897afb216db2278bf443c9a3c442025f955ba`；实际实施起点：`b4585905616ddea133097ee91a8abf0283aeef29`，已据此创建上述隔离树。仅依赖已集成ALERT-POLICY-READ／READ／settings，无vendor前置，不以父done为前置。
+- 原验收依据：冻结DND永久丢资格不能由笼统false授权；现bool false含原资格／config global-provider／Bot／DND／source／read多类，须内部typed reason先行，真实终止仍后续。父BE-10-02原范围／依赖／验收保留，仍running未完。
+- 允许路径／锁：仅主`server/internal/push/alert_policy.go`，确有必要可新增`server/internal/push/alert_policy_models.go`，必要新`server/internal/push/alert_policy_reason_test.go`。保留CheckAlertPolicyTx原bool／error为完全等价wrapper，与typed入口共用单一判断实现，不复制配置／DND策略。至少eligible／dnd／other_denied，error独立于非DND拒绝；可信Tx同实现，保留DND在message／read之前的原顺序。
+- 语义／禁止：dnd只代表前置cfg通过且当时命中DND，不代表后续source／read也通过；不是缓存授权票据或跨Tx许可，原资格false不复活。不lease／attempt／状态写，不改producer／worker／迁移／外部合同或真实send，不引入新状态库。SQL1～13保持、0013永久占用；alert-lease-check及terminal迁移drop仅后续候选、均非ready，不预占0014。上述最多3路径排他锁及唯一Go窗口已交该实施者；当前实际仅alert_policy.go与新增alert_policy_reason_test.go，optional models未用。派发时尚无freeze／正式结果；当前固定source及正式检查见下方checkpoint，独立A01已派，I01为NOT_RUN。
+- 必须验收：逐个原false分支／原true及全部error／cancel与bool wrapper完全等价，error不误标DND；DND start／end／跨午夜／DST及严格JSON损坏行为保持，维持原DND前置顺序；全表零写、无secret，跨Store同Tx一致；旧policy／read／HTTP及sync负控制不回归。相关普通／race、vet／build／gofmt／diff／冻结输入与精确组合正式派发固定；本地提交→不同全链A01→编号修复重审→精确I01后由总调度决定done。正式实施检查见下方，独立A01尚无结论、I01为NOT_RUN，不记done；父／global／CAS公开HTTP及reply待决不变。
+
+- source／A01 checkpoint（2026-11-05）：完整固定链`b4585905616ddea133097ee91a8abf0283aeef29`→`55e0890b6ffcb23f88fb1ac254ac6ab43e3c1bb4`，单提交仅2允许路径、原实施树clean。`/tmp/relaynest-be10-alert-policy-reason-evidence/handoff.json` SHA256 `98115be78c9ff22e357f0862134da061297af2d9341d3c2b16e3a4bdd2c392c0`与`evidence-index.json` SHA256 `61a04fc09eb4bf5a9e0a034ca180f7a6e6153c454f7b63229fdc214d20ab4ccb`均实际核匹配。219输入冻结`ac2d3029557e6afea0d0bd4e4cc0e06c6ca8fefdf5c701b9a2b1917af0bc5f81`与提交后同值；正式min16 top／128 all、whole432／2154、四包定向race43／248及vet／build／gofmt全部PASS，新9／72身份全含于whole与race。
+- 覆盖及限制：impact记录真实无新生产调用者，原bool wrapper委托单一判断实现；本叶full push慢例NOT_RUN，旧完整push470.55s PASS仅精确适用未受影响范围，不冒新跑，四包定向race覆盖相关新旧policy／settings／read／HTTP。无本叶测试FAIL；首次Git identity exit128与命令级身份修复保留。前叶两次300s命令FAIL、独立预算报告和授权恢复原argv后的470.55s PASS历史保留，不以本叶PASS替换。
+- A01已正式派独立owner `/root/alert_policy_auditor_a01`，固定完整链与覆盖充分性待独审，唯一Go窗口归该审计者；尚无结论，I01为NOT_RUN。本叶review、未done，父BE-10-02仍running且原依赖／验收范围不变，0013永久占用、不占0014。
+
+
 <a id="g5-be10-alert-policy-read"></a>
 
 ### BE-10-02-ALERT-POLICY-READ 原alert快照的可信事务只读策略投影
