@@ -14,6 +14,33 @@ import (
 // 输入、SQL 错误或受保护快照的显式数据校验失败返回错误且没有候选。
 // 不自开/提交事务，不领取、续期或推进任何状态。
 func CheckSyncLeaseTx(ctx context.Context, tx *sql.Tx, lease JobLease, now time.Time) (*SyncLeaseSnapshot, error) {
+	j, err := checkLeaseTx(ctx, tx, lease, now, syncLeaseScope)
+	if err != nil || j == nil {
+		return nil, err
+	}
+	return &SyncLeaseSnapshot{Job: *j}, nil
+}
+
+// leaseScope 只允许本包的两个窄入口指定用途；提供方始终取自已验证的原 job。
+type leaseScope uint8
+
+const (
+	syncLeaseScope leaseScope = iota
+	alertLeaseScope
+)
+
+func (scope leaseScope) accepts(j JobSnapshot) bool {
+	switch scope {
+	case syncLeaseScope:
+		return j.Purpose == "sync" && j.Provider == "fcm" && !j.AlertEligible
+	case alertLeaseScope:
+		return j.Purpose == "alert" && (j.Provider == "fcm" || j.Provider == "opush") && j.AlertEligible
+	default:
+		return false
+	}
+}
+
+func checkLeaseTx(ctx context.Context, tx *sql.Tx, lease JobLease, now time.Time, scope leaseScope) (*Job, error) {
 	if err := jobTxInput(ctx, tx); err != nil {
 		return nil, err
 	}
@@ -27,7 +54,7 @@ func CheckSyncLeaseTx(ctx context.Context, tx *sql.Tx, lease JobLease, now time.
 	if err != nil {
 		return nil, err
 	}
-	if j.State != "leased" || j.Snapshot.Purpose != "sync" || j.Snapshot.Provider != "fcm" || j.Snapshot.AlertEligible {
+	if j.State != "leased" || !scope.accepts(j.Snapshot) {
 		return nil, nil
 	}
 	var storedHash []byte
@@ -60,12 +87,12 @@ func CheckSyncLeaseTx(ctx context.Context, tx *sql.Tx, lease JobLease, now time.
 		!j.Snapshot.ExpiresAt.After(now) || j.Snapshot.CreatedAt.After(now) || j.NextAttemptAt.After(now) {
 		return nil, nil
 	}
-	valid, err := syncLeaseCurrentSnapshot(ctx, tx, j.Snapshot, now)
+	valid, err := leaseCurrentSnapshot(ctx, tx, j.Snapshot, now, scope)
 	if err != nil || !valid {
 		return nil, err
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	return &SyncLeaseSnapshot{Job: j}, nil
+	return &j, nil
 }
