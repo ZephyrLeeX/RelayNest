@@ -510,7 +510,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 ### BE-10-02 Hub 推送待办合并与调度
 
-- 证据与交接：总调度采纳有限拆分，首叶 [PENDING-READ](COMPLETED.md#g5-be10-pending-read) 已done；[JOB-STORAGE](COMPLETED.md#g5-be10-job-storage) 兼容模型／内部预留亦已done、0011永久占用；[SYNC-CREATE-HTTP](COMPLETED.md#g5-be10-sync-create-http)真实生产者亦已done；[SYNC-LEASE-CHECK](#be-10-02-sync-lease-check)可信Tx只读复核已done；[SYNC-ATTEMPT-RESULT](#be-10-02-sync-attempt-result)有限内部尝试／结果叶已done；[SYNC-POSTCOMMIT-ATTEMPT-CHECK](#be-10-02-sync-postcommit-attempt-check)只读叶done；[SYNC-SCOPED-RESERVE](#be-10-02-sync-scoped-reserve)限定预留叶done；[SYNC-WORKER-CORE](#be-10-02-sync-worker-core)有限假adapter叶done；[ALERT-POLICY-READ](#be-10-02-alert-policy-read)只读策略叶done；[ALERT-POLICY-REASON](#be-10-02-alert-policy-reason)typed前置叶ready；完整调度／发送等父范围仍未完成。父原完整范围、依赖和验收保留。首叶已完成源检查／不同独审及准确新组合I01，不将父包或未来发送能力标完成。
+- 证据与交接：总调度采纳有限拆分，首叶 [PENDING-READ](COMPLETED.md#g5-be10-pending-read) 已done；[JOB-STORAGE](COMPLETED.md#g5-be10-job-storage) 兼容模型／内部预留亦已done、0011永久占用；[SYNC-CREATE-HTTP](COMPLETED.md#g5-be10-sync-create-http)真实生产者亦已done；[SYNC-LEASE-CHECK](#be-10-02-sync-lease-check)可信Tx只读复核已done；[SYNC-ATTEMPT-RESULT](#be-10-02-sync-attempt-result)有限内部尝试／结果叶已done；[SYNC-POSTCOMMIT-ATTEMPT-CHECK](#be-10-02-sync-postcommit-attempt-check)只读叶done；[SYNC-SCOPED-RESERVE](#be-10-02-sync-scoped-reserve)限定预留叶done；[SYNC-WORKER-CORE](#be-10-02-sync-worker-core)有限假adapter叶done；[ALERT-POLICY-READ](#be-10-02-alert-policy-read)只读策略叶done；[ALERT-POLICY-REASON](#be-10-02-alert-policy-reason)typed前置叶running；完整调度／发送等父范围仍未完成。父原完整范围、依赖和验收保留。首叶已完成源检查／不同独审及准确新组合I01，不将父包或未来发送能力标完成。
 
 - 旧ID：`P09-02`；类型：有限分拆收口（不整组派发）；状态：`running`（首叶PENDING-READ有限legacy只读已done，其余父验收仍未完成，父完整运行时尚未完成）。
 - 依赖：[已完成 BE-10-01 限定服务器父组合](COMPLETED.md#g5-be10-compose)、[已完成基线 P05-01](COMPLETED.md#g2)。[READ-STORAGE事务仓储已独审／精确集成完成](COMPLETED.md#g5-be04-read-storage)，实际共享已读HTTP已在[BE04父组合](COMPLETED.md#g5-be04-compose)完成；推送策略过滤仍未完成，后包依赖须按真实范围具体核实；此前置完成不自动使整包 ready。
@@ -579,10 +579,10 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-10-02-ALERT-POLICY-REASON 保持bool兼容的内部typed策略原因
 
-- 状态：`ready`（2026-11-05，总调度依据独立研究确认bool false含多类拒绝，登记typed reason前置）；owner／agent、隔离树／分支待正式派发，不提前running。固定业务基线：`2e8897afb216db2278bf443c9a3c442025f955ba`；真实实施从本次最终metadata root SHA建树、派发时填写。仅依赖已集成ALERT-POLICY-READ／READ／settings，无vendor前置，不以父done为前置。
+- 状态：`running`（2026-11-05，typed reason前置登记ready后正式派发且独立树已创建，ready→running）；实现owner／agent：`/root/alert_policy_reason_implementer`，隔离树：`/tmp/relaynest-be10-alert-policy-reason`，分支：`impl/backend-be10-alert-policy-reason-20261105`。固定业务基线：`2e8897afb216db2278bf443c9a3c442025f955ba`；实际实施起点：`b4585905616ddea133097ee91a8abf0283aeef29`，已据此创建上述隔离树。仅依赖已集成ALERT-POLICY-READ／READ／settings，无vendor前置，不以父done为前置。
 - 原验收依据：冻结DND永久丢资格不能由笼统false授权；现bool false含原资格／config global-provider／Bot／DND／source／read多类，须内部typed reason先行，真实终止仍后续。父BE-10-02原范围／依赖／验收保留，仍running未完。
 - 允许路径／锁：仅主`server/internal/push/alert_policy.go`，确有必要可新增`server/internal/push/alert_policy_models.go`，必要新`server/internal/push/alert_policy_reason_test.go`。保留CheckAlertPolicyTx原bool／error为完全等价wrapper，与typed入口共用单一判断实现，不复制配置／DND策略。至少eligible／dnd／other_denied，error独立于非DND拒绝；可信Tx同实现，保留DND在message／read之前的原顺序。
-- 语义／禁止：dnd只代表前置cfg通过且当时命中DND，不代表后续source／read也通过；不是缓存授权票据或跨Tx许可，原资格false不复活。不lease／attempt／状态写，不改producer／worker／迁移／外部合同或真实send，不引入新状态库。SQL1～13保持、0013永久占用；alert-lease-check及terminal迁移drop仅后续候选、均非ready，不预占0014。本次仅元数据登记，无实现写锁／Go窗口已派发。
+- 语义／禁止：dnd只代表前置cfg通过且当时命中DND，不代表后续source／read也通过；不是缓存授权票据或跨Tx许可，原资格false不复活。不lease／attempt／状态写，不改producer／worker／迁移／外部合同或真实send，不引入新状态库。SQL1～13保持、0013永久占用；alert-lease-check及terminal迁移drop仅后续候选、均非ready，不预占0014。上述最多3路径排他锁及唯一Go窗口已交该实施者；当前实际仅alert_policy.go与新增alert_policy_reason_test.go，optional models未用。尚未freeze／正式检查结果，无source commit／A01／I01，均NOT_RUN，不以草稿记成果完成。
 - 必须验收：逐个原false分支／原true及全部error／cancel与bool wrapper完全等价，error不误标DND；DND start／end／跨午夜／DST及严格JSON损坏行为保持，维持原DND前置顺序；全表零写、无secret，跨Store同Tx一致；旧policy／read／HTTP及sync负控制不回归。相关普通／race、vet／build／gofmt／diff／冻结输入与精确组合正式派发固定；本地提交→不同全链A01→编号修复重审→精确I01后由总调度决定done。当前全部检查NOT_RUN，无实施／审计／集成PASS，父／global／CAS公开HTTP及reply待决不变。
 
 <a id="be10-preflight-a01"></a>
