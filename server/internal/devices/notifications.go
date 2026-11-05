@@ -73,6 +73,55 @@ func readNotifications(ctx context.Context, tx *sql.Tx, device string) (Notifica
 	result.UpdatedAt = &t
 	return result, nil
 }
+
+// ReadNotificationSettingsTx 仅读取调用方已授权事务中的设备偏好，不认证或续期会话。
+// 旧 HTTP 读取保持原行为；可信策略入口额外拒绝损坏的持久类型与不完整配置，
+// 防止 JSON 的零值/默认值填充把损坏配置提升成提醒许可。
+func ReadNotificationSettingsTx(ctx context.Context, tx *sql.Tx, device string) (NotificationSettings, error) {
+	if ctx == nil || tx == nil || device == "" {
+		return NotificationSettings{}, ErrSettingsInput
+	}
+	if err := ctx.Err(); err != nil {
+		return NotificationSettings{}, err
+	}
+	var raw string
+	var valid bool
+	err := tx.QueryRowContext(ctx, `SELECT configuration,typeof(device_id)='text' AND typeof(settings_version)='integer' AND settings_version>0 AND typeof(updated_at)='text' AND typeof(configuration)='text' FROM device_notification_settings WHERE device_id=?`, device).Scan(&raw, &valid)
+	if err != nil && err != sql.ErrNoRows {
+		return NotificationSettings{}, err
+	}
+	if err == nil {
+		fields, ok := pushObject([]byte(raw), []string{"enabled", "bot_overrides", "dnd", "preview", "notify_channel", "notify_provider"}, "notify_provider")
+		if !valid || !ok {
+			return NotificationSettings{}, auth.ErrStorage
+		}
+		if _, ok := pushObject(fields["dnd"], []string{"enabled", "timezone", "start", "end"}); !ok {
+			return NotificationSettings{}, auth.ErrStorage
+		}
+
+		var overrides []json.RawMessage
+		if json.Unmarshal(fields["bot_overrides"], &overrides) != nil || overrides == nil {
+			return NotificationSettings{}, auth.ErrStorage
+		}
+		for _, bot := range overrides {
+			if _, ok := pushObject(bot, []string{"bot_id", "enabled"}); !ok {
+				return NotificationSettings{}, auth.ErrStorage
+			}
+		}
+	}
+	result, err := readNotifications(ctx, tx, device)
+	if err != nil {
+		return NotificationSettings{}, err
+	}
+	if (result.UpdatedAt != nil && result.UpdatedAt.IsZero()) || validateNotifications(NotificationSettingsUpdate{ExpectedVersion: result.SettingsVersion, NotificationConfiguration: result.NotificationConfiguration}) != nil {
+		return NotificationSettings{}, auth.ErrStorage
+	}
+	if err := ctx.Err(); err != nil {
+		return NotificationSettings{}, err
+	}
+	return result, nil
+}
+
 func (r *PushRepository) GetCurrentNotifications(ctx context.Context, actor auth.AdminRequest) (NotificationSettingsState, error) {
 	var result NotificationSettingsState
 	err := r.authorized(ctx, actor, true, func(tx *sql.Tx, s auth.Session) error {
