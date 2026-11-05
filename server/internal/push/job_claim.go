@@ -8,31 +8,45 @@ import (
 	"time"
 )
 
+// jobReservationScope 仅封闭支持通用与 sync，避免调用方任意拼接候选 SQL。
+type jobReservationScope uint8
+
+const (
+	jobReservationAll jobReservationScope = iota
+	jobReservationSync
+)
+
 // ReserveJobsTx 只原子预留候选，不是发送前注册、配置、DND 或共享已读复核。
 // 必须使用可信短写事务；返回句柄在外层 COMMIT 成功前均是暂存值，不得发布。
 func ReserveJobsTx(ctx context.Context, tx *sql.Tx, now time.Time, ttl time.Duration, limit int) ([]JobReservation, error) {
+	return reserveJobsTx(ctx, tx, now, ttl, limit, jobReservationAll)
+}
+
+func reserveJobsTx(ctx context.Context, tx *sql.Tx, now time.Time, ttl time.Duration, limit int, scope jobReservationScope) ([]JobReservation, error) {
 	if err := jobTxInput(ctx, tx); err != nil {
 		return nil, err
 	}
 	until := now.Add(ttl)
-	if !jobTimeValid(now) || ttl <= 0 || !jobTimeValid(until) || limit < 1 || limit > MaxJobReservations {
+	if (scope != jobReservationAll && scope != jobReservationSync) || !jobTimeValid(now) || ttl <= 0 || !jobTimeValid(until) || limit < 1 || limit > MaxJobReservations {
 		return nil, ErrJobInput
 	}
 	var result []JobReservation
 	err := jobSavepoint(ctx, tx, func() error {
-		// 先为每设备选确定的最早候选，再应用全局边界；不让同设备挤满批次。
+		// 用途先过滤，再选每设备最早候选及全局批次；较早 alert 不占 sync 的 rank/limit。
+		// holder 检查和下方回收仍跨用途，保持同设备租约独占。
 		rows, err := tx.QueryContext(ctx, `WITH candidates AS (
  SELECT p.id,p.next_attempt_at,p.device_id,
  row_number() OVER(PARTITION BY p.device_id ORDER BY p.next_attempt_at,p.id) AS rank
  FROM push_jobs p JOIN sessions s ON s.id=p.session_id AND s.device_id=p.device_id
  JOIN administrator a ON a.id=1 AND a.auth_generation=s.auth_generation
- WHERE (p.state='queued' OR (p.state='leased' AND p.lease_until_ns<=?))
+ WHERE (?=0 OR p.purpose='sync')
+ AND (p.state='queued' OR (p.state='leased' AND p.lease_until_ns<=?))
  AND p.next_attempt_at<=? AND p.expires_at_ns>?
  AND s.client_type='android' AND s.revoked=0 AND s.auth_generation=p.session_generation
  AND s.idle_expires_at>? AND s.absolute_expires_at>?
  AND NOT EXISTS(SELECT 1 FROM push_jobs holder WHERE holder.device_id=p.device_id AND holder.state='leased' AND holder.lease_until_ns>?)
  ) SELECT id FROM candidates WHERE rank=1 ORDER BY next_attempt_at,id LIMIT ?`,
-			now.UnixNano(), now.UTC().Format(jobTimestamp), now.UnixNano(), now.UnixNano(), now.UnixNano(), now.UnixNano(), limit)
+			int(scope), now.UnixNano(), now.UTC().Format(jobTimestamp), now.UnixNano(), now.UnixNano(), now.UnixNano(), now.UnixNano(), limit)
 		if err != nil {
 			return err
 		}

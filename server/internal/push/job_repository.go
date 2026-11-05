@@ -131,13 +131,22 @@ func jobSavepoint(ctx context.Context, tx *sql.Tx, fn func() error) error {
 
 // Reserve 在 Store 提交成功后才发布候选；等待网络必须发生在返回之后。
 func (r *JobRepository) Reserve(ctx context.Context, now time.Time, ttl time.Duration, limit int) ([]JobReservation, error) {
+	return r.reserve(ctx, now, ttl, limit, jobReservationAll)
+}
+
+// ReserveSync 仅预留完整 sync 待办；不代表最终发送资格，提交成功后才发布候选。
+func (r *JobRepository) ReserveSync(ctx context.Context, now time.Time, ttl time.Duration, limit int) ([]JobReservation, error) {
+	return r.reserve(ctx, now, ttl, limit, jobReservationSync)
+}
+
+func (r *JobRepository) reserve(ctx context.Context, now time.Time, ttl time.Duration, limit int, scope jobReservationScope) ([]JobReservation, error) {
 	if ctx == nil || r == nil || r.store == nil {
 		return nil, ErrJobInput
 	}
 	var result []JobReservation
 	err := r.store.Write(ctx, func(tx *sql.Tx) error {
 		var err error
-		result, err = ReserveJobsTx(ctx, tx, now, ttl, limit)
+		result, err = reserveJobsTx(ctx, tx, now, ttl, limit, scope)
 		return err
 	})
 	if err != nil {
