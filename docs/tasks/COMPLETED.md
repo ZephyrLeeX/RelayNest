@@ -28,6 +28,35 @@
 
 ## Go 后端（Bot Hub）
 
+<a id="g5-be10-sync-postcommit-attempt-check"></a>
+
+### BE-10-02-SYNC-POSTCOMMIT-ATTEMPT-CHECK 已提交sync attempt的只读即时复核
+
+- 终态：`done`（2026-11-05），总调度依据source正式交接、不同A01完整链PASS无新发现及精确I01 PASS决定。仅本只读叶完成，父BE-10-02仍running／未完成；非最终发送资格、发送原子性或真实send／worker／adapter／平台／Android／global完成。
+- source链：`3188cdb52abd49a7f0fa2631ecc9593daffb6638`→`c6f284e9dd712c2f80d855ff33fc36d4f01b1593`，单提交3新增路径／375行。I01从canonical `ca6143e489bf287596285cf2792c532ce493eba5`无冲突准确映射source→`7efebf8ed3b8f0c42333aad1f4783ee98a1028a6`，binary patch逐字节同值／-x原SHA，root已安全ff后者。210输入（207 tracked＋3真实embed）与冻结`45a8c9a7d5045b7c26e0a7732d9f5be34f335d813f6d09ce1ef13992c54626f3`同值，旧206键全部保持；被审source与candidate／root完整tracked tree仅BACKEND元数据不同，SQL1～13不改，0013永久占用。
+- 正式证据：source `/tmp/relaynest-be10-sync-attempt-check-evidence/handoff.json` SHA256 `cdbf53c42f6a7848d0ee1a1c4602927a5c5f7bbd47c0cdaac155ffff57b71e7b`；A01 `/tmp/relaynest-be10-sync-attempt-check-a01/handoff.json` SHA256 `97b6d702961c547fba8568e4e91807a9ee07cc70a126ece9cbf982849e8d4a81`；I01 `/tmp/relaynest-be10-sync-attempt-check-i01-evidence/handoff.json` SHA256 `addc0040c866049df9a3a8c49a12ee1dd932ef371d1a5be8bc3a8736c115a0e1`。归档前实际文件hash及PASS／无发现字段均核实。
+- 原生source正式min33 top／270 all、whole398／1923、四包race166／722、新cmd定向race1／3及vet／build／gofmt／diff全部PASS。A01独立普通9／62及race5／13 PASS，包含真实TLS／事务结束取消／已提交快照读取／六typed outcome及新票据重试／跨Store边界；未修改产品，不以摘要代替固定全链审查。
+- I01新跑准确候选min33／270 PASS（15.772s，log SHA256 `6d7ad65606f44da151a5acc53255b20e5cbbedaac097f0fb1606633c7f7842c8`），测试身份与source min03一致，版本与候选／root diff-range-check PASS。source whole398／1923、四race166／722、cmd1／3、vet／build／gofmt及A01普通9／62、race5／13为**精确复用PASS，非I01新跑**；旧Begin／Apply overlay1／5与1／8同样仅历史REUSED_PASS_NOT_RERUN，不独自检验新Check。210输入／原flags／原生日志身份集合／overlay字节及真实embed核等值，required本地任务检查满足。
+- 历史保留：min01新夹具CHECK及absolute expiry约束FAIL，min02／whole01草稿结果（whole01自然exit0但输入期间变动，不计最终），相对cwd FileNotFoundError、首次Git身份FAIL及命令级身份修复均保留；元数据核验首次对diff项缺exit的KeyError发生于编辑前，按真实schema修正后PASS，无产品影响，不把该工具错误记作业务失败。npm ci/build、hosted CI、全CI race ./...、CGO_ENABLED=0空缓存-trimpath可执行构建NOT_RUN；scope检查不伪称全CI。详细原范围／验收及过程原文见下方。
+- 锁与后续：本叶source／审计／集成写锁及Go窗口释放，0013永久占用；下一SYNC-SCOPED-RESERVE只登记ready，父原完整范围／验收与CAS公开HTTP／reply待决不变。
+
+#### 归档前原范围、验收与过程原文（历史状态不代表当前终态）
+
+<a id="be-10-02-sync-postcommit-attempt-check"></a>
+
+#### BE-10-02-SYNC-POSTCOMMIT-ATTEMPT-CHECK 已提交sync attempt的只读即时复核
+
+- 状态：`review`（2026-11-05，总调度在ATTEMPT-RESULT独审／精确I01完成后登记ready，同日真实开工后ready→running；source固定提交及正式检查PASS后running→review，独立A01待结论）。实现owner／agent：`/root/sync_attempt_check_implementer`；隔离工作树：`/tmp/relaynest-be10-sync-attempt-check`；分支：`impl/backend-be10-sync-attempt-check-20261105`。固定产品／依赖基线：`0e01b88aa7e93af899b7534208ff0e251f4a4760`；实际实施起点：`3188cdb52abd49a7f0fa2631ecc9593daffb6638`，已按该SHA创建独立树。依赖：[ATTEMPT-RESULT已完成](COMPLETED.md#g5-be10-sync-attempt-result)、[SYNC-LEASE-CHECK已完成](COMPLETED.md#g5-be10-sync-lease-check)、已集成JOB-STORAGE／SYNC-CREATE-HTTP；不以父done为前置。
+- 原验收依据：父BE-10-02“重试前复核当前配置／注册／期限、模式或注册变化隔离旧job、同设备租约及条件状态防双worker／迟到结果污染”。仅收口已COMMIT内部attempt票据在当前时点的只读复核；父原完整范围、依赖与验收保留。
+- 允许路径／锁：仅新增`server/internal/push/sync_attempt_check.go`及必要自有测试（真实入口测试确有必要时另计）；研究推荐方案为repository自有短只读事务，校验原lease＋ticket完整绑定、当前身份／配置／注册／期限、结果仍为空，通过仅在事务成功完成后公布。现有Begin／Apply／Check、共享文件、SQL1～13、main／router及其他模块只读；无DDL／迁移号申请，0013永久占用。已向上述Implementer排他派发3条新增路径：`server/internal/push/sync_attempt_check.go`、`server/internal/push/sync_attempt_check_test.go`、`server/cmd/relaynest/sync_attempt_check_production_test.go`，唯一Go窗口归该实施者；其他路径仍只读。
+- 不变量／禁止：只读前后全表digest相同，无写入／领取／续租／释放／扣次／结果更新；不暴露secrets、原lease、token、正文或URL。不含adapter／network／worker、alert／DND／READ政策，不称最终发送资格或发送原子性；事务完成后的外部变化与已外发残余不能由本地检查消除。scoped-reserve→worker留后续，不先领alert再release。
+- 必须验收：真实TLS完整sync job→真实Reserve→Begin COMMIT→此只读检查；原lease与票据各绑定字段失配、已写结果、释放／接管／轮换／撤销／配置或身份版本变化、原期限／租约期限／future边界及reopen均失效关闭；legacy／alert混合不混入，错误／事务完成失败不公布通过，所有表无部分写入／秘密泄漏。保留旧断言／timeout，必要普通／race／真实入口定向及vet／build／gofmt／diff、冻结输入／精确组合核验；由实现提交→不同固定全链A01→编号修复重审→精确I01后总调度才决定done。source已本地提交，正式实施检查见下方checkpoint；独立A01进行中、尚无结论，I01为NOT_RUN，不记审计／集成PASS。
+
+- source／A01 checkpoint（2026-11-05）：固定source `c6f284e9dd712c2f80d855ff33fc36d4f01b1593`，parent／完整审计基线`3188cdb52abd49a7f0fa2631ecc9593daffb6638`；原实施私树与分支不变、提交后clean，仅3新增路径共375行。`/tmp/relaynest-be10-sync-attempt-check-evidence/handoff.json` SHA256 `cdbf53c42f6a7848d0ee1a1c4602927a5c5f7bbd47c0cdaac155ffff57b71e7b`已实际核匹配；210输入冻结SHA256 `45a8c9a7d5045b7c26e0a7732d9f5be34f335d813f6d09ce1ef13992c54626f3`，旧206键全部同值，增量仅3自有路径＋mise.toml。正式min33 top／270 all、whole398／1923、四包race166／722、新cmd定向race1／3及vet／build／gofmt／diff全部PASS；原两A01 overlay1／5与1／8为精确复用PASS，非本轮新跑。
+- 历史与限制：min01新夹具违反CHECK／absolute expiry约束的真实FAIL保留；whole01虽exit0（397／1916），但草稿输入运行中变化，不计最终PASS，最终统一冻结后完整重跑。首次Git身份缺失FAIL、原日志及夹具副本保留；无旧断言／timeout修改。npm、hosted CI、全CI race ./...及CGO_ENABLED=0空缓存-trimpath构建NOT_RUN；不代表最终发送资格／发送原子性或平台验收。
+- A01已派独立owner `/root/attempt_check_auditor_a01`，对完整`3188cdb`→`c6f284e`固定链隔离审计，唯一Go窗口已交该审计者；尚无正式结论，I01为NOT_RUN。任务仍review、不归档done，原父running及验收不变，0013永久占用。
+
+
 <a id="g5-be10-sync-attempt-result"></a>
 
 ### BE-10-02-SYNC-ATTEMPT-RESULT 完整sync内部尝试／typed结果／有界重试持久闭环

@@ -510,7 +510,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 ### BE-10-02 Hub 推送待办合并与调度
 
-- 证据与交接：总调度采纳有限拆分，首叶 [PENDING-READ](COMPLETED.md#g5-be10-pending-read) 已done；[JOB-STORAGE](COMPLETED.md#g5-be10-job-storage) 兼容模型／内部预留亦已done、0011永久占用；[SYNC-CREATE-HTTP](COMPLETED.md#g5-be10-sync-create-http)真实生产者亦已done；[SYNC-LEASE-CHECK](#be-10-02-sync-lease-check)可信Tx只读复核已done；[SYNC-ATTEMPT-RESULT](#be-10-02-sync-attempt-result)有限内部尝试／结果叶已done；[SYNC-POSTCOMMIT-ATTEMPT-CHECK](#be-10-02-sync-postcommit-attempt-check)只读叶review；完整调度／发送等父范围仍未完成。父原完整范围、依赖和验收保留。首叶已完成源检查／不同独审及准确新组合I01，不将父包或未来发送能力标完成。
+- 证据与交接：总调度采纳有限拆分，首叶 [PENDING-READ](COMPLETED.md#g5-be10-pending-read) 已done；[JOB-STORAGE](COMPLETED.md#g5-be10-job-storage) 兼容模型／内部预留亦已done、0011永久占用；[SYNC-CREATE-HTTP](COMPLETED.md#g5-be10-sync-create-http)真实生产者亦已done；[SYNC-LEASE-CHECK](#be-10-02-sync-lease-check)可信Tx只读复核已done；[SYNC-ATTEMPT-RESULT](#be-10-02-sync-attempt-result)有限内部尝试／结果叶已done；[SYNC-POSTCOMMIT-ATTEMPT-CHECK](#be-10-02-sync-postcommit-attempt-check)只读叶done；[SYNC-SCOPED-RESERVE](#be-10-02-sync-scoped-reserve)限定预留叶ready；完整调度／发送等父范围仍未完成。父原完整范围、依赖和验收保留。首叶已完成源检查／不同独审及准确新组合I01，不将父包或未来发送能力标完成。
 
 - 旧ID：`P09-02`；类型：有限分拆收口（不整组派发）；状态：`running`（首叶PENDING-READ有限legacy只读已done，其余父验收仍未完成，父完整运行时尚未完成）。
 - 依赖：[已完成 BE-10-01 限定服务器父组合](COMPLETED.md#g5-be10-compose)、[已完成基线 P05-01](COMPLETED.md#g2)。[READ-STORAGE事务仓储已独审／精确集成完成](COMPLETED.md#g5-be04-read-storage)，实际共享已读HTTP已在[BE04父组合](COMPLETED.md#g5-be04-compose)完成；推送策略过滤仍未完成，后包依赖须按真实范围具体核实；此前置完成不自动使整包 ready。
@@ -555,15 +555,17 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-10-02-SYNC-POSTCOMMIT-ATTEMPT-CHECK 已提交sync attempt的只读即时复核
 
-- 状态：`review`（2026-11-05，总调度在ATTEMPT-RESULT独审／精确I01完成后登记ready，同日真实开工后ready→running；source固定提交及正式检查PASS后running→review，独立A01待结论）。实现owner／agent：`/root/sync_attempt_check_implementer`；隔离工作树：`/tmp/relaynest-be10-sync-attempt-check`；分支：`impl/backend-be10-sync-attempt-check-20261105`。固定产品／依赖基线：`0e01b88aa7e93af899b7534208ff0e251f4a4760`；实际实施起点：`3188cdb52abd49a7f0fa2631ecc9593daffb6638`，已按该SHA创建独立树。依赖：[ATTEMPT-RESULT已完成](COMPLETED.md#g5-be10-sync-attempt-result)、[SYNC-LEASE-CHECK已完成](COMPLETED.md#g5-be10-sync-lease-check)、已集成JOB-STORAGE／SYNC-CREATE-HTTP；不以父done为前置。
-- 原验收依据：父BE-10-02“重试前复核当前配置／注册／期限、模式或注册变化隔离旧job、同设备租约及条件状态防双worker／迟到结果污染”。仅收口已COMMIT内部attempt票据在当前时点的只读复核；父原完整范围、依赖与验收保留。
-- 允许路径／锁：仅新增`server/internal/push/sync_attempt_check.go`及必要自有测试（真实入口测试确有必要时另计）；研究推荐方案为repository自有短只读事务，校验原lease＋ticket完整绑定、当前身份／配置／注册／期限、结果仍为空，通过仅在事务成功完成后公布。现有Begin／Apply／Check、共享文件、SQL1～13、main／router及其他模块只读；无DDL／迁移号申请，0013永久占用。已向上述Implementer排他派发3条新增路径：`server/internal/push/sync_attempt_check.go`、`server/internal/push/sync_attempt_check_test.go`、`server/cmd/relaynest/sync_attempt_check_production_test.go`，唯一Go窗口归该实施者；其他路径仍只读。
-- 不变量／禁止：只读前后全表digest相同，无写入／领取／续租／释放／扣次／结果更新；不暴露secrets、原lease、token、正文或URL。不含adapter／network／worker、alert／DND／READ政策，不称最终发送资格或发送原子性；事务完成后的外部变化与已外发残余不能由本地检查消除。scoped-reserve→worker留后续，不先领alert再release。
-- 必须验收：真实TLS完整sync job→真实Reserve→Begin COMMIT→此只读检查；原lease与票据各绑定字段失配、已写结果、释放／接管／轮换／撤销／配置或身份版本变化、原期限／租约期限／future边界及reopen均失效关闭；legacy／alert混合不混入，错误／事务完成失败不公布通过，所有表无部分写入／秘密泄漏。保留旧断言／timeout，必要普通／race／真实入口定向及vet／build／gofmt／diff、冻结输入／精确组合核验；由实现提交→不同固定全链A01→编号修复重审→精确I01后总调度才决定done。source已本地提交，正式实施检查见下方checkpoint；独立A01进行中、尚无结论，I01为NOT_RUN，不记审计／集成PASS。
+已完成有限只读叶：[完整source、原验收、不同A01及精确I01新跑／复用与历史限制](COMPLETED.md#g5-be10-sync-postcommit-attempt-check)。单source c6f准确映射canonical `7efebf8ed3b8f0c42333aad1f4783ee98a1028a6`，210输入同值；I01新最小33／270 PASS，其余required与独立边界精确复用，非全CI。只读检查不代表最终发送资格／外发原子性，父worker／真实发送／平台与global未完成，0013永久占用，产品／Go锁释放。
 
-- source／A01 checkpoint（2026-11-05）：固定source `c6f284e9dd712c2f80d855ff33fc36d4f01b1593`，parent／完整审计基线`3188cdb52abd49a7f0fa2631ecc9593daffb6638`；原实施私树与分支不变、提交后clean，仅3新增路径共375行。`/tmp/relaynest-be10-sync-attempt-check-evidence/handoff.json` SHA256 `cdbf53c42f6a7848d0ee1a1c4602927a5c5f7bbd47c0cdaac155ffff57b71e7b`已实际核匹配；210输入冻结SHA256 `45a8c9a7d5045b7c26e0a7732d9f5be34f335d813f6d09ce1ef13992c54626f3`，旧206键全部同值，增量仅3自有路径＋mise.toml。正式min33 top／270 all、whole398／1923、四包race166／722、新cmd定向race1／3及vet／build／gofmt／diff全部PASS；原两A01 overlay1／5与1／8为精确复用PASS，非本轮新跑。
-- 历史与限制：min01新夹具违反CHECK／absolute expiry约束的真实FAIL保留；whole01虽exit0（397／1916），但草稿输入运行中变化，不计最终PASS，最终统一冻结后完整重跑。首次Git身份缺失FAIL、原日志及夹具副本保留；无旧断言／timeout修改。npm、hosted CI、全CI race ./...及CGO_ENABLED=0空缓存-trimpath构建NOT_RUN；不代表最终发送资格／发送原子性或平台验收。
-- A01已派独立owner `/root/attempt_check_auditor_a01`，对完整`3188cdb`→`c6f284e`固定链隔离审计，唯一Go窗口已交该审计者；尚无正式结论，I01为NOT_RUN。任务仍review、不归档done，原父running及验收不变，0013永久占用。
+<a id="be-10-02-sync-scoped-reserve"></a>
+
+#### BE-10-02-SYNC-SCOPED-RESERVE 保持通用兼容的sync限定内部预留
+
+- 状态：`ready`（2026-11-05，总调度在POSTCOMMIT-ATTEMPT-CHECK独审／精确I01完成后登记，独立研究只读结论已核）；owner／agent、工作树／分支待正式派发，不提前running。固定产品／依赖基线：`7efebf8ed3b8f0c42333aad1f4783ee98a1028a6`；真实实施从本次元数据最终root SHA建隔离树，派发时填写。依赖：已准确集成[JOB-STORAGE](COMPLETED.md#g5-be10-job-storage)、[SYNC-LEASE-CHECK](COMPLETED.md#g5-be10-sync-lease-check)、[ATTEMPT-RESULT](COMPLETED.md#g5-be10-sync-attempt-result)及[POSTCOMMIT-ATTEMPT-CHECK](COMPLETED.md#g5-be10-sync-postcommit-attempt-check)，不以父done为前置。
+- 原父验收依据：sync／alert用途分离、同设备租约独占与条件状态防双worker／迟到结果污染。仅sync限定内部预留；父原依赖、范围与验收保留，父BE-10-02仍running／未完成。
+- 允许路径／锁：最多2个主要文件`server/internal/push/job_claim.go`、`server/internal/push/job_repository.go`，新增自有`server/internal/push/job_claim_scope_test.go`。保持通用Reserve／ReserveJobsTx签名与行为，共享私有封闭all／sync scope helper，候选过滤必须在rank／limit前；新增窄ReserveSync仅返回sync，排除legacy。不复制SQL、不先领alert后Release。跨purpose设备独占保持；入选设备到期旧holder可为alert，回收仅原租约三列，不改attempt／result／snapshot／资格。
+- 不变量／禁止：不改DDL1～13、现有Begin／Apply／Check、政策／secrets／adapter／worker、main／router或冻结外部接口；无新迁移申请，0013永久占用。仅候选范围收窄，不代表最终发送资格／send／平台或父任务完成；本次仅登记元数据，未派实现写锁或Go窗口。
+- 必须验收：完整通用Reserve回归；混合purpose排序／limit、未来与expiry边界、活跃alert阻塞、到期alert最小回收及其他字段全不变；跨Store通用vsSync竞争／接管／reopen；真实批次SQL、Scan／0-row、取消及COMMIT故障无半批、无发布，Tx保存点及无效参数边界。保留旧断言／timeout，相关普通／race及必要真实组合、vet／build／gofmt／diff、冻结输入及准确集成检查；本地固定提交→不同全链A01→编号修复重审→精确I01→总调度决定done。当前所有检查NOT_RUN，无实施／审计／集成PASS。
 
 <a id="be10-preflight-a01"></a>
 
