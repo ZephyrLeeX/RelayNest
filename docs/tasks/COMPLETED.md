@@ -28,6 +28,38 @@
 
 ## Go 后端（Bot Hub）
 
+<a id="g5-be10-alert-policy-read"></a>
+
+### BE-10-02-ALERT-POLICY-READ 原alert快照的可信事务只读策略投影
+
+- 终态：`done`（2026-11-05），总调度依据source正式交接、不同A01完整链PASS无发现及准确I01 PASS决定。仅可信Tx只读alert策略投影，不是最终身份／lease／attempt／dispatch，不持久DND丢资格；父BE-10-02仍running／未完成，平台／Android／global未验。
+- source完整链`92e44151ed74b1f426846ee03ac341ec0a8c5ebd`→`0a7801ec7004b549d321920104df54178bae0f84`，4路径；I01从目标`b060628d042b877158eb034931387bb971485a17`准确映射source→`2e8897afb216db2278bf443c9a3c442025f955ba`，-x及完整binary patch相同，无冲突或新业务改动，root已安全ff。218输入冻结`51b753d560141f6200363710c792e53dae1b7d411a50734b3b8353a71ad30614`同值，完整tracked tree相对被审source仅BACKEND元数据不同；SQL1～13／worker／原HTTP不变，0013永久占用。
+- 正式证据：source `/tmp/relaynest-be10-alert-policy-evidence/handoff.json` SHA256 `73d818e5eba8b3b13bec7399c3d5156ed9abdd3022168617522b89706d4bdf2c`；A01 `/tmp/relaynest-be10-alert-policy-audit-evidence/handoff.json` SHA256 `b4aab333c1418d4431fe9c4b0046c1f72538762d9d87c3c1308d88cb017e207f`；I01 `/tmp/relaynest-be10-alert-policy-i01-evidence/handoff.json` SHA256 `43374056b085996c8d51aaa229d95884f0f4dcd2c40c57c62005dfdbcdd8049c`。归档前实际hash、A01 PASS无发现及I01准确映射字段核实。
+- source新min／定向race各7 top／56 all及vet／build／fmt PASS，恢复既有argv的完整push race75／439 PASS（470.552610s）。A01独立普通与race各9／66 PASS。I01新候选min7／56 PASS（5.315s，log SHA256 `d20d502c87b862c679d6e7e30f7ce5036fffa78a729245796c8421dd1da9917c`），版本／diff-range PASS；source完整push race／定向race／vet／build／fmt及A01普通／race为精确复用PASS，非I01新跑。
+- 适用性与历史：旧whole423／2082只证明旧测试体，217未变输入适用于现生产／其他测试；新push测试唯一一行跨Store差异由当前min／定向race／完整push race覆盖。旧七包race整体FAIL仅其中6包PASS可精确复用，不记新whole或七race整体PASS。两次新增300s command预算FAIL、独立报告ef893…及总调度授权去掉仅本轮新增timeout恢复原required argv保留；旧timer／断言未改，当前恢复命令实录GOFLAGS空，历史GOFLAGS未知不补造。min准备／新夹具／schema约束注入／Git identity等失败保留；审计普通阶段未有formal prefreeze的限制如实保留，不扩大证据强度。所有原日志、217适用性及最终freeze记录见正式交接与下方历史原文。
+- 只读与门槛：测试损坏值仅专用库先验证正常CHECK拒绝、临时ignore_check_constraints注入后恢复OFF，不声称正常API可产生；无写产品状态／lease／attempt或秘密读取。npm build、hosted CI、全包race／CGO_ENABLED=0空缓存-trimpath构建、真实alert producer／平台网络／最终dispatch均NOT_RUN，不冒真实alert来源或全CI。实施／审计／集成产品写锁和Go窗口释放；下一POLICY-REASON只登记ready，不以bool false直接授权终止，父／全局／CAS合同待决不变。
+
+#### 归档前原范围、验收与过程原文（历史状态不代表当前终态）
+
+<a id="be-10-02-alert-policy-read"></a>
+
+#### BE-10-02-ALERT-POLICY-READ 原alert快照的可信事务只读策略投影
+
+- 状态：`review`（2026-11-05，独立覆盖研究确认缺口后登记ready，正式派发后ready→running；固定source正式交接与完整push race缺口补齐后running→review，独立A01待结论）；实现owner／agent：`/root/alert_policy_read_implementer`，隔离树：`/tmp/relaynest-be10-alert-policy`，分支：`impl/backend-be10-alert-policy-20261105`。固定业务基线：`6113767418f9299cf0c18464db0d094b67948314`；实际实施起点：`92e44151ed74b1f426846ee03ac341ec0a8c5ebd`，已据此创建上述隔离树。依赖已集成JOB-STORAGE、通知偏好限定父组合、READ与消息存储，不以vendor／ACK或父BE10-02 done为前置。
+- 原验收／覆盖依据：冻结OpenAPI `x-notification-job-policy`（当前3095／3175／5205附近）的alert开关／Bot覆盖／DND／sharedREAD／unread与source existing规则。现sync Check明确排除这些alert策略，pending_read仅legacy投影，不重做已由G1覆盖的BE03基础矩阵。DND使用设备IANA时区、含start不含end，涵盖跨午夜／DST重复本地时刻；父原依赖／范围／验收保留，仍running未完。
+- 允许路径／锁：最多3个主文件：共享`server/internal/devices/notifications.go`新增窄可信Tx只读配置入口（复用默认值／现有读取）、新增`server/internal/push/alert_policy.go`，确有必要才新增`server/internal/push/alert_policy_models.go`；必要新测试为`server/internal/devices/notifications_tx_test.go`、`server/internal/push/alert_policy_test.go`。总调度已核所有worktree共享notifications.go无未提交修改；上述5条允许路径（models仅确有必要）排他锁及唯一Go窗口已交该实施者。派发时尚无source commit及正式检查结果；当前固定source与运行checkpoint见下方，A01尚未执行，I01为NOT_RUN。SQL1～13不改、无迁移申请，0013永久占用。
+- 单目标／不变量：消费可信Tx的原JobSnapshot＋now，只读投影原alert资格／配置version／当前mode-provider／enabled／Bot／DND／source匹配存在及shared READ相对BotSeq的未读条件；原资格false不能复活，不给旧job补回资格。不得读token／正文／附件，所有表只读，不lease／attempt；损坏配置／时区／读取失败时关闭，错误／取消不公布通过，跨Store同Tx保持一致快照。保留sync不受DND／全部已读／source清理禁止的控制。
+- 必须验收：alert原资格／Bot覆盖／启停／配置版本与mode-provider、source存在匹配及sharedREAD/unread边界；DND start／end／跨午夜／IANA无效区／DST重复时刻，配置损坏与SQL／取消失败关闭；同Tx跨Store一致与全表digest不变、无秘密泄漏；sync负控制不被新增alert政策误禁。这里只策略投影，不是身份／lease／attempt最终dispatch，不持久DND丢资格、不改producer／worker／main／router，不桥接平台／secrets或新增状态库。相关普通／race与必要真实组合、vet／build／gofmt／diff／冻结输入／精确I01须正式派发固定；本地提交→不同全链A01→编号修复重审→精确I01后由总调度决定done。完整push race缺口已真实补齐，正式交接及精确适用性见下方最新checkpoint；独立A01进行中尚无结论、I01为NOT_RUN，不记done，CAS公开HTTP／reply待决与全局门槛不变。
+
+- 运行checkpoint（2026-11-05）：状态保持`running`，未review／done。实施树本地source `0a7801ec7004b549d321920104df54178bae0f84`，parent `92e44151ed74b1f426846ee03ac341ec0a8c5ebd`，Git元数据已核仅4允许路径、树clean；正式交接及完整required终态仍待总调度核收。旧freeze `273de…`上的min7 top／56 all与whole423／2082 PASS；七包race总体FAIL（push新加300s预算超时、其他6包PASS），之后push单包同300s再FAIL，两次原日志全部保留。仅新push测试一行改为读f.other／写f.store后冻结`51b753d…`，新min与定向race各7／56及vet／build／fmt PASS；旧whole／其他6包对当前生产及其余测试的精确适用性待正式handoff／独审判断，不能合称完整required全PASS。
+- 预算来源及在途验证：独立只读报告`/tmp/relaynest-be10-push-race-budget-research.json` SHA256 `ef893793d9ebd21e2d6d1f3d9dec02a51533dc3045a6abfc15dff0d4d6202a86`实核匹配；300s来自本轮新加command flag，非冻结docs／CI／旧case timer，历史worker／scoped push分别410.354s／339.786s PASS的argv无-timeout。总调度授权固定source按既有CI／required原命令去掉仅本轮新加300s参数，再跑push完整race一次；不改旧timer／断言，不把历史FAIL抹成PASS。唯一Go窗口重新交实施者；重跑在途、尚无核收终态，当前env须实录，历史GOFLAGS未知不补造。原min准备／新夹具／schema／Git identity失败继续保留。
+- A01待正式交接尚未执行，I01为NOT_RUN；父BE-10-02仍running，原范围／依赖／验收与全局门槛不变，0013永久占用。本checkpoint不以本地source提交替代审计／精确集成或完成验收。
+
+- 正式交接／A01 checkpoint（2026-11-05）：固定完整链`92e44151ed74b1f426846ee03ac341ec0a8c5ebd`→`0a7801ec7004b549d321920104df54178bae0f84`，仅4允许路径、原实施树clean。正式`/tmp/relaynest-be10-alert-policy-evidence/handoff.json` SHA256 `73d818e5eba8b3b13bec7399c3d5156ed9abdd3022168617522b89706d4bdf2c`及`evidence-index.json` SHA256 `85451b9addd07a3f43a64248e12d3615a8fbd5cb28016815145d4082b5349021`实际核匹配；新freeze218项`51b753d560141f6200363710c792e53dae1b7d411a50734b3b8353a71ad30614`与提交后同值。新min／定向race各7 top／56 all、vet／build／gofmt PASS；授权恢复既有argv后的完整push race75／439 PASS（470.552610s，0FAIL／SKIP），完整race缺口已补齐，非修改旧源码timer／断言。
+- 适用性／历史：旧whole423／2082及旧七包race中其他6包PASS依精确不变的217输入适用性保留，仅新push测试一行由f.store.Read改f.other.Read；当前新min／定向race及完整push race覆盖修改，不冒称新freeze全服普通／六包重跑。两次300s命令FAIL、独立ef893预算报告、总调度恢复原argv授权及原夹具／schema／identity／准备失败全部保留。恢复命令真实当前env记录Go1.27.3、GOFLAGS为空，历史GOFLAGS未捕、不补造；不把该失败归因产品回归或未经证实的资源竞争。
+- A01已正式派独立owner `/root/alert_policy_auditor_a01`，完整固定链／共享可信Tx入口及证据充分性待独审结论，唯一Go窗口归该审计者。状态review、未done，I01为NOT_RUN；父BE-10-02仍running且原依赖／验收保持，0013永久占用。
+
+
 <a id="g5-be10-sync-worker-core"></a>
 
 ### BE-10-02-SYNC-WORKER-CORE 假typed adapter驱动的有限sync Step闭环
