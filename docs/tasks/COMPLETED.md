@@ -28,6 +28,35 @@
 
 ## Go 后端（Bot Hub）
 
+<a id="g5-be10-sync-worker-core"></a>
+
+### BE-10-02-SYNC-WORKER-CORE 假typed adapter驱动的有限sync Step闭环
+
+- 终态：`done`（2026-11-05），总调度依据source正式交接、不同A01完整链PASS无发现、精确I01 PASS及required适用性补充决定。仅内部单步框架／测试fake完成，不是生产adapter合同或最终policy／真实发送资格；父BE-10-02仍running／未完，平台／Android／global未验。
+- 完整source链`241df29e6f1c236782b10081208607938e77195f`→`0d508ac6cc94eb602b13781ea64a1ecb50589503`，单提交4新增路径／782行。I01从canonical `03fdd225a0b62b1524f57de7935018ee88c38b6b`准确映射source→`6113767418f9299cf0c18464db0d094b67948314`，-x及完整binary patch相同，无冲突或新业务编辑，root已安全ff；完整tracked tree对被审source仅BACKEND元数据差异。214受测冻结`060f4e556c965390c25bc6ed3818ed19c566d0a4e922b786d317adca08f9b370`＋独核mise共215，旧211全同值＋4新文件；SQL1～13保持，0013永久占用。
+- 正式证据：source `/tmp/relaynest-be10-sync-worker-evidence/handoff.json` SHA256 `5e11b5ec96bd9f9040b599ce27c2670a9cbde0ce54b2238b33a3174cdfd8294b`；A01 `/tmp/relaynest-be10-sync-worker-a01-evidence/report.json` SHA256 `439a233698d531390d74e8f5d23aa6b64f8f64ca716efd19fba13af5b91e9f9e`；I01 `/tmp/relaynest-be10-sync-worker-i01-evidence/handoff.json` SHA256 `2dadccd05c7be87235620f1ba5a07f5fa0e7c235b83b82cda3a4b778bad31a7f`。A01 `runner-supplement.json` SHA256 `95d9327ac9f08facf1309709ea477d73e65ef4a3f6bd2283d31d48f022eaa74a`、I01 `required-applicability-supplement.json` SHA256 `877270ad65e6dc001ce7cd46db7a8d1643cb432bf3015abd01d7995f57fa3356`均在各证据目录；以上5份实际hash均已核匹配，原报告未改。
+- source最终min10／79、whole416／2026、四包race183／812、cmd定向8／54及vet／build／fmt／diff PASS。A01最终race **15 top／87 all＝原79＋最终5组8补充身份**真实PASS，最终补测文件SHA256 `2a312e13378bc18cde317352e1e4892696cb35051a5193a27d57e89d266378f0`及实际`mise exec go@1.27.3 -- go test -race -json -count=1`argv已补充核实，作为完整独立边界证据。旧普通14／86仅首4组、当时补测文件运行前hash未留，不能拿最终文件hash补造其输入或用该旧普通补证最终边界；A01当时go version／goenv／继承GOFLAGS未独捕，不宣称隐含flags为空。
+- I01新跑准确候选native10／79 PASS（7.639s，log SHA256 `151eee7b94139cf12f0e3060423b8529fa6fd21c809507a9d41f616dcbffcee2`），与source原生79及A01最终race87中对应79身份相同。版本／goenv及diff-range核验PASS；source whole／race／cmd／vet／build／fmt及A01最终race为精确复用PASS，非I01新跑。required适用性补充明确以上固定产品／最终补测hash与实际runner证据充分，不依赖旧普通缺失prehash推断，也不补造历史环境快照。
+- Web／历史／限制：source本轮真实npm run build PASS，工具chunk有实际输出但无独立shell log；A01／I01未npm build，仅核真实3assets与相同web树，非本轮集成新跑。min01 Apply COMMIT夹具过早命中Begin FAIL、首次Git identity FAIL及缺python命令保留；仅修新夹具，旧断言／timeout不变。TOCTOU／在途残余、Check到adapter间隙无精确取消可控fixture、非ExactlyOnce边界保持。完整hosted CI／所有包race／CGO_ENABLED=0空缓存-trimpath构建NOT_RUN，真实平台／网络／secrets／生产启动／alert DND READ策略不在范围。原验收及历史原文如下。
+- 实施／审计／集成产品写锁与Go窗口释放；0013永久占用，下一ALERT-POLICY-READ只登记ready；父原依赖／验收、CAS公开HTTP／reply待决及全局门槛不变。
+
+#### 归档前原范围、验收与过程原文（历史状态不代表当前终态）
+
+<a id="be-10-02-sync-worker-core"></a>
+
+#### BE-10-02-SYNC-WORKER-CORE 假typed adapter驱动的有限sync Step闭环
+
+- 状态：`review`（2026-11-05，SCOPED-RESERVE独审／精确I01完成后登记ready，同日实际开工后ready→running；source固定提交与正式必检完成后running→review，独立A01待结论）；实现owner／agent：`/root/sync_worker_implementer`，隔离工作树：`/tmp/relaynest-be10-sync-worker`，分支：`impl/backend-be10-sync-worker-20261105`。固定业务／依赖基线：`2cc95a5f0cee02a3c039dc4e0f50aa809d1b76b7`；实际实施起点：`241df29e6f1c236782b10081208607938e77195f`，已据此创建上述隔离树。依赖已准确集成的SCOPED-RESERVE、POSTCOMMIT-ATTEMPT-CHECK、ATTEMPT-RESULT、SYNC-LEASE-CHECK、JOB-STORAGE及SYNC-CREATE-HTTP，不以父done为前置。
+- 原验收依据：父允许先用假adapter验证框架；仅内部同步Step(limit=1)：新now ReserveSync→Begin成功COMMIT且非nil票据→新now CheckSyncAttempt→结束短事务／ctx检查→假typed adapter一次→新now Apply。clock注入有效且本Step不倒退；TTL沿旧正值／overflow边界，8次／原24h／未来retry与稳定快照不重置。最多2个新主文件`server/internal/push/sync_worker.go`、`server/internal/push/sync_dispatch.go`＋必要新push／cmd测试；现有共享Reserve／Begin／Apply／Check只读，父原范围／验收保留。
+- 调用／故障边界：无票据或前置失败adapter调用为0，不主动Release／续租／另建重试；adapter error或无效outcome保守unknown，不传播含秘密的原error。ctx取消不另开后台context补写；Apply false不冒称已落库、不立即重调adapter。envelope仅脱敏必要元数据，不含ticket／lease／token／hash／body／URL／完整snapshot；假adapter由测试提供，不升级成生产合同。
+- 不变量／禁止：只保证检查时刻currentness，保留事务后TOCTOU及在途残余，不承诺ExactlyOnce、最终policy／真实平台或父BE-10-02完成。禁止main／router／生产启动／背景循环、SDK／网络／真实秘密桥接、alert／DND／READ策略、注册清理、DDL1～13或新状态库；0013永久占用。4条新路径排他锁：`server/internal/push/sync_worker.go`、`server/internal/push/sync_dispatch.go`、`server/internal/push/sync_worker_test.go`、`server/cmd/relaynest/sync_worker_production_test.go`，连同唯一Go窗口已交该实施者；派发时仅草稿；当前固定source与正式检查见下方checkpoint，产品写锁已交固定SHA只读审计，唯一Go窗口交A01，I01仍NOT_RUN。
+- 必须验收：真实TLS非零完整sync→Step＋全部typed outcomes，message／receipt／read不变；Reserve／Begin真实COMMIT故障与Check失败adapter=0；轮换／撤销／配置／接管／到期的提交后复核；阻塞adapter时跨Store写成功，证明无跨调用事务，迟到结果no-op；error／invalid／cancel／Apply失败不立即重发；budget／TTL／overflow／倒退clock、mixed legacy＋alert及envelope秘密隔离。保留旧断言／timeout，相关普通／race／真实入口与vet／build／gofmt／diff、冻结输入和精确组合；本地固定提交→不同全链A01→编号修复重审→精确I01后由总调度决定done。正式实施检查见下方checkpoint；A01尚无结论，I01为NOT_RUN，不记审计／集成PASS。
+
+- source／A01 checkpoint（2026-11-05）：完整固定链`241df29e6f1c236782b10081208607938e77195f`→`0d508ac6cc94eb602b13781ea64a1ecb50589503`，单提交4新增路径／782行，原实施树／分支提交后clean。`/tmp/relaynest-be10-sync-worker-evidence/handoff.json` SHA256 `5e11b5ec96bd9f9040b599ce27c2670a9cbde0ce54b2238b33a3174cdfd8294b`，`evidence-index.json` SHA256 `b937921d9272773f3b2fa473a231b91cb81b8b3c050380bdb440558841f69856`均实际核匹配。最终min10 top／79 all、whole416／2026、四包race183／812、cmd定向8／54及vet／build／gofmt／diff全部PASS；214受测输入冻结`060f4e556c965390c25bc6ed3818ed19c566d0a4e922b786d317adca08f9b370`＋独核mise.toml共215，旧211全部同值＋4新文件。本轮真实npm run build PASS并核3assets，非仅复用旧build。
+- 历史／限制：min01 Apply COMMIT故障夹具过早命中Begin的真实FAIL、修正仅新故障安装时机后的PASS保留，不误记产品回归；首次Git身份FAIL及缺python命令保留。仍有Check到adapter的TOCTOU、忽略取消的在途残余，无该间隙精确取消可控fixture，不承诺ExactlyOnce／最终policy。真实平台／secrets／网络发送、Android／global及完整全cmd race未验，父BE-10-02仍running；不以本叶source PASS替代独审／集成。
+- A01已正式派独立owner `/root/sync_worker_auditor_a01`，隔离审计完整固定`241df29`→`0d508ac`全链，唯一Go窗口已授该审计者；尚无结论，I01为NOT_RUN。本叶仍review、不归档done，父原依赖／验收不变，0013永久占用。
+
+
 <a id="g5-be10-sync-scoped-reserve"></a>
 
 ### BE-10-02-SYNC-SCOPED-RESERVE 保持通用兼容的sync限定内部预留
