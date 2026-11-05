@@ -596,6 +596,10 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - 完整race真实FAIL：四包带-overlay增强、默认10m，push600.046s／阶段606.018s于`TestSyncWorkerBlockingDispatchAndLateFencing/unchanged`超时，storage／devices／auth各PASS；203 top／1063 all局部PASS不能算整包通过，旧worker812身份仍缺27、未完整覆盖。未调timeout或旧assertions，不以拆族抹FAIL。随后cmd race9／55 PASS（112.356s，旧worker54及lease6身份全含），vet／build／fmt PASS；初DROP sessions级联新fixture FAIL保留，仅改rename并证实job仍在／no-such-table，原断言不改。
 - 门槛／调度：独立`/root/sync_attempt_result_integrator_i01`仅研究原生CI与5份临时audit增强集合／默认预算影响，尚无复验授权，不提高timeout或擅跑重型。实施Go已结束释放，仅允许source提交／证据整理；A01待fixed handoff未执行、I01为NOT_RUN。父BE-10-02仍running，原依赖／范围／验收保持，0013永久占用；本地source提交不替代完整检查／独审／精确集成。
 
+- 原生race授权checkpoint（2026-11-05）：状态仍`running`，固定source `0c6fc4a3d14fb4c52419eca6fe469de41993a659`不改；独立研究`/tmp/relaynest-be10-alert-lease-race-matrix-research.json` SHA256 `dd45978ea8a345f9f11bd287bbfc350dd36426b33f86afb2645f662bd8210691`已实核匹配。增强四包FAIL含5个仅临时追加的push审计测试，原生CI无overlay；whole442／2305＝native436／2278＋历史6／27，native push88／635，原FAIL只完成native83／608、仍缺5 top／27 all身份，不把包内26项PASS替代独立package gate。
+- 新授权与停止条件：总调度授权串行一次完整native push race（无-overlay／-run／-timeout，默认timer、全部原生case），随后原5个audit精确5／26独立race包exit0；固定source／228输入、不改旧assertions或timer，系独立研究确定原生CI与临时增强两种集合，不是任意拆族抹FAIL。当前native在途、未核收结论；若仍超时，停止并研究成本，不继续拆族或提高timeout。原增强FAIL永久保留；其他3包PASS及cmd9／55只能依mapping作用域精确复用。
+- 唯一Go窗口重新交实施者，源码固定不改；A01未执行、I01为NOT_RUN，未review／done。先前正式handoff为gate未满足快照，最新结果待核收，本checkpoint不引用会被后续覆盖的旧路径hash；父running、原范围／依赖／验收与0013永久占用保持。
+
 <a id="be10-preflight-a01"></a>
 
 #### BE10-PREFLIGHT-A01 非零同步待办的真实会话期限预检
