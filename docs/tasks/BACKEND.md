@@ -631,6 +631,10 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - 不同F6 Fixer已正式派树`/tmp/relaynest-be10-alert-dnd-drop-f6`、分支`fix/backend-be10-alert-dnd-drop-f6-20261106`，base f23a；唯一许可`server/cmd/relaynest/push_http_test.go`，仅A03-01安全失败诊断。禁止输出原logs或读活进程buffer，原timer／assertions／秘密保护保持；先定向与合成验证、固定提交，再完整native cmd普通／race各一次。唯一Go归F6；F6最终提交与检查尚无终态、均NOT_RUN，不虚构SHA或PASS。随后仍须不同Auditor完整链A04及精确I01，当前未PASS。
 - 原所有FAIL／原因UNKNOWN保持；0014本任务专占、0015未分配，父running／全部原依赖AC状态不变，不动已完成归档范围。
 
+- F6固定提交／race在途恢复checkpoint（2026-11-06）：仍`review`／`CHANGES_REQUIRED`，A01-01／A03-01 OPEN，A01-02 CLOSED。F6实际固定`55a1e7290b4c2e7009e11e4994de0736e7bfe3ae`，parent `f23a2f24a82db6c9bbb0356b940fcea29c1041bc`，仅`push_http_test.go`＋47安全诊断、树clean；定向普通／race、安全合成race、exit／timeout EXPECTED_FAIL负控及fmt／vet／build通过。完整native cmd普通86 top／479 all PASS（包102.764s／runner104.030s），实际启动时HEAD为f23a＋该单文件staged：首次Git identity提交失败后shell继续启动普通，233输入冻结`8ab0bcbb7011ca4c0a73cfb1f20bbcc300c0f1a11e2593ef327525708d5dc2dd`前后同值、无运行中源码改动，之后命令级git -c既有合法身份准确提交55a；不得称普通在55a固定HEAD启动。
+- 完整native cmd race已在准确55a HEAD启动（session47822／Go PID3482716），树`/tmp/relaynest-be10-alert-dnd-drop-f6`；恢复证据`/tmp/relaynest-be10-alert-dnd-drop-f6-evidence/native-cmd-race-started.json`和`native-cmd-race.jsonl`实际已核，记录完整原生argv、env及相同冻结，无package终态。当前在途，不记PASS；唯一Go窗口归F6，不重复启动。正式handoff尚未封存，不预写路径hash。
+- A04完整链独审及I01尚未执行，原FAIL／UNKNOWN保留；此前文档索引路径已由21cc425纠正为真实evidence-index.json，保持不回退。0014本叶专占、0015未分配，父／原依赖AC不变，不标done或改COMPLETED。
+
 <a id="be10-preflight-a01"></a>
 
 #### BE10-PREFLIGHT-A01 非零同步待办的真实会话期限预检
