@@ -619,6 +619,10 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - A02封存`/tmp/relaynest-be10-alert-dnd-drop-a02-evidence/report.json` SHA256 `1a3fd5ca9442a714d2b6604d2e43abba98924e0c7de6aa0a11e259f2c54ce898`，`index.json` SHA256 `3f3158e1d679200f429ca46204c741ab9d790f27dcbc3884b34fdee109248da0`均已实际核匹配。独立dropstorage普通／race10／77、cmd定向3／120、附加2／10均PASS，3负控exit1符合预期、单列不作候选FAIL；原审计夹具错误及判定器修正保持。无确认新产品发现，但-01未关闭，不能称全服新PASS，I01为NOT_RUN；此前所有真实FAIL／NOT_RUN不抹除。
 - F4运行中：树`/tmp/relaynest-be10-alert-dnd-drop-f4`、分支`fix/backend-be10-alert-dnd-drop-f4-20261106`，固定基线bfe；仅`server/cmd/relaynest/read_test.go`与`server/cmd/relaynest/main_test.go`获许可。已决定保留对照后放弃净不利main单fixture候选并恢复，预计最终仅read_test.go，尚无最终范围／收益结论。唯一Go归F4，父BE-10-02仍running／原依赖AC保持，0014继续本任务独占、0015未分配，不集成或标done。
 
+- F4正式交接／A03 checkpoint（2026-11-06）：仍`review`／`CHANGES_REQUIRED`，A01-01 OPEN、-02已A02 CLOSED。F4已提交`62f7d5765d1703721cb9db6069188ec9bd3a486b`，parent `bfe36ff1d4055c8cc0e481d0e839ee959754a4f5`，仅`read_test.go`＋14／−9，未在canonical集成；main单fixture净不利候选已恢复、不入提交，探索失败保留。`/tmp/relaynest-be10-alert-dnd-drop-f4-evidence/handoff.json` SHA256 `2e7da307f60a95b192e5b75b7a0b486ce88316e699bf74fc53d4de0afc4d9cf2`及`evidence-index.json` SHA256 `f6fb8108adae00fb620619f1e03d714880ccc7fd54ded8b1969d0b3b681915b4`实核匹配，233输入冻结`c9c7c9f763384851b7313dba8f4887c9e96d5cecc283f0e18edbc04b56271b16`。
+- F4真实验证：native cmd普通86／479 PASS（106.603s）；完整race默认600s FAIL（600.085s，478 run／475 pass／84 top局部PASS），最后worker admin=true／configuration_error仅alarm前0.089735s，不能称case hang。另`TestMainProcessPushRouteAndSecretLogging`真实FAIL（6.67s，push_http_test.go:448 shutdown exit1）；原stdout／stderr buffer未输出、NOT_AVAILABLE，最后秘密日志断言未执行，不猜原因。原96＋21定向、3负控及vet／build／fmt PASS不能替代整包门槛，不宣称整体／CI PASS。
+- F4 Go已释放，不同A03已派固定完整6e→b931→F1→F2→F3→F4链审，唯一Go仅授权新失败定向复现／安全诊断，不重跑整包；正式新审计编号尚未给，不预编。Researcher仅只读准备下一有限性能修复，不实施。I01 NOT_RUN，父／依赖保持，0014继续本叶独占、0015未分配，不记done。
+
 <a id="be10-preflight-a01"></a>
 
 #### BE10-PREFLIGHT-A01 非零同步待办的真实会话期限预检
