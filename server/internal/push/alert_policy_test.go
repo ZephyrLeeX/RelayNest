@@ -127,6 +127,8 @@ func TestAlertPolicySnapshotAndSettings(t *testing.T) {
 	}
 }
 func TestAlertPolicyDND(t *testing.T) {
+	f, j, c := alertFixture(t)
+	baseline := reusableBaseline(t, f.other)
 	cases := []struct {
 		name, zone, start, end, at string
 		want                       bool
@@ -136,7 +138,8 @@ func TestAlertPolicyDND(t *testing.T) {
 		{"device-zone", "Asia/Shanghai", "10:00", "12:00", "2026-01-01T02:00:00Z", false}, {"dst-first", "America/New_York", "01:15", "01:45", "2026-11-01T05:30:00Z", false}, {"dst-second", "America/New_York", "01:15", "01:45", "2026-11-01T06:30:00Z", false}, {"dst-end", "America/New_York", "01:15", "01:45", "2026-11-01T06:45:00Z", true}, {"dst-gap", "America/New_York", "02:00", "03:00", "2026-03-08T07:00:00Z", true}, {"low-year", "UTC", "10:00", "12:00", "1970-01-01T00:00:00.000000001Z", true}, {"high-year", "UTC", "10:00", "12:00", "2262-04-11T23:47:16Z", true}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			f, j, c := alertFixture(t)
+			reusablePolicyCase(t, f, baseline)
+			j, c := j, c
 			c.DND = devices.NotificationDND{Enabled: true, Timezone: tc.zone, Start: tc.start, End: tc.end}
 			alertSettings(t, f, j, c)
 			j.SettingsVersion = 1
@@ -146,6 +149,9 @@ func TestAlertPolicyDND(t *testing.T) {
 			}
 			alertExpect(t, f, j, now, tc.want, false)
 		})
+		if t.Failed() {
+			t.Fatal("shared fixture failed; refusing to run another policy case")
+		}
 	}
 }
 func TestAlertPolicySourceAndRead(t *testing.T) {
@@ -199,11 +205,14 @@ func TestAlertPolicySourceAndRead(t *testing.T) {
 	}
 }
 func TestAlertPolicyDamagedConfiguration(t *testing.T) {
+	f, j, c := alertFixture(t)
+	baseline := reusableBaseline(t, f.other)
 	cases := map[string]string{
 		"missing": `configuration=json_remove(configuration,'$.enabled')`, "null": `configuration=json_set(configuration,'$.enabled',NULL)`, "timezone": `configuration=json_set(configuration,'$.dnd.timezone','Invalid/Zone')`, "equal": `configuration=json_set(configuration,'$.dnd.end','22:00')`, "clock": `configuration=json_set(configuration,'$.dnd.start','3:00')`, "nested-missing": `configuration=json_remove(configuration,'$.dnd.enabled')`, "blob-config": `configuration=CAST(configuration AS BLOB)`, "blob-version": `settings_version=CAST('1' AS BLOB)`, "blob-time": `updated_at=CAST(updated_at AS BLOB)`, "zero-version": `settings_version=0`, "bad-time": `updated_at='bad'`, "zero-time": `updated_at='0001-01-01T00:00:00Z'`}
 	for name, q := range cases {
 		t.Run(name, func(t *testing.T) {
-			f, j, c := alertFixture(t)
+			reusablePolicyCase(t, f, baseline)
+			j, c := j, c
 			alertSettings(t, f, j, c)
 			j.SettingsVersion = 1
 			if name == "blob-version" || name == "zero-version" {
@@ -213,6 +222,9 @@ func TestAlertPolicyDamagedConfiguration(t *testing.T) {
 			}
 			alertExpect(t, f, j, f.now, false, true)
 		})
+		if t.Failed() {
+			t.Fatal("shared fixture failed; refusing to run another policy case")
+		}
 	}
 }
 func TestAlertPolicyTransactionFailuresAndSnapshot(t *testing.T) {
