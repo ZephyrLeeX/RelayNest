@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"crypto/tls"
 	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -23,11 +24,14 @@ import (
 	"relaynest/server/internal/messages"
 	"relaynest/server/internal/storage"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
 
 	"relaynest/server/internal/health"
+
+	"modernc.org/sqlite"
 )
 
 func TestGracefulShutdownDrainsRequest(t *testing.T) {
@@ -728,12 +732,54 @@ func TestBotHTTPActorRecheckAndRollback(t *testing.T) {
 		}
 	}
 	for _, method := range []string{"POST", "PATCH"} {
+		// 每个 method 共享真实 TLS/认证及初始 Bot；故障必须全部由原事务回滚。
+		// 唯一函数仅观察实际 trigger 执行，不将授权入口计数冒充故障触发证据。
+		var triggered atomic.Int32
+		observer := fmt.Sprintf("bot_rollback_%x", sha256.Sum256([]byte(t.TempDir())))
+		if err := sqlite.RegisterScalarFunction(observer, 0, func(_ *sqlite.FunctionContext, _ []driver.Value) (driver.Value, error) {
+			triggered.Add(1)
+			return int64(0), nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+		shared := botHTTP(t, nil)
+		status, raw, h := shared.admin("POST", "/api/v1/admin/bots", botCreateBody)
+		assertBotResponse(t, status, 201, raw, h)
+		c := decodeBotCreated(t, raw)
+		baseline := readRollbackBaseline(t, shared)
 		for _, failure := range []string{"business", "credentials", "changes", "renewal", "final authorization", "commit"} {
-			t.Run(method+"/"+failure, func(t *testing.T) {
-				f := botHTTP(t, nil)
-				status, raw, h := f.admin("POST", "/api/v1/admin/bots", botCreateBody)
-				assertBotResponse(t, status, 201, raw, h)
-				c := decodeBotCreated(t, raw)
+			if !t.Run(method+"/"+failure, func(t *testing.T) {
+				local := *shared
+				local.t = t
+				f := &local
+				originalAuthorize := shared.afterAuthorize
+				t.Cleanup(func() {
+					shared.afterAuthorize = originalAuthorize
+					shared.beforeRead = nil
+					f.sessions.SetRevocationHook(nil)
+					f.sql("DROP TRIGGER IF EXISTS fail")
+					if failure == "commit" {
+						var count int
+						if err := f.store.Read(context.Background(), func(tx *sql.Tx) error {
+							return tx.QueryRow("SELECT count(*) FROM deferred_check").Scan(&count)
+						}); err != nil || count != 0 {
+							t.Fatalf("提交故障表未回滚为空: count=%d err=%v", count, err)
+						}
+						f.sql("DROP TABLE deferred_check")
+					}
+					if readRollbackBaseline(t, f) != baseline {
+						t.Fatal("Bot 回滚共享夹具未恢复全表及 schema 基线")
+					}
+				})
+				if readRollbackBaseline(t, f) != baseline {
+					t.Fatal("Bot 回滚共享夹具起始全表及 schema 基线改变")
+				}
+				if session, _, err := f.sessions.Inspect(context.Background(), f.android.Token, "android"); err != nil || session.ID != f.androidID {
+					t.Fatalf("Bot 回滚请求起始会话无效: %v", err)
+				}
+				if bot, err := bots.New(f.store).Get(context.Background(), c.Bot.ID); err != nil || bot != c.Bot || bot.Version != 1 || bot.Credentials.APIToken.Generation != 1 || bot.Credentials.WebhookKey.Generation != 1 {
+					t.Fatal("Bot 回滚请求起始实体或凭据版本改变")
+				}
 				path, body := "/api/v1/admin/bots", botCreateBody
 				verb := "INSERT"
 				if method == "PATCH" {
@@ -741,26 +787,42 @@ func TestBotHTTPActorRecheckAndRollback(t *testing.T) {
 					body = `{"expected_version":1,"enabled":false}`
 					verb = "UPDATE"
 				}
+				var trigger string
 				switch failure {
 				case "business":
-					f.sql("CREATE TRIGGER fail BEFORE " + verb + " ON bots BEGIN SELECT RAISE(ABORT,'private business error'); END")
+					trigger = "CREATE TRIGGER fail BEFORE " + verb + " ON bots BEGIN SELECT RAISE(ABORT,'private business error'); END"
 				case "credentials":
 					if method == "PATCH" {
 						return
 					}
-					f.sql("CREATE TRIGGER fail BEFORE INSERT ON bot_credentials BEGIN SELECT RAISE(ABORT,'private credential error'); END")
+					trigger = "CREATE TRIGGER fail BEFORE INSERT ON bot_credentials BEGIN SELECT RAISE(ABORT,'private credential error'); END"
 				case "changes":
-					f.sql("CREATE TRIGGER fail BEFORE INSERT ON changes BEGIN SELECT RAISE(ABORT,'private changes error'); END")
+					trigger = "CREATE TRIGGER fail BEFORE INSERT ON changes BEGIN SELECT RAISE(ABORT,'private changes error'); END"
 				case "renewal":
-					f.sql("CREATE TRIGGER fail BEFORE UPDATE OF idle_expires_at ON sessions BEGIN SELECT RAISE(ABORT,'private renewal error'); END")
+					trigger = "CREATE TRIGGER fail BEFORE UPDATE OF idle_expires_at ON sessions BEGIN SELECT RAISE(ABORT,'private renewal error'); END"
 				case "final authorization":
-					f.sql("CREATE TRIGGER fail AFTER " + verb + " ON bots BEGIN UPDATE sessions SET revoked=1; END")
+					trigger = "CREATE TRIGGER fail AFTER " + verb + " ON bots BEGIN UPDATE sessions SET revoked=1; END"
 				case "commit":
 					f.sql("CREATE TABLE deferred_check(id INTEGER REFERENCES bots(id) DEFERRABLE INITIALLY DEFERRED)")
-					f.sql("CREATE TRIGGER fail AFTER " + verb + " ON bots BEGIN INSERT INTO deferred_check VALUES('missing'); END")
+					trigger = "CREATE TRIGGER fail AFTER " + verb + " ON bots BEGIN INSERT INTO deferred_check VALUES('missing'); END"
 				}
+				trigger = strings.Replace(trigger, " BEGIN ", " BEGIN SELECT "+observer+"(); ", 1)
+				f.sql(trigger)
+				var installed string
+				if err := f.store.Read(context.Background(), func(tx *sql.Tx) error {
+					return tx.QueryRow("SELECT sql FROM sqlite_master WHERE type='trigger' AND name='fail'").Scan(&installed)
+				}); err != nil || installed != trigger {
+					t.Fatal("Bot 回滚故障 trigger 定义与预期不符")
+				}
+				var authorized atomic.Int32
+				triggered.Store(0)
+				// handler 捕获的是 shared，不能只改 child 浅拷贝中的 hook。
+				shared.afterAuthorize = func() { authorized.Add(1) }
 				before := f.snapshot()
-				status, raw, h = f.admin(method, path, body)
+				status, raw, h := f.admin(method, path, body)
+				if authorized.Load() != 1 || triggered.Load() != 1 {
+					t.Fatalf("Bot 回滚未恰好一次到达授权入口及真实故障 trigger: authorized=%d triggered=%d", authorized.Load(), triggered.Load())
+				}
 				want := 503
 				if failure == "final authorization" {
 					want = 401
@@ -772,10 +834,14 @@ func TestBotHTTPActorRecheckAndRollback(t *testing.T) {
 				if strings.Contains(raw, "private") || strings.Contains(raw, "token") || strings.Contains(raw, "digest") || strings.Contains(raw, "webhook_key") {
 					t.Fatal("failure leaked internals")
 				}
-			})
+			}) {
+				// 包括 cleanup 失败；污染后停止，禁止后例提前 401/503 造成假通过。
+				return
+			}
 		}
 	}
 }
+
 func TestBotHTTPContractAndPagination(t *testing.T) {
 	f := botHTTP(t, nil)
 	var created []bots.Created
