@@ -933,10 +933,14 @@ func TestBotHTTPExactJSONKeys(t *testing.T) {
 					}
 				}
 			}
+			// 每组复用真实 TLS、数据库及认证初始化；各子例仍独立创建 Bot 和获取全表基线。
+			fixture := botHTTP(t, nil)
 			for _, tc := range cases {
 				key, alias, replace := tc.key, tc.alias, tc.replace
 				t.Run(fmt.Sprintf("%s/%s/%s/replace=%t", kind, method, alias, replace), func(t *testing.T) {
-					f := botHTTP(t, nil)
+					// 按值绑定当前子例，确保请求及数据库辅助函数的失败归属当前子 T。
+					f := *fixture
+					f.t = t
 					token, actorID := f.android.Token, f.androidID
 					var headers map[string]string
 					if kind == "web" {
