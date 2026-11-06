@@ -607,6 +607,10 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - 真实阶段结果：最终storage定向8 top／30 all PASS（4.108s），新HTTP＋旧lost-response2／6 PASS（4.208s）；首HTTP新夹具替换未改变原body却误期409的FAIL原log保留，修正后PASS，不冒产品结论。236输入按实际冻结，不套旧233；真实3 embed经同Web输入核hash复制，npm build NOT_RUN。准确commit完整normal-all正在跑，后续原生push race／cmd race／new storage race及质量检查串行，尚无正式终态，不预PASS。
 - 不同Auditor `/root/sync_enqueue_merge_auditor_a01`已派固定1e104隔离静态全链审，严格无Go、等Implementer释放；正式审计PASS／I01 NOT_RUN。Go与3主／test锁归Implementer，本metadata仅root文档writer；父running、0014已done永久占用、0015未配及其他todo／CAS reply待决保持，不扩范围。
 
+- 完整普通milestone checkpoint（2026-11-07）：本叶仍`running`，固定实现`1e104fd01b49253387b8a47ba420f9eae8eb56b3`／parent86b不变；准确commit全包普通实际456 top／2389 all PASS（243.399s），真实log `/tmp/relaynest-be10-sync-enqueue-merge-evidence/normal-all.log` SHA256 `e09e36bf53ac3454c36b4d81ffb5d9bb81eda89fc912370d026b6b21ce76170a`实核匹配，236输入pre／post同值。旧native push88／635无删除、cmd87／482＝旧86／479＋merge1／3、dropstorage10／77、新mergestorage8／30；普通总数不含旧6份overlay历史，不混口径。
+- 当前准确1e104原生push race已启动一次（-p=1，无-run／overlay／-timeout），其后cmd／dropstorage／newstorage各race串行，尚无核收终态不预PASS；stage runner argv／env／HEAD／PID／prehash已落实际证据，唯一Go仍Implementer。A01固定独立树静态尚无实质确认缺陷，候选overlay边界／fault／真实COMMIT对照已准备未执行、无Go等窗口；正式audit／I01仍NOT_RUN，不以静态或普通PASS提前review／done。
+- 首HTTP新夹具FAIL及旧sync_create单语义更新授权范围保留；父／0014已done永久占用／0015未配及全部未决范围不变，后续待完整race终态再维护，不将心跳作新的验收证据。
+
 <a id="be10-preflight-a01"></a>
 
 #### BE10-PREFLIGHT-A01 非零同步待办的真实会话期限预检
