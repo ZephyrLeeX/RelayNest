@@ -611,6 +611,10 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - F2 owner `/root/alert_dnd_drop_fixer_f2`／原f2树分支、基线aeef103不变；3授权push tests已静态准备，233输入freeze7395…，严格DB／schema／26列type／pragma真实控制，116原叶与635全集保护。target5普通／race、相关45／376及完整native push普通88／635 PASS；6个恢复fail-stop负控为EXPECTED_FAIL，单列、不算候选产品失败。完整native push race在途、无核收结论，唯一Go归F2，-02仍OPEN，不提前记修复完成。
 - F3已派独立owner `/root/alert_dnd_drop_fixer_f3`，新增必要精确排他`server/cmd/relaynest/read_test.go`，仅`TestAssembledReadAuthorizationRollback`及极小恢复helper，仍-01修复范围；树`/tmp/relaynest-be10-alert-dnd-drop-f3`，分支`fix/backend-be10-alert-dnd-drop-f3-20261106`，当前基于aeef103仅静态准备97＋／9−，未授Go、收益未测。7 before保fresh、14 final-renewal共享真实fixture，21旧名顺序／断言／observer、DB-schema／hook-trigger恢复与Inspect健康、0→1 version2 event1真实可达及子T控制保持；待F2最终SHA后自存patch、安全FF至F2再apply原patch，最终b931→F1→F2→F3完整链A02，不能只审尾。A02／I01 NOT_RUN，父running／原AC依赖与0014本叶独占保持。
 
+- F2正式交接／F3执行checkpoint（2026-11-06）：状态仍`review`／`CHANGES_REQUIRED`，source b931与F1 aeef历史不改。F2固定提交`b84923530f13de2f362236915a8e5a9520877977`，parent `aeef1039864f5c4adaaac6f8135eee60e9f7578a`，仅3授权push tests（190＋／7−）、树clean。`/tmp/relaynest-be10-alert-dnd-drop-f2-evidence/handoff.json` SHA256 `06139e5035a1cd968b921e5bc24798df05b32fbaced36bd2ddbde012ed7b306d`及index SHA256 `53c8c8f6b4f32f64b0334e11598f8c0abb1a04350a20611878d82babc63b5629`实核匹配；native push普通／race各88／635 PASS（race包588.160s、runner589.630s，默认600，无overlay／-run），116原叶顺序／断言保护与6个EXPECTED_FAIL恢复负控成立，233 freeze7395…前后同值，vet／build／fmt PASS。-02仅有修复候选证据待不同A02确认，仍未关闭，不冒整服PASS，-01仍OPEN。
+- F3已保全原patch e8b0a329…，安全FF到F2 b849后apply同原字节；实际HEAD b849，仅read_test.go未提交，原read候选hash dbf58945…保持，新233输入freeze `d7e6c23b017953918c057abd9bd6b5c4ec5aacc2ade0506e3968dd3e77153777`。唯一Go现交F3，Top21普通已启动，完整native cmd普通／race默认600门槛仍待实测，不猜收益／终态。F1 cmd600.088s FAIL、source完整race两FAIL与准确旧baseline600.074s FAIL／研究诊断边界均保留。
+- 最终必须完整b931→F1→F2→F3由不同A02审查，不只尾提交，独立功能Go仍NOT_RUN，I01为NOT_RUN。source4主含SQL0014不改，父running／原AC依赖保持、0014本叶独占，不因F2候选PASS记done。
+
 <a id="be10-preflight-a01"></a>
 
 #### BE10-PREFLIGHT-A01 非零同步待办的真实会话期限预检
