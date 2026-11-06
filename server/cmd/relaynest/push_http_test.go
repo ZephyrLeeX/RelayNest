@@ -360,6 +360,50 @@ func TestAssembledPushStrictRequestsAndInstanceSwitch(t *testing.T) {
 	}
 }
 
+// 只在 Wait 返回后读取日志；诊断仅输出固定枚举、布尔和退出码，避免泄露原始日志。
+func mainProcessShutdownDiagnostic(logs []byte, exitCode int) string {
+	diagnostic := struct {
+		Codes              []string `json:"codes"`
+		ExitCode           int      `json:"exit_code"`
+		RaceMarkerSeen     bool     `json:"race_marker_seen"`
+		PanicMarkerSeen    bool     `json:"panic_marker_seen"`
+		DeadlineMarkerSeen bool     `json:"deadline_marker_seen"`
+		UnknownCodeSeen    bool     `json:"unknown_code_seen"`
+	}{Codes: []string{}, ExitCode: exitCode,
+		RaceMarkerSeen:  bytes.Contains(logs, []byte("WARNING: DATA RACE")),
+		PanicMarkerSeen: bytes.Contains(logs, []byte("panic:")) || bytes.Contains(logs, []byte("fatal error:")),
+		// http_failed 会折叠底层错误；未发现标记不能排除超时。
+		DeadlineMarkerSeen: bytes.Contains(logs, []byte("context deadline exceeded")) || bytes.Contains(logs, []byte("i/o timeout")) || bytes.Contains(logs, []byte("test timed out after")),
+	}
+	for _, line := range bytes.Split(logs, []byte("\n")) {
+		if len(bytes.TrimSpace(line)) == 0 {
+			continue
+		}
+		var entry struct {
+			Code *string `json:"code"`
+		}
+		if json.Unmarshal(line, &entry) != nil {
+			diagnostic.UnknownCodeSeen = true
+			continue
+		}
+		if entry.Code == nil {
+			continue
+		}
+		for _, code := range strings.Split(*entry.Code, "\n") {
+			switch code {
+			case "http_failed", "storage_close_failed", "attachment_storage_close_failed",
+				"configuration_failed", "database_process_lock_failed", "configuration_or_storage_failed",
+				"attachment_storage_failed", "listen_failed":
+				diagnostic.Codes = append(diagnostic.Codes, code)
+			default:
+				diagnostic.UnknownCodeSeen = true
+			}
+		}
+	}
+	raw, _ := json.Marshal(diagnostic)
+	return string(raw)
+}
+
 func TestMainProcessPushRouteAndSecretLogging(t *testing.T) {
 	f := botHTTP(t, nil)
 	// main以独立真实进程重新打开同一库；先关闭夹具连接与HTTP服务。
@@ -445,9 +489,12 @@ func TestMainProcessPushRouteAndSecretLogging(t *testing.T) {
 	case err := <-done:
 		stopped = true
 		if err != nil {
+			t.Log(mainProcessShutdownDiagnostic(logs.Bytes(), cmd.ProcessState.ExitCode()))
 			t.Fatal("main process shutdown", err)
 		}
 	case <-time.After(7 * time.Second):
+		// 进程仍可能写 buffer，此处分支不能读取日志。
+		t.Log(`{"test_wait_timeout":true}`)
 		t.Fatal("main process did not stop")
 	}
 	for _, value := range []string{secret, f.android.Token, f.databasePath} {
