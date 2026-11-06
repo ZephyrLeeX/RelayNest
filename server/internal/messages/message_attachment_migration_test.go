@@ -190,7 +190,7 @@ func TestMessageAttachmentMigrationElevenToTwelve(t *testing.T) {
 				if e := tx.QueryRow(`SELECT count(*) FROM schema_migrations`).Scan(&n); e != nil {
 					return e
 				}
-				if n != 13 {
+				if n != 14 {
 					t.Fatal(n)
 				}
 				// 新列只能保持空值，迁移不得替原legacy或完整job补造派发/结果。

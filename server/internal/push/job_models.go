@@ -15,6 +15,9 @@ var (
 	ErrJobData  = errors.New("push: invalid job snapshot")
 )
 
+// jobSuppressed 表示原 alert 已命中 DND，后续配置或时段改变不能重新预留。
+const jobSuppressed = "suppressed"
+
 const MaxJobReservations = 128
 const jobTimestamp = "2006-01-02T15:04:05.000000000Z"
 

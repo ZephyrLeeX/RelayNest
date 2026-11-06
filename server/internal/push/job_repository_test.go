@@ -308,7 +308,7 @@ func TestJobMigrationTenToElevenAndAtomicFailure(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer s.Close()
-			if jobCount(t, s, `SELECT count(*) FROM schema_migrations`) != 13 {
+			if jobCount(t, s, `SELECT count(*) FROM schema_migrations`) != 14 {
 				t.Fatal("migration count")
 			}
 			for name, sum := range checks {
