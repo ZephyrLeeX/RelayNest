@@ -623,6 +623,10 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - F4真实验证：native cmd普通86／479 PASS（106.603s）；完整race默认600s FAIL（600.085s，478 run／475 pass／84 top局部PASS），最后worker admin=true／configuration_error仅alarm前0.089735s，不能称case hang。另`TestMainProcessPushRouteAndSecretLogging`真实FAIL（6.67s，push_http_test.go:448 shutdown exit1）；原stdout／stderr buffer未输出、NOT_AVAILABLE，最后秘密日志断言未执行，不猜原因。原96＋21定向、3负控及vet／build／fmt PASS不能替代整包门槛，不宣称整体／CI PASS。
 - F4 Go已释放，不同A03已派固定完整6e→b931→F1→F2→F3→F4链审，唯一Go仅授权新失败定向复现／安全诊断，不重跑整包；正式新审计编号尚未给，不预编。Researcher仅只读准备下一有限性能修复，不实施。I01 NOT_RUN，父／依赖保持，0014继续本叶独占、0015未分配，不记done。
 
+- A03封存／F5 checkpoint（2026-11-06）：仍`review`／`CHANGES_REQUIRED`。A03固定`62f7d5765d1703721cb9db6069188ec9bd3a486b`、完整6e→b931→F1～F4链审已封存：`/tmp/relaynest-be10-alert-dnd-drop-a03-evidence/report.json` SHA256 `163ea247fa6afb492ac61ddcf03313a028038e7da528db2b8e42e302235bcefd`、`index.json` SHA256 `5cc9ea53c30c1af8106f73443a4be981e7e80329bbad25fb68b183a6ec1018e5`实核匹配。A01-01仍OPEN，-02重核CLOSED；新增**BE10-ALERT-DND-DROP-A03-01（P2）**：原生cmd race mainprocess shutdown exit1、最后秘密日志断言未执行，原因UNKNOWN。A03独立定向普通／race各一次PASS（0.37／2.76s）不能关闭历史FAIL；允许不同Fixer有限安全诊断及最终原生完整包复验，不要求猜根因。A03 Go已释放。
+- F5树`/tmp/relaynest-be10-alert-dnd-drop-f5`、分支`fix/backend-be10-alert-dnd-drop-f5-20261106`，固定base62f7，仅`server/cmd/relaynest/message_history_test.go`获许可，目标A01-01：12 before保fresh，12 final共享真实fixture并完整保护。定向24 case普通／race PASS（5.09／28.14s）只是阶段结果，不保证600s；负控／static收尾，当前唯一Go窗口归F5。根明确完整native cmd普通／race为NOT_RUN，待F5提交再与后续不同F6安全诊断串接后，各真实完整跑一次，避免重复600s；F6尚未派发，无最终SHA，不预写。
+- 原所有FAIL／NOT_RUN保留，I01为NOT_RUN，0014继续本任务独占、0015未分配；父running／原依赖AC及COMPLETED不改，不因定向PASS标完成或集成。
+
 <a id="be10-preflight-a01"></a>
 
 #### BE10-PREFLIGHT-A01 非零同步待办的真实会话期限预检
