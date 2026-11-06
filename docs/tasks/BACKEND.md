@@ -643,6 +643,10 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - F7恢复树`/tmp/relaynest-be10-alert-dnd-drop-f7`、分支`fix/backend-be10-alert-dnd-drop-f7-20261106`，实际已提交`435e727de15b29ca1ef33052b85e1b5fb742cdd6`、parent55a，仅main_test.go、树clean；233输入freeze `2fdbd7a5d29cc270a49580a309f997128ed68e44784454791c0edeca03dbe699`实核前后同值。旧runner普通1 top／27 child自然完成PASS、未重跑，后续同27 race PASS（Top普通6.51s／race34.85s）。前15 fresh、原PATCH credentials提前return及原assert字节保护；后12按method共享27→17初始化，11真实fault请求授权入口／SQL trigger分别atomic恰1。7个data／schema／noop／trigger计数／实际shared hook／漏drop trigger／漏drop空deferred表负控均race EXPECTED_FAIL并fail-stop，fmt／vet／build PASS。已从准确435e启动完整native cmd普通／race串行各一次（-p=1，无overlay／-run／-timeout，默认600s），尚无正式结果，不预记PASS或handoff；唯一Go归F7。
 - 父／原依赖AC、0014本叶专占及0015未分配保持，所有历史FAIL／NOT_RUN不抹除；I01未执行、不归档done、不创建完成marker。
 
+- F7正式交接／A05 checkpoint（2026-11-07）：本叶仍`review`，尚无A05 PASS，不可integrating／done；A01-01目前OPEN待不同审计决定，A01-02／A03-01已A04 CLOSED，历史FAIL／UNKNOWN保持。F7最终准确`435e727de15b29ca1ef33052b85e1b5fb742cdd6`、parent55a、树clean；完整native cmd普通86 top／479 all PASS（99.952s），race86／479 PASS（包583.995s／runner585.618s），默认600、无overlay／-run／-timeout、-p=1原集合未拆。两native均从准确435e启动，原process Push及末secret断言PASS，233输入前后同`2fdbd7a5d29cc270a49580a309f997128ed68e44784454791c0edeca03dbe699`；已停止优化，Go实核退出释放。
+- 正式`/tmp/relaynest-be10-alert-dnd-drop-f7-evidence/handoff.json` SHA256 `6a8f4443ec3f0f532e12056d3f33f89f67cfb8ac321545535ce78789b4bbc5ff`、`evidence-index.json` SHA256 `44fa8b115c8aa7ff34b67f3714641792966844a7e72e9cc5e340f1f7e7d350fb`实核匹配。不同A05已接唯一Go，审固定435e完整6e→b931→F1～F7链、原Top27普通／race＋7独立负控、15包原生闭包充分性与必要I01历史组合，尚无结论、不预PASS。
+- 原whole-race FAIL及F1／F3／F4／F6 native FAIL永久保留；本次只是准确cmd门槛PASS，不称新whole或CI PASS。I01 NOT_RUN、未集成，0014本叶独占、0015未分配；父／原依赖AC范围不改，不动COMPLETED，不创建完成marker。
+
 <a id="be10-preflight-a01"></a>
 
 #### BE10-PREFLIGHT-A01 非零同步待办的真实会话期限预检
