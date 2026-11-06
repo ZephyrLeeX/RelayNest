@@ -23,6 +23,20 @@ func CreateJobTx(ctx context.Context, tx *sql.Tx, j JobSnapshot, next time.Time)
 	if !j.valid() || !jobTimeValid(next) || next.Before(j.CreatedAt) {
 		return ErrJobInput
 	}
+	if err := validateJobSourceTx(ctx, tx, j); err != nil {
+		return err
+	}
+	_, err := tx.ExecContext(ctx, `INSERT INTO push_jobs(id,session_id,device_id,target_change_seq,state,next_attempt_at,
+ purpose,provider,registration_version,settings_version,deployment_id,message_id,bot_id,bot_seq,
+ session_generation,created_at_ns,expires_at_ns,alert_eligible) VALUES(?,?,?,?,'queued',?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		j.ID, j.SessionID, j.DeviceID, j.TargetChangeSeq, next.UTC().Format(jobTimestamp), j.Purpose, j.Provider,
+		j.RegistrationVersion, j.SettingsVersion, j.DeploymentID, j.MessageID, j.BotID, j.BotSeq,
+		j.SessionGeneration, j.CreatedAt.UnixNano(), j.ExpiresAt.UnixNano(), j.AlertEligible)
+	return err
+}
+
+// validateJobSourceTx 复用创建时的来源及目标身份检查；归并必须验证新事件而非旧 anchor。
+func validateJobSourceTx(ctx context.Context, tx *sql.Tx, j JobSnapshot) error {
 	deployment, err := storage.ReadInstanceIDTx(ctx, tx)
 	if err != nil {
 		return err
@@ -49,13 +63,7 @@ func CreateJobTx(ctx context.Context, tx *sql.Tx, j JobSnapshot, next time.Time)
 	if !valid {
 		return ErrJobData
 	}
-	_, err = tx.ExecContext(ctx, `INSERT INTO push_jobs(id,session_id,device_id,target_change_seq,state,next_attempt_at,
- purpose,provider,registration_version,settings_version,deployment_id,message_id,bot_id,bot_seq,
- session_generation,created_at_ns,expires_at_ns,alert_eligible) VALUES(?,?,?,?,'queued',?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-		j.ID, j.SessionID, j.DeviceID, j.TargetChangeSeq, next.UTC().Format(jobTimestamp), j.Purpose, j.Provider,
-		j.RegistrationVersion, j.SettingsVersion, j.DeploymentID, j.MessageID, j.BotID, j.BotSeq,
-		j.SessionGeneration, j.CreatedAt.UnixNano(), j.ExpiresAt.UnixNano(), j.AlertEligible)
-	return err
+	return nil
 }
 
 // MergeJobWatermarkTx 只合并 sync 的目标水位，不改原资格、版本、时间或租约。

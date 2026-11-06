@@ -204,6 +204,8 @@ func TestAssembledSyncCreateConcurrentAndLostResponse(t *testing.T) {
 			if len(syncCreateJobs(t, f)) != 1 {
 				t.Fatal("same-key duplicated jobs")
 			}
+			firstJobs := syncCreateJobs(t, f)
+			firstRows := syncMergeRows(t, f)
 			// 首请求确已提交但完全丢弃响应；同键重试必须复用唯一快照。
 			path := "/api/v1/bot/messages"
 			token := bot.APIToken.Token
@@ -227,7 +229,7 @@ func TestAssembledSyncCreateConcurrentAndLostResponse(t *testing.T) {
 				t.Fatal(err)
 			}
 			deadline := time.Now().Add(5 * time.Second)
-			for len(syncCreateJobs(t, f)) != 2 {
+			for jobs := syncCreateJobs(t, f); len(jobs) != 1 || jobs[0].Snapshot.TargetChangeSeq <= firstJobs[0].Snapshot.TargetChangeSeq; jobs = syncCreateJobs(t, f) {
 				if time.Now().After(deadline) {
 					conn.Close()
 					t.Fatal("lost request did not commit")
@@ -236,6 +238,12 @@ func TestAssembledSyncCreateConcurrentAndLostResponse(t *testing.T) {
 			}
 			conn.Close()
 			before := syncCreateJobs(t, f)
+			want := firstJobs[0]
+			want.Snapshot.TargetChangeSeq = before[0].Snapshot.TargetChangeSeq
+			firstRows[want.Snapshot.ID][3] = want.Snapshot.TargetChangeSeq
+			if before[0] != want || !reflect.DeepEqual(firstRows, syncMergeRows(t, f)) {
+				t.Fatal("lost request changed original snapshot")
+			}
 			status, raw, h := syncCreateRequest(f, bot, admin, lostKey)
 			syncCreateReceipt(t, status, raw, h, admin)
 			if !reflect.DeepEqual(before, syncCreateJobs(t, f)) {

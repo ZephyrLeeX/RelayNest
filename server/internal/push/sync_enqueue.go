@@ -33,6 +33,9 @@ func EnqueueSyncTx(ctx context.Context, tx *sql.Tx, event SyncEvent) error {
 	if event.MessageID == "" || event.BotID == "" || event.BotSeq < 1 || event.TargetChangeSeq < 1 || !jobTimeValid(event.CreatedAt) || !jobTimeValid(expires) || !expires.After(event.CreatedAt) {
 		return ErrJobInput
 	}
+	if err := validateSyncEventTx(ctx, tx, event); err != nil {
+		return err
+	}
 	deployment, err := storage.ReadInstanceIDTx(ctx, tx)
 	if err != nil {
 		return err
@@ -76,7 +79,7 @@ func EnqueueSyncTx(ctx context.Context, tx *sql.Tx, event SyncEvent) error {
 				Purpose: "sync", Provider: "fcm", TargetChangeSeq: event.TargetChangeSeq, RegistrationVersion: target.registration,
 				SettingsVersion: target.settings, DeploymentID: deployment, MessageID: event.MessageID, BotID: event.BotID,
 				BotSeq: event.BotSeq, SessionGeneration: target.generation, CreatedAt: event.CreatedAt, ExpiresAt: expires}
-			if err = CreateJobTx(ctx, tx, job, event.CreatedAt); err != nil {
+			if err = mergeOrCreateSyncTx(ctx, tx, job); err != nil {
 				return err
 			}
 		}
