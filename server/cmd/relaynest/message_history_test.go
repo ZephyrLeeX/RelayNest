@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -267,6 +268,11 @@ func historyIntercept(f *botHTTPFixture, before func(), after func(*sql.Tx) erro
 	})
 }
 func TestAssembledHistoryAuthorizationInvalidation(t *testing.T) {
+	// 共享资源归父测试所有；child 只持有绑定当前 testing.T 的浅拷贝。
+	shared := botHTTP(t, nil)
+	sharedBot := clientMessageBot(t, shared).Bot.ID
+	sharedMessage := historyCreate(t, shared, sharedBot, "history-invalid", "do-not-release-candidate", nil)
+	sharedBaseline := readRollbackBaseline(t, shared)
 	mutations := []struct {
 		name, statement string
 		args            func(*botHTTPFixture) []any
@@ -281,14 +287,44 @@ func TestAssembledHistoryAuthorizationInvalidation(t *testing.T) {
 	for _, mutation := range mutations {
 		for _, phase := range []string{"before", "final"} {
 			for _, detail := range []bool{false, true} {
-				t.Run(fmt.Sprintf("%s/%s/detail=%v", mutation.name, phase, detail), func(t *testing.T) {
-					f := botHTTP(t, nil)
-					bot := clientMessageBot(t, f)
-					m := historyCreate(t, f, bot.Bot.ID, "history-invalid", "do-not-release-candidate", nil)
+				if !t.Run(fmt.Sprintf("%s/%s/detail=%v", mutation.name, phase, detail), func(t *testing.T) {
+					var f *botHTTPFixture
+					var bot string
+					var m historyMessage
+					if phase == "before" {
+						// before 提交身份变化，仍保持每例独立的真实夹具及 instance observer。
+						f = botHTTP(t, nil)
+						bot = clientMessageBot(t, f).Bot.ID
+						m = historyCreate(t, f, bot, "history-invalid", "do-not-release-candidate", nil)
+					} else {
+						// final 的变化必须由授权读事务回滚；仅这一组复用真实 TLS/SQLite 夹具。
+						local := *shared
+						local.t = t
+						f, bot, m = &local, sharedBot, sharedMessage
+						original := *shared
+						originalHandler := f.handler.MessageHandler
+						t.Cleanup(func() {
+							f.handler.MessageHandler = originalHandler
+							f.afterAuthorize, f.beforeRead = original.afterAuthorize, original.beforeRead
+							f.sessions.SetRevocationHook(nil)
+							*shared = original
+							if readRollbackBaseline(t, f) != sharedBaseline {
+								t.Fatal("共享历史夹具未恢复全表及 schema 基线")
+							}
+						})
+						if readRollbackBaseline(t, f) != sharedBaseline {
+							t.Fatal("共享历史夹具起始全表及 schema 基线改变")
+						}
+					}
+					if session, _, err := f.sessions.Inspect(context.Background(), f.android.Token, "android"); err != nil || session.ID != f.androidID {
+						t.Fatalf("历史请求起始会话无效: %v", err)
+					}
+					var reached atomic.Int32
 					var baseline [32]byte
 					observed := *f
 					if phase == "before" {
 						historyIntercept(f, func() {
+							reached.Add(1)
 							f.sql(mutation.statement, mutation.args(f)...)
 							if mutation.name == "instance" {
 								// 生产Store保留原绑定并失败关闭；新Store仅用于独立观测副作用。
@@ -303,13 +339,21 @@ func TestAssembledHistoryAuthorizationInvalidation(t *testing.T) {
 						}, nil)
 					} else {
 						baseline = f.snapshot()
-						historyIntercept(f, nil, func(tx *sql.Tx) error { _, err := tx.Exec(mutation.statement, mutation.args(f)...); return err })
+						historyIntercept(f, nil, func(tx *sql.Tx) error {
+							// 原拦截点在真实候选读取及投影成功之后、最终授权复核之前。
+							reached.Add(1)
+							_, err := tx.Exec(mutation.statement, mutation.args(f)...)
+							return err
+						})
 					}
-					path := "/api/v1/client/bots/" + bot.Bot.ID + "/messages"
+					path := "/api/v1/client/bots/" + bot + "/messages"
 					if detail {
 						path = "/api/v1/client/messages/" + m.ID
 					}
 					status, raw, h := f.admin("GET", path, "")
+					if reached.Load() != 1 {
+						t.Fatalf("历史请求未恰好一次到达 %s 授权拦截边界: %d", phase, reached.Load())
+					}
 					wantStatus, wantCode := 401, "AUTHENTICATION_REQUIRED"
 					if mutation.name == "instance" {
 						wantStatus, wantCode = 409, "INSTANCE_MISMATCH"
@@ -320,7 +364,10 @@ func TestAssembledHistoryAuthorizationInvalidation(t *testing.T) {
 					if status != wantStatus || !strings.Contains(raw, wantCode) || strings.Contains(raw, m.Text) || h.Get("Cache-Control") != "no-store" || observed.snapshot() != baseline {
 						t.Fatalf("invalidated status=%d %s", status, raw)
 					}
-				})
+				}) {
+					// 包含 cleanup 失败；污染时停止父组，禁止后续共享用例提前拒绝造成假通过。
+					return
+				}
 			}
 		}
 	}
