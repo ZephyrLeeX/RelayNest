@@ -615,6 +615,10 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - F3已保全原patch e8b0a329…，安全FF到F2 b849后apply同原字节；实际HEAD b849，仅read_test.go未提交，原read候选hash dbf58945…保持，新233输入freeze `d7e6c23b017953918c057abd9bd6b5c4ec5aacc2ade0506e3968dd3e77153777`。唯一Go现交F3，Top21普通已启动，完整native cmd普通／race默认600门槛仍待实测，不猜收益／终态。F1 cmd600.088s FAIL、source完整race两FAIL与准确旧baseline600.074s FAIL／研究诊断边界均保留。
 - 最终必须完整b931→F1→F2→F3由不同A02审查，不只尾提交，独立功能Go仍NOT_RUN，I01为NOT_RUN。source4主含SQL0014不改，父running／原AC依赖保持、0014本叶独占，不因F2候选PASS记done。
 
+- A02／F4恢复checkpoint（2026-11-06）：本叶继续`review`／`CHANGES_REQUIRED`，**BE10-ALERT-DND-DROP-A01-01仍OPEN，-02已由不同A02确认CLOSED**。F3固定`bfe36ff1d4055c8cc0e481d0e839ee959754a4f5`，完整链b931→aeef→b849→bfe保持；cmd原生普通86／479 PASS（106.707s），完整race600.093s FAIL（85 top／476 all PASS、478 run），不能记全PASS。F2 `b84923530f13de2f362236915a8e5a9520877977`原生push普通／race各88／635 PASS（31.423／588.160s）；F3仅cmd变化，push按精确影响范围复用，-02关闭不代表整服门槛通过。
+- A02封存`/tmp/relaynest-be10-alert-dnd-drop-a02-evidence/report.json` SHA256 `1a3fd5ca9442a714d2b6604d2e43abba98924e0c7de6aa0a11e259f2c54ce898`，`index.json` SHA256 `3f3158e1d679200f429ca46204c741ab9d790f27dcbc3884b34fdee109248da0`均已实际核匹配。独立dropstorage普通／race10／77、cmd定向3／120、附加2／10均PASS，3负控exit1符合预期、单列不作候选FAIL；原审计夹具错误及判定器修正保持。无确认新产品发现，但-01未关闭，不能称全服新PASS，I01为NOT_RUN；此前所有真实FAIL／NOT_RUN不抹除。
+- F4运行中：树`/tmp/relaynest-be10-alert-dnd-drop-f4`、分支`fix/backend-be10-alert-dnd-drop-f4-20261106`，固定基线bfe；仅`server/cmd/relaynest/read_test.go`与`server/cmd/relaynest/main_test.go`获许可。已决定保留对照后放弃净不利main单fixture候选并恢复，预计最终仅read_test.go，尚无最终范围／收益结论。唯一Go归F4，父BE-10-02仍running／原依赖AC保持，0014继续本任务独占、0015未分配，不集成或标done。
+
 <a id="be10-preflight-a01"></a>
 
 #### BE10-PREFLIGHT-A01 非零同步待办的真实会话期限预检
