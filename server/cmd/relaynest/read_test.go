@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -295,7 +296,47 @@ func readIntercept(f *botHTTPFixture, before func(), after func(*sql.Tx) error) 
 		return access, true
 	})
 }
+
+// 全表内容仍由独立 observer 读取；另核 schema，防止共享夹具残留故障 trigger。
+func readRollbackBaseline(t *testing.T, f *botHTTPFixture) [32]byte {
+	t.Helper()
+	data := readSnapshot(t, f)
+	var schema []string
+	if err := f.store.Read(context.Background(), func(tx *sql.Tx) error {
+		rows, err := tx.Query(`SELECT type, name, tbl_name, COALESCE(sql,'') FROM sqlite_master ORDER BY type,name`)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var kind, name, table, statement string
+			if err := rows.Scan(&kind, &name, &table, &statement); err != nil {
+				return err
+			}
+			schema = append(schema, kind, name, table, statement)
+		}
+		return rows.Err()
+	}); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := json.Marshal(struct {
+		Data   [32]byte
+		Schema []string
+	}{data, schema})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return sha256.Sum256(raw)
+}
+
 func TestAssembledReadAuthorizationRollback(t *testing.T) {
+	// before 会提交身份变化，必须各用独立 Store；其余故障必须随被测事务回滚。
+	shared := botHTTP(t, nil)
+	sharedBot := clientMessageBot(t, shared).Bot.ID
+	shared.sql("UPDATE bots SET bot_seq=1 WHERE id=?", sharedBot)
+	shared.sql("UPDATE sessions SET idle_expires_at=? WHERE id=?", time.Now().Add(time.Hour).UnixNano(), shared.androidID)
+	baseline := readRollbackBaseline(t, shared)
+	originalReadHandler := shared.handler.ReadHandler
 	for _, mutation := range []struct {
 		name, query string
 		status      int
@@ -310,26 +351,68 @@ func TestAssembledReadAuthorizationRollback(t *testing.T) {
 		{"instance", "UPDATE instance_identity SET instance_id='00000000-0000-4000-8000-000000000099'", 409, "INSTANCE_MISMATCH"},
 	} {
 		for _, phase := range []string{"before", "final", "renewal"} {
-			t.Run(mutation.name+"/"+phase, func(t *testing.T) {
-				f := botHTTP(t, nil)
-				bot := clientMessageBot(t, f).Bot.ID
-				f.sql("UPDATE bots SET bot_seq=1 WHERE id=?", bot)
-				f.sql("UPDATE sessions SET idle_expires_at=? WHERE id=?", time.Now().Add(time.Hour).UnixNano(), f.androidID)
+			if !t.Run(mutation.name+"/"+phase, func(t *testing.T) {
+				var f *botHTTPFixture
+				bot := sharedBot
+				if phase == "before" {
+					f = botHTTP(t, nil)
+					bot = clientMessageBot(t, f).Bot.ID
+					f.sql("UPDATE bots SET bot_seq=1 WHERE id=?", bot)
+					f.sql("UPDATE sessions SET idle_expires_at=? WHERE id=?", time.Now().Add(time.Hour).UnixNano(), f.androidID)
+				} else {
+					local := *shared
+					local.t = t
+					f = &local
+					// 清理在任何 Fatal 路径均执行；失败后父循环立即返回，不复用污染状态。
+					t.Cleanup(func() {
+						f.handler.ReadHandler = originalReadHandler
+						f.afterAuthorize, f.beforeRead = nil, nil
+						f.sessions.SetRevocationHook(nil)
+						f.sql("DROP TRIGGER IF EXISTS read_renewal_fault")
+						if readRollbackBaseline(t, f) != baseline {
+							t.Fatal("共享已读夹具未恢复全表及 schema 基线")
+						}
+					})
+					if readRollbackBaseline(t, f) != baseline {
+						t.Fatal("共享已读夹具起始基线改变")
+					}
+					if session, _, err := f.sessions.Inspect(context.Background(), f.android.Token, "android"); err != nil || session.ID != f.androidID {
+						t.Fatalf("共享会话无效: %v", err)
+					}
+				}
 				args := []any{}
 				if strings.Contains(mutation.query, "?") {
 					args = append(args, f.androidID)
 				}
 				status, code := mutation.status, mutation.code
 				var before [32]byte
+				var reached atomic.Int32
 				if phase == "before" {
 					readIntercept(f, func() { f.sql(mutation.query, args...); before = readSnapshot(t, f) }, nil)
 					if mutation.name == "instance" {
 						status, code = 503, "INSTANCE_UNAVAILABLE"
 					}
 				} else {
-					if phase == "final" {
-						readIntercept(f, nil, func(tx *sql.Tx) error { _, err := tx.Exec(mutation.query, args...); return err })
-					} else {
+					// 每例必须真正推进 0→1 并写事件；仅返回原错误不足以证明共享状态可达。
+					readIntercept(f, nil, func(tx *sql.Tx) error {
+						var seq, version, events int64
+						if err := tx.QueryRow("SELECT read_seq,state_version FROM bot_read_states WHERE bot_id=?", bot).Scan(&seq, &version); err != nil {
+							return err
+						}
+						if err := tx.QueryRow("SELECT count(*) FROM changes WHERE type='read.updated' AND entity_id=?", bot).Scan(&events); err != nil {
+							return err
+						}
+						if seq != 1 || version != 2 || events != 1 {
+							return fmt.Errorf("已读事务未推进: seq=%d version=%d events=%d", seq, version, events)
+						}
+						reached.Add(1)
+						if phase == "final" {
+							_, err := tx.Exec(mutation.query, args...)
+							return err
+						}
+						return nil
+					})
+					if phase == "renewal" {
 						// 真实续期 UPDATE 后再失效，验证最末次授权也会回滚全部写入。
 						statement := strings.ReplaceAll(mutation.query, "?", "'"+f.androidID+"'")
 						f.sql("CREATE TRIGGER read_renewal_fault AFTER UPDATE OF idle_expires_at ON sessions BEGIN " + statement + "; END")
@@ -337,10 +420,15 @@ func TestAssembledReadAuthorizationRollback(t *testing.T) {
 					before = readSnapshot(t, f)
 				}
 				got, raw, h := readPut(f, bot, 1)
+				if phase != "before" && reached.Load() != 1 {
+					t.Fatal("故障请求未到达真实已读写入后的复核边界")
+				}
 				if got != status || !strings.Contains(raw, code) || strings.Contains(raw, `"read"`) || h.Get("Cache-Control") != "no-store" || readSnapshot(t, f) != before {
 					t.Fatalf("rollback %d %s", got, raw)
 				}
-			})
+			}) {
+				return
+			}
 		}
 	}
 }
