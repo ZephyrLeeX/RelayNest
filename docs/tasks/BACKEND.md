@@ -639,6 +639,10 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - F6 no_more_go并释放；A04正在固定55a完整链独立核验新增history／安全diagnostic／负控，唯一Go归A04，尚无final PASS。I01未执行，不依F6局部或安全诊断PASS关闭旧编号。
 - F7不同Fixer已派树`/tmp/relaynest-be10-alert-dnd-drop-f7`、分支`fix/backend-be10-alert-dnd-drop-f7-20261106`，base55a；唯一许可`server/cmd/relaynest/main_test.go`内`BotHTTPActorRecheckAndRollback`后半12 case按method共享真实fixture（总27初始化→17），前半15 fresh保持，原names／assertions／timer、完整data／schema、健康session、真实fault可达、清理及fail-stop控制完整保护。当前仅静态准备实施，未授Go、等A04释放；F7检查／最终SHA均NOT_RUN，不预写成果。父／依赖AC保持，0014专占、0015未分配，全部历史FAIL／UNKNOWN保留，不记done。
 
+- A04封存／F7恢复checkpoint（2026-11-07）：本叶仍`review`／`CHANGES_REQUIRED`；A04完整6e→55a正式CHANGES_REQUIRED，A01-01 OPEN（F6 native600.117s FAIL）、A01-02重确认CLOSED、A03-01本轮CLOSED。原F4 FAIL／原因UNKNOWN永久保留，若再现则重开原编号；不能据诊断编号关闭称整cmd／任务PASS。`/tmp/relaynest-be10-alert-dnd-drop-a04-evidence/report.json` SHA256 `4fad5680e0b68e2c2dc23ac8f349cec8d9c2b30e9522388d5a4e638c131ea897`、`index.json` SHA256 `be08ddc4e6e32a5edd48bad9ca0ee2ce24e1961ec487d59b847049ff7d923b3e`实核匹配。中断前9项自然完成已全部回收、未重跑：独立history＋process2／26普通／race、安全1／10普通／race及5 EXPECTED_FAIL；noop needle分类错误保留并独立纠正，15包闭包矩阵封存。额度中断不记测试FAIL，A04不再Go。
+- F7恢复树`/tmp/relaynest-be10-alert-dnd-drop-f7`、分支`fix/backend-be10-alert-dnd-drop-f7-20261106`，固定55a＋唯一`main_test.go`未提交，233输入freeze `2fdbd7a5d29cc270a49580a309f997128ed68e44784454791c0edeca03dbe699`（实核现有freeze文件）。旧runner普通1 top／27 child自然完成PASS、未重跑，后续同27 race PASS（Top普通6.51s／race34.85s）。前15 fresh、原PATCH credentials提前return及原assert字节保护；后12按method共享27→17初始化，11真实fault请求授权入口／SQL trigger分别atomic恰1。data／schema／noop／观察计数／hook／trigger／deferred漏清理负控在途；完整native cmd与最终commit NOT_RUN，不预记PASS。唯一Go归F7。
+- 父／原依赖AC、0014本叶专占及0015未分配保持，所有历史FAIL／NOT_RUN不抹除；I01未执行、不归档done、不创建完成marker。
+
 <a id="be10-preflight-a01"></a>
 
 #### BE10-PREFLIGHT-A01 非零同步待办的真实会话期限预检
