@@ -28,6 +28,43 @@
 
 ## Go 后端（Bot Hub）
 
+<a id="g5-be10-alert-lease-check"></a>
+
+### BE-10-02-ALERT-LEASE-CHECK 已预留alert租约的可信事务只读复核
+
+- 终态：`done`（2026-11-06），总调度依据source正式交接、不同A01整个共享抽取完整链PASS无发现及准确I01 PASS决定。仅alert lease当前原身份／版本只读复核，无policy／DND／read／source存在性／平台readiness或最终发送许可；原sync契约保持，父BE-10-02仍running／未完。
+- source完整链`82ed4b387389fe6f98feeed5c22978a2280988e0`→`0c6fc4a3d14fb4c52419eca6fe469de41993a659`，3主＋1新push test；I01从目标`3848115aea521e21b46be401c10a2c5e65d1940d`准确映射source→`d08d39ec11ec1f07319e413bd0af3e186d49357a`，-x及完整binary patch相同，无冲突／新业务改动，root已安全ff。221 native产品／工具／真实embed、228 source含历史fixture与mapping、230 audit范围分别核验同值，不混称新跑范围；tracked tree对被审source仅BACKEND元数据不同，SQL1～13／policy／worker／旧tests保持，0013永久占用。
+- 正式证据：source `/tmp/relaynest-be10-alert-lease-check-evidence/handoff.json` SHA256 `5254e5c8eab6c3ecefcd3c3fdf9eb443d60ae4341df977250cfee745423a9914`；A01 `/tmp/relaynest-be10-alert-lease-a01-evidence/handoff.json` SHA256 `94f763f46f542ad444cc409dd4e0bbdc11b8c5c9aa4ca124fd6569bc41d5f5ee`；I01 `/tmp/relaynest-be10-alert-lease-check-i01-evidence/handoff.json` SHA256 `4d4f3979b9c45b6d49ed5bd6871bf0bae0134cafdd347f545950a88e244bde41`。归档前实际hash、A01 PASS无发现与I01准确映射字段已核。
+- source完整native push默认race88／635 package PASS（593.882s／stage597.613s）、5历史audit独立5／26 package PASS（37.976s），另3包115／429依overlay不触闭包精确复用，native四包203／1064、含历史208／1090，旧worker812与lease97身份零遗漏；whole442／2305、cmd9／55、静态均PASS。A01独立普通与race各33／283 PASS，审整个共享抽取及新边界，无新发现。I01新native min19／194 PASS（8.103s，log SHA256 `66e058ce5f7b9d6bba5d53e7b1165c5aede794a0e360d1c5fce3802b8cd23972`），221输入前后同值，原source min221剔除27历史恰194身份；原228／audit230为验证引用范围，不称新跑。source宽矩阵及A01普通／race均精确复用PASS、非I01新跑，required满足。
+- 历史／方法限制：原带5历史push audit的增强四包默认600s整体FAIL永久保留，不冒增强full PASS；原handoff86df…及41件index快照不改，独立dd459研究及总调度授权完整native一次＋5audit package gate保持，未拆原生族或改timer。DROP sessions级联新fixture FAIL、rename验证修复、Git identity失败、前叶两300s FAIL及预算报告保留；两次I01 setup拒绝历史保留，不作为产品失败或PASS。npm build／hosted CI／全cmd宽race、真实alert producer／平台send／DND永久drop均NOT_RUN或范围外。原验收及过程原文如下。
+- 实施／审计／集成写锁与Go窗口释放；总调度另行独占分配0014给ALERT-DND-DROP-STORAGE ready，不由本叶占用；0013永久占用，父原依赖／验收、CAS公开HTTP／reply及平台global门槛不变。
+
+#### 归档前原范围、验收与过程原文（历史状态不代表当前终态）
+
+<a id="be-10-02-alert-lease-check"></a>
+
+#### BE-10-02-ALERT-LEASE-CHECK 已预留alert租约的可信事务只读复核
+
+- 状态：`review`（2026-11-05，真实alert lease前置登记ready后正式派发，ready→running；授权完整native race及历史audit门槛补齐后running→review，独立A01待最终结论）；实现owner／agent：`/root/alert_lease_check_implementer`，隔离树：`/tmp/relaynest-be10-alert-lease-check`，分支：`impl/backend-be10-alert-lease-check-20261105`。固定业务基线：`d4a7c0f07feb36d38dd58d38018e0120bd385a95`；实际实施起点：`82ed4b387389fe6f98feeed5c22978a2280988e0`，已据此创建上述隔离树。依赖已集成JOB-STORAGE、注册／通知偏好、SYNC-LEASE-CHECK与alert policy，无vendor／ACK前置，不以父done为前置。
+- 原验收依据：父用途分离、当前session Android／admin代次与期限、原注册／配置版本及租约fence。研究已核现CheckSyncLeaseTx拒非sync／非FCM及alerteligible，snapshot查询硬FCM，不能伪装purpose／provider复用。父原范围／依赖／验收保持，仍running未完。
+- 允许路径／锁：最多3主`server/internal/push/sync_lease_check.go`、`server/internal/push/sync_lease_snapshot.go`（抽私有共同helper）、新增`server/internal/push/alert_lease_check.go`；必要新增`server/internal/push/alert_lease_check_test.go`及`server/cmd/relaynest/alert_lease_check_production_test.go`，原tests只读。原sync wrapper及所有共享调用链语义完整保持，尤其坏类型F1～F6和既有unsupported nil／nil不能改为ErrJobData；独审须审整个共享抽取，不只新wrapper。上述3主＋2必要新测试路径排他锁及唯一Go窗口已交该实施者；派发时仅草稿；当前固定source与最终授权验证见下方最新checkpoint，原增强race FAIL不改，独立A01 phase2进行中、I01为NOT_RUN。
+- 单目标／不变量：可信Tx alert窄入口仅返回脱敏当前原job候选；严格绑定原lease摘要／期限、leased／due／created／expiry、deployment／精确session-device、Android原TEXT类型／admin-session代次纳秒期限、原provider注册版本（FCM／OPPO隔离）、原配置version及关键SQLite storage type。无当前资格nil candidate，坏数据／SQL error依正确契约失败关闭；不读token、policy／read／DND或平台readiness，不领取／续租／release／attempt，所有表只读、无secret。
+- 必须验收：真实通用Reserve alert→check，跨Store／reopen／接管／release／到期旧lease、轮换／撤销／实例／配置／原provider隔离及typed损坏／SQL失败；可信Tx全表零写／无secret，mixed legacy不提升；原sync全历史回归及已集成真实producer＋worker组合按共享抽取影响覆盖。相关普通／race／必要真实组合、vet／build／gofmt／diff／冻结输入及精确I01正式派发固定；本地提交→不同完整链A01→编号修复重审→精确I01后由总调度决定done。最终验证及原FAIL边界见下方最新checkpoint，独立A01无最终结论、I01为NOT_RUN，不记done。
+- 禁止与后续：不最终dispatch／策略／状态写，不改DDL1～13或冻结HTTP，不接生产worker／adapter／网络；0013永久占用、不占0014。terminal／drop迁移仍后续非ready，父／global／CAS公开HTTP及reply待决／真实平台门槛保持。
+
+- 运行checkpoint（2026-11-05）：状态保持`running`，不可review／done。实际source已提交`0c6fc4a3d14fb4c52419eca6fe469de41993a659`，parent `82ed4b387389fe6f98feeed5c22978a2280988e0`，Git元数据核4实际路径（3主＋new push test）、原实施树clean；cmd使用原临时联合fixture，无新cmd源码路径。正式min25 top／221 all、whole442／2305 PASS，228冻结输入（221产品／embed＋5份push原audit＋1 cmd联合fixture＋overlay mapping）检查前后同值；尚无正式handoff核收。
+- 完整race真实FAIL：四包带-overlay增强、默认10m，push600.046s／阶段606.018s于`TestSyncWorkerBlockingDispatchAndLateFencing/unchanged`超时，storage／devices／auth各PASS；203 top／1063 all局部PASS不能算整包通过，旧worker812身份仍缺27、未完整覆盖。未调timeout或旧assertions，不以拆族抹FAIL。随后cmd race9／55 PASS（112.356s，旧worker54及lease6身份全含），vet／build／fmt PASS；初DROP sessions级联新fixture FAIL保留，仅改rename并证实job仍在／no-such-table，原断言不改。
+- 门槛／调度：独立`/root/sync_attempt_result_integrator_i01`仅研究原生CI与5份临时audit增强集合／默认预算影响，尚无复验授权，不提高timeout或擅跑重型。实施Go已结束释放，仅允许source提交／证据整理；A01待fixed handoff未执行、I01为NOT_RUN。父BE-10-02仍running，原依赖／范围／验收保持，0013永久占用；本地source提交不替代完整检查／独审／精确集成。
+
+- 原生race授权checkpoint（2026-11-05）：状态仍`running`，固定source `0c6fc4a3d14fb4c52419eca6fe469de41993a659`不改；独立研究`/tmp/relaynest-be10-alert-lease-race-matrix-research.json` SHA256 `dd45978ea8a345f9f11bd287bbfc350dd36426b33f86afb2645f662bd8210691`已实核匹配。增强四包FAIL含5个仅临时追加的push审计测试，原生CI无overlay；whole442／2305＝native436／2278＋历史6／27，native push88／635，原FAIL只完成native83／608、仍缺5 top／27 all身份，不把包内26项PASS替代独立package gate。
+- 新授权与停止条件：总调度授权串行一次完整native push race（无-overlay／-run／-timeout，默认timer、全部原生case），随后原5个audit精确5／26独立race包exit0；固定source／228输入、不改旧assertions或timer，系独立研究确定原生CI与临时增强两种集合，不是任意拆族抹FAIL。当前native在途、未核收结论；若仍超时，停止并研究成本，不继续拆族或提高timeout。原增强FAIL永久保留；其他3包PASS及cmd9／55只能依mapping作用域精确复用。
+- 唯一Go窗口重新交实施者，源码固定不改；A01未执行、I01为NOT_RUN，未review／done。先前正式handoff为gate未满足快照，最新结果待核收，本checkpoint不引用会被后续覆盖的旧路径hash；父running、原范围／依赖／验收与0013永久占用保持。
+
+- 正式交接／A01 checkpoint（2026-11-05）：固定完整链`82ed4b387389fe6f98feeed5c22978a2280988e0`→`0c6fc4a3d14fb4c52419eca6fe469de41993a659`，4路径、原实施树clean。最终`/tmp/relaynest-be10-alert-lease-check-evidence/handoff.json` SHA256 `5254e5c8eab6c3ecefcd3c3fdf9eb443d60ae4341df977250cfee745423a9914`、`evidence-index.json` SHA256 `5fef854c8a646271d57e55d2f6f4de80e9fcf964115afc1e1f471524400a8154`实核匹配。原handoff已按`handoff-before-native-recheck.json`保存（86df19e…），原41件index快照／indexed证据未改；228输入冻结`16c1d5069cee198317345e6bd9f08110547b43441f4cf108272450bf1efc485a`及env pre／post同值。
+- 授权验证终态：完整native push race单次无-overlay／-run／新增timeout、默认timer88 top／635 all package PASS（push593.882s，stage597.613s）；5份原历史audit独立5／26 package PASS（37.976s）。其他3包115／429按overlay不触闭包精确复用，native四包并集203／1064＋历史audit＝208／1090，旧lease97与worker812身份零遗漏；cmd9／55、whole442／2305及静态检查PASS保持。原带overlay增强四包默认600s整体FAIL永久保留，不冒该增强full PASS、不拆原生族或改timer；独立dd459研究／授权与原fixture／identity失败继续保留。
+- A01独立owner `/root/alert_lease_auditor_a01`：phase1 static已核无确认缺陷，非最终PASS；现正式phase2独立测试与完整report，唯一Go窗口归该审计者。任务`review`、尚无最终审计结论，I01为NOT_RUN；父running／原AC依赖范围及0013永久占用保持，未done。
+
+
 <a id="g5-be10-alert-policy-reason"></a>
 
 ### BE-10-02-ALERT-POLICY-REASON 保持bool兼容的内部typed策略原因
