@@ -297,10 +297,14 @@ func readIntercept(f *botHTTPFixture, before func(), after func(*sql.Tx) error) 
 	})
 }
 
-// 全表内容仍由独立 observer 读取；另核 schema，防止共享夹具残留故障 trigger。
-func readRollbackBaseline(t *testing.T, f *botHTTPFixture) [32]byte {
+// 全表内容仍由独立 observer 读取；schema 单独核对，允许请求前安装预期故障 trigger。
+func readRollbackBaseline(t *testing.T, f *botHTTPFixture) [2][32]byte {
 	t.Helper()
-	data := readSnapshot(t, f)
+	return [2][32]byte{readSnapshot(t, f), readRollbackSchema(t, f)}
+}
+
+func readRollbackSchema(t *testing.T, f *botHTTPFixture) [32]byte {
+	t.Helper()
 	var schema []string
 	if err := f.store.Read(context.Background(), func(tx *sql.Tx) error {
 		rows, err := tx.Query(`SELECT type, name, tbl_name, COALESCE(sql,'') FROM sqlite_master ORDER BY type,name`)
@@ -319,10 +323,7 @@ func readRollbackBaseline(t *testing.T, f *botHTTPFixture) [32]byte {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	raw, err := json.Marshal(struct {
-		Data   [32]byte
-		Schema []string
-	}{data, schema})
+	raw, err := json.Marshal(schema)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -373,8 +374,8 @@ func TestAssembledReadAuthorizationRollback(t *testing.T) {
 							t.Fatal("共享已读夹具未恢复全表及 schema 基线")
 						}
 					})
-					if readRollbackBaseline(t, f) != baseline {
-						t.Fatal("共享已读夹具起始基线改变")
+					if readRollbackSchema(t, f) != baseline[1] {
+						t.Fatal("共享已读夹具起始 schema 基线改变")
 					}
 					if session, _, err := f.sessions.Inspect(context.Background(), f.android.Token, "android"); err != nil || session.ID != f.androidID {
 						t.Fatalf("共享会话无效: %v", err)
@@ -418,6 +419,10 @@ func TestAssembledReadAuthorizationRollback(t *testing.T) {
 						f.sql("CREATE TRIGGER read_renewal_fault AFTER UPDATE OF idle_expires_at ON sessions BEGIN " + statement + "; END")
 					}
 					before = readSnapshot(t, f)
+					// Inspect、handler 安装及预期 trigger 不写业务表，原请求前快照同时证明起始数据基线。
+					if before != baseline[0] {
+						t.Fatal("共享已读夹具起始数据基线改变")
+					}
 				}
 				got, raw, h := readPut(f, bot, 1)
 				if phase != "before" && reached.Load() != 1 {
