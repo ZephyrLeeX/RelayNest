@@ -635,6 +635,10 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - 完整native cmd race已在准确55a HEAD启动（session47822／Go PID3482716），树`/tmp/relaynest-be10-alert-dnd-drop-f6`；恢复证据`/tmp/relaynest-be10-alert-dnd-drop-f6-evidence/native-cmd-race-started.json`和`native-cmd-race.jsonl`实际已核，记录完整原生argv、env及相同冻结，无package终态。当前在途，不记PASS；唯一Go窗口归F6，不重复启动。正式handoff尚未封存，不预写路径hash。
 - A04完整链独审及I01尚未执行，原FAIL／UNKNOWN保留；此前文档索引路径已由21cc425纠正为真实evidence-index.json，保持不回退。0014本叶专占、0015未分配，父／原依赖AC不变，不标done或改COMPLETED。
 
+- F6正式交接／A04与F7 checkpoint（2026-11-06）：仍`review`／`CHANGES_REQUIRED`，A01-01／A03-01 OPEN、A01-02 CLOSED，待A04正式判断。F6最终`55a1e7290b4c2e7009e11e4994de0736e7bfe3ae`、parent f23a；`/tmp/relaynest-be10-alert-dnd-drop-f6-evidence/handoff.json` SHA256 `e8fd137177670c7b363eb09e426d82950d145a2daf9e8e1f73187ac7b7a630df`与`evidence-index.json` SHA256 `d968e3743e37ec73af915bc76048501e213c502422c37eac06a242a0c3dfd38d`实核匹配。普通86／479 PASS102.764s、staged启动时机照原记录；race准确55a自然FAIL600.117s，86 top／479 all全start，85 top／477 all仅局部PASS。最后worker admin=true／unknown_delivery在597.904s才start，不能称hang。该native主进程Top普通／race均PASS且末secret assert执行，历史root cause UNKNOWN保留，仍非整包PASS。
+- F6 no_more_go并释放；A04正在固定55a完整链独立核验新增history／安全diagnostic／负控，唯一Go归A04，尚无final PASS。I01未执行，不依F6局部或安全诊断PASS关闭旧编号。
+- F7不同Fixer已派树`/tmp/relaynest-be10-alert-dnd-drop-f7`、分支`fix/backend-be10-alert-dnd-drop-f7-20261106`，base55a；唯一许可`server/cmd/relaynest/main_test.go`内`BotHTTPActorRecheckAndRollback`后半12 case按method共享真实fixture（总27初始化→17），前半15 fresh保持，原names／assertions／timer、完整data／schema、健康session、真实fault可达、清理及fail-stop控制完整保护。当前仅静态准备实施，未授Go、等A04释放；F7检查／最终SHA均NOT_RUN，不预写成果。父／依赖AC保持，0014专占、0015未分配，全部历史FAIL／UNKNOWN保留，不记done。
+
 <a id="be10-preflight-a01"></a>
 
 #### BE10-PREFLIGHT-A01 非零同步待办的真实会话期限预检
