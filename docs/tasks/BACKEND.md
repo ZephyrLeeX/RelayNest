@@ -619,6 +619,17 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - A02不同Auditor固定d87静态重审945→c854→d87，暂无新confirmed issue，01源码修复正确但dynamic NOT_RUN；原A01仅静态／独立Go0事实保持。`/tmp/relaynest-be10-alert-origin-a02-evidence/preparation.md`与实际`preparation-index.json` SHA256 `14aa1752b59fe39bf181397f237bde5de130dc27f175a0a24a4f850b71efd5dd`已核，A02等待Go窗口不是需用户解决的阻塞。F1正式handoff／index及正式audit／I01尚无，不预填新hash。
 - 原c854交接元数据澄清：当前`/tmp/relaynest-be10-alert-origin-enqueue-evidence/handoff.json` SHA256 `9b38028dfb728c12e1247d8ad4951b157a975a091f5f78507a401996f6fe9f88`、`evidence-index.json` SHA256 `9d123a21cc82d7ddc9d3c5ac7bb6ffedc3ed32549524c95ec8182a2eaf5b1ee7`实核匹配（47索引项此前逐字节hash核同）。owner在09:11:15北京时间将pending编号／F1接续metadata更新后重生handoff／release／index，发生于此前声称sealed之后；旧dbd3ab67…／336b…原bytes未保留，仅tool消息hash／操作记录，不伪造旧快照或声称旧bytes不可变。原normal raw log df0136…及212 prepost未改，这只是交接metadata更改、非Go统计变更；3轮fixture FAIL及全部旧历史保持。父AC／0014 done永久占用／0015未配／CAS reply待决不变，后待race终态再维护，不作心跳提交。
 
+<a id="be-10-02-alert-opush-scoped-reserve"></a>
+
+#### BE-10-02-ALERT-OPUSH-SCOPED-RESERVE 完整opush alert限定内部预留
+
+- 状态：`running`（2026-11-07，Planner只读核依赖满足／无冲突，总调度ready后已真实派发，ready→running；当前仅静态实施）；owner／agent：`/root/alert_opush_reserve_implementer`，树`/tmp/relaynest-be10-alert-opush-reserve`，分支`impl/backend-be10-alert-opush-reserve-20261107`，固定实施基线`44c13f26ea5bac2d2c7aa682ec1e7623e6f58082`，受验业务`d52164e385b26b4500f33ee508cda6850f8c0382`。该树不含未集成producer；producer非本叶技术前置，精确I01必须producer＋claim真实组合，不能假定全树相同，总调度协调先producer后scope集成。
+- 已满足依赖：已归档JOB-STORAGE、SYNC-SCOPED-RESERVE、ALERT-LEASE-CHECK及ALERT-DND-DROP-STORAGE。原父用途分离／同设备租约／迟到fence验收保持，父BE-10-02仍running／未完；仅内部预留，不代表最终permit／平台资格，FCM仍hint。
+- 允许路径／锁：≤2主`server/internal/push/job_claim.go`、`server/internal/push/job_repository.go`，必要新test-only opushreservestorage，不迁旧case。复用reserveJobsTx／JobRepository.reserve封闭新增opush-alert scope窄入口，在设备内rank／global limit之前过滤完整alert＋opush＋原AlertEligible=true；原queued／到期leased／due／expiry／活跃Android代次筛选保持。原General Reserve／ReserveJobsTx／ReserveSync签名、行为、排序、原native case及timer不变；旧private enum test确需语义输入调整时先报告根，不删弱assert。
+- 不变量：legacy／suppressed／terminal不入，不改原资格／attempt／平台元数据，不发送或续租。全部purpose共享device leased唯一约束，active sync／FCM alert holder仍阻挡；只按原规则回收入选device expired跨purpose holder，清lease／state→queued，其他26列元数据保持。savepoint防批内partial及真实COMMIT成功后发布handles保持，不以误COMMIT发布部分批。
+- 并行协调：本scope writer仅自己隔离树的job_claim／job_repository及新test路径排他，其他任务这些只读；producer F1仅写其alert_enqueue.go＋alertoriginstorage tests且已冻结，唯一Go仍F1，新scope当前任何Go／gofmt／npm均禁止，等F1→A02窗口。A02仅只读审producer、等窗口不是需用户解决的blocked。原producer review／CHANGES_REQUIRED／01 OPEN、F1 d87普通467／2534及quality PASS／race在途状态保持，不以并行叶改变它。
+- 必须验收：mixed scope早head不占rank／limit，跨session／provider与device holder隔离，expired恢复／双Store竞争／reopen／旧Release no-op；due／expiry／limit／overflow与26列保持；SQL／zero-row／RAISE IGNORE／ctx／真实COMMIT及调用方误COMMIT保存点全批原子，原native集合全保。后续准确I01必须producer创建→新scope Reserve→AlertLease／Policy／DND drop真实组合＋sync互斥；普通／race／质量／冻结输入清单正式Go授权后固定，本地提交→不同完整链审计→编号修复重审→精确I01后根决定done。目前所有检查NOT_RUN，无实现commit／audit／I01，不预PASS。无DDL／0015、公共main／model／OAS／worker／网络／资格激活变化，0014 done永久占用／0015未配、CAS reply与global／platform pending保持。
+
 <a id="be10-preflight-a01"></a>
 
 #### BE10-PREFLIGHT-A01 非零同步待办的真实会话期限预检
