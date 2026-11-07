@@ -28,6 +28,47 @@
 
 ## Go 后端（Bot Hub）
 
+<a id="g5-be10-sync-enqueue-watermark-merge"></a>
+
+### BE-10-02-SYNC-ENQUEUE-WATERMARK-MERGE 同消息事务的sync水位归并
+
+- 终态：`done`（2026-11-07），总调度依据source正式交接、不同A01完整链PASS无发现及精确I01 PASS决定。仅首次创建消息Tx内sync namespace水位归并，旧anchor／稳定键／TTL／backoff等保持；父BE-10-02仍running／未完成，不代表alert producer／真实send／平台或Android／global完成，CAS reply待决保持。
+- source完整链`86b3fa6b636147c46cabb27d29b89dd8c6b2b9f1`→`1e104fd01b49253387b8a47ba420f9eae8eb56b3`，6路径735＋／9−；I01从目标`651919f7b89d4bf6ff21b73784ff01af9dbb8cdd`准确-x source→`d52164e385b26b4500f33ee508cda6850f8c0382`，单patch逐字节全等，无冲突／重复，不重DND8提交／base／docs，root已安全ff。原目标metadata／SQL1～14字节保持，0014永久占用，0015未分配。
+- 正式source `/tmp/relaynest-be10-sync-enqueue-merge-evidence/handoff.json` SHA256 `6eadaf60c60e8d4ad62cb0e8d7284fa00c77a7d1cc832c9dbdfa4f40bcbc4478`、index `9e4ec5aabee07bee78f026edaf1f11880272dbbb61fd9f510716b071a472d297`；A01 `/tmp/relaynest-be10-sync-enqueue-merge-a01-evidence/handoff.json` SHA256 `36fa977cda5404f16064fbc76b715805b94b2ed504d8c6fb08152b8b9ce5866d`、实际`evidence-index.json` SHA256 `66cd7ea6043095121337fd9d9cc23a78c5947b904af9ddd10904bfc90c391910`。I01 `/tmp/relaynest-be10-sync-enqueue-merge-i01-evidence/handoff.json` SHA256 `65e5775df139974d605947f9eee994eddb89bb43bd04757367e49e8484ff8eff`、实际`evidence-index.json` SHA256 `5ac2deb8ea400f4d4e9da2b351f7b39f0aa89018aea195d01b86d1458929a9d6`，归档前实际摘要／PASS及mapping字段核实。
+- source普通456 top／2389 all、完整四包native race push88／635、cmd87／482、dropstorage10／77、mergestorage8／30及质量检查PASS；source cmd race package596.352s与runner601.917s分别记录，默认600包预算未改。A01独立storage普通原8／30＋overlay4／12分别运行，race12／42组合PASS；TLS普通原2／6＋交错1／1、race3／7 PASS，无确认发现，236及extra前后同值；不把ordinary分次合称同一次命令。
+- I01真实新13 stage全部PASS：历史普通／race各5／26＋joint各1／1＝各6／27；native merge8／30＋drop10／77＋含旧lost／DND的HTTP3／7＝21／114；go-deps／vet／build／mod-verify／fmt／diff PASS。source236冻结`3fdd9c6cd910529474bb08ce6ecc075c310ab1540f9d8a377e426821f4e7ff53`、native230 `b1c1ef31be47ece29851736d6a3f6519ec4f2e9572297d00f3747dc48c5cc86f`、增强map237 `c875c8abcd2ebb108ff138cbb80704075d6cc6af8115eeca3ab91687a80bfba7`分列前后同值，5 tool／env一致。实际16包每文件依赖闭包适用：4受影响包ref1e104，其余12包refb931，精确覆盖456／2389身份；这是准确reuse，**不是新whole／all-package race／CI PASS**，四慢包完整race与A01独立矩阵本I01未重跑。
+- 历史／限制：首HTTP新fixture未改body误期409 FAIL、修正夹具后PASS及全部继承FAIL永久保持；旧sync_create仅授权2jobs→1oldjob＋target增长，原26列除target保护／5s／12并发／receipt／replay／261断言不变。I01首次统计脚本假下划线路径AssertionError保留，后只按真实斜杠runtime UUID路径窄纠正，未Go FAIL／未弱化fixture／未重跑。npm ci/build/test、API validator及CGO0空cache-trimpath CI专用构建NOT_RUN，工具版本与真实3embed hash复用不冒build执行；性能接近默认预算的限制、平台／secret桥／ExactlyOnce／父未完边界保持。
+- 实施／审计／集成全部锁与Go释放；共享helper／job_repository后续只读、下一ALERT-ORIGIN-ENQUEUE-TX独立派发，不改既有完成范围。原验收及全部历史checkpoint如下。
+
+#### 归档前原范围、验收与过程原文（历史状态不代表当前终态）
+
+<a id="be-10-02-sync-enqueue-watermark-merge"></a>
+
+#### BE-10-02-SYNC-ENQUEUE-WATERMARK-MERGE 同消息事务的sync水位归并
+
+- 状态：`integrating`（2026-11-07，固定source交接及13 stage PASS后review，经不同A01正式PASS决定review→integrating；I01尚未执行、不可done）；实现owner／agent：`/root/sync_enqueue_merge_implementer`，隔离树：`/tmp/relaynest-be10-sync-enqueue-merge`，分支：`impl/backend-be10-sync-enqueue-merge-20261107`。已集成依赖：消息／changes存储、JOB-STORAGE、SYNC-CREATE-HTTP及既有sync链；DND叶done后共享job_repository锁释放。业务基线`4abd54d64868c0143c109df6e054f758340c2f43`，实施／验证／审计I01均NOT_RUN；实际实施固定基线：`86b3fa6b636147c46cabb27d29b89dd8c6b2b9f1`，不因本纯metadata提交覆盖；父done非前置。
+- 原验收依据：按设备合并水位、不复活旧提醒，原首次创建HTTP已done不重做。namespace严格为deployment／device／session／generation／purpose=sync／provider=fcm／regver／settingsver；仅queued、未过期且created<=event的确定性候选。全局changes.change_seq可跨Bot取target=max，只改target，旧anchor／JobKey／原TTL／backoff／attempt／provider元数据保持。leased／terminal／expired／legacy／alert及版本不同不merge，原快照／稳定键不重置。
+- 允许路径／锁：最多3主`server/internal/push/sync_enqueue.go`、新增`server/internal/push/sync_merge.go`、确有必要才改`server/internal/push/job_repository.go`（仅复用新事件source验证、签名不改），必要新增sync_merge tests与真实production测试派发时固定。公共main／router／auth生产只读；上述sync_enqueue／new sync_merge／可选jobrepo及必要sync_merge tests／cmd production test锁、唯一Go窗口已交真实Implementer。派发时尚无实现／检查结果；当前固定实现与阶段验证见下方checkpoint，正式独审／I01仍NOT_RUN，不预写PASS；不重做首次创建HTTP／CAS reply／alert／平台，不占0015。
+- 单事务／失败闭合：每个新事件须验证自己的source／time／change关系，不能只验证旧anchor；covered target零写合法，需要增长时zero-row／RAISE IGNORE须error，不能fallback新建掩盖。归并与新事件原msg Tx同一事务原子，SQL／取消／真实COMMIT失败不留部分水位或消息成功；不接新平台／secret bridge／alert producer，不占新DDL或0015，不涉及CAS reply待决。
+- 必须验收：新事件来源／时间／change关系、跨Bot全局target=max与全部namespace fence、queued确定排序与covered零写、增长失败关闭；261 session分页、幂等／丢响应重放／Webhook与两真实HTTP入口、虚拟settings0，leased／terminal／expired／legacy／alert隔离及原snapshot／TTL／backoff／attempt保持；同msg Tx SQL／zero-row／RAISE IGNORE／COMMIT／ctx故障全回滚。相关普通／race／生产组合及vet／build／fmt／diff／冻结输入与准确集成正式派发固定；实现本地提交→不同完整链审计→编号修复重审→精确I01后由总调度决定done。阶段验证见下方，正式source handoff已核，状态review；独立审计尚无结论、I01为NOT_RUN，不记done；父原依赖／验收、全局Android／平台及pending CAS reply决定不变。
+
+- 实施固定／验证在途checkpoint（2026-11-07）：本叶仍`running`，未正式handoff，不提前review／done。实际实现`1e104fd01b49253387b8a47ba420f9eae8eb56b3`，parent `86b3fa6b636147c46cabb27d29b89dd8c6b2b9f1`，原实施树clean，6路径735＋／9−：3主、new mergestorage测试／cmd production测试与旧`server/cmd/relaynest/sync_create_test.go`单语义期望更新。根此前已授权仅`TestAssembledSyncCreateConcurrentAndLostResponse`第二event从2 jobs改为1 old job且target严格增长，并证明旧26列除target保持；原5s／12并发／receipt／replay及261族断言不改，不泛化其他旧test。迁移／公共main／messages／auth／OAS保持。
+- 真实阶段结果：最终storage定向8 top／30 all PASS（4.108s），新HTTP＋旧lost-response2／6 PASS（4.208s）；首HTTP新夹具替换未改变原body却误期409的FAIL原log保留，修正后PASS，不冒产品结论。236输入按实际冻结，不套旧233；真实3 embed经同Web输入核hash复制，npm build NOT_RUN。准确commit完整normal-all正在跑，后续原生push race／cmd race／new storage race及质量检查串行，尚无正式终态，不预PASS。
+- 不同Auditor `/root/sync_enqueue_merge_auditor_a01`已派固定1e104隔离静态全链审，严格无Go、等Implementer释放；正式审计PASS／I01 NOT_RUN。Go与3主／test锁归Implementer，本metadata仅root文档writer；父running、0014已done永久占用、0015未配及其他todo／CAS reply待决保持，不扩范围。
+
+- 完整普通milestone checkpoint（2026-11-07）：本叶仍`running`，固定实现`1e104fd01b49253387b8a47ba420f9eae8eb56b3`／parent86b不变；准确commit全包普通实际456 top／2389 all PASS（243.399s），真实log `/tmp/relaynest-be10-sync-enqueue-merge-evidence/normal-all.log` SHA256 `e09e36bf53ac3454c36b4d81ffb5d9bb81eda89fc912370d026b6b21ce76170a`实核匹配，236输入pre／post同值。旧native push88／635无删除、cmd87／482＝旧86／479＋merge1／3、dropstorage10／77、新mergestorage8／30；普通总数不含旧6份overlay历史，不混口径。
+- 当前准确1e104原生push race已启动一次（-p=1，无-run／overlay／-timeout），其后cmd／dropstorage／newstorage各race串行，尚无核收终态不预PASS；stage runner argv／env／HEAD／PID／prehash已落实际证据，唯一Go仍Implementer。A01固定独立树静态尚无实质确认缺陷，候选overlay边界／fault／真实COMMIT对照已准备未执行、无Go等窗口；正式audit／I01仍NOT_RUN，不以静态或普通PASS提前review／done。
+- 首HTTP新夹具FAIL及旧sync_create单语义更新授权范围保留；父／0014已done永久占用／0015未配及全部未决范围不变，后续待完整race终态再维护，不将心跳作新的验收证据。
+
+- 正式source／A01 checkpoint（2026-11-07）：本叶`running`→`review`，固定`1e104fd01b49253387b8a47ba420f9eae8eb56b3`／parent86b，6路径735＋／9−、3主＋必要tests，树clean。`/tmp/relaynest-be10-sync-enqueue-merge-evidence/handoff.json` SHA256 `6eadaf60c60e8d4ad62cb0e8d7284fa00c77a7d1cc832c9dbdfa4f40bcbc4478`及`evidence-index.json` SHA256 `9e4ec5aabee07bee78f026edaf1f11880272dbbb61fd9f510716b071a472d297`实核匹配；236冻结`3fdd9c6cd910529474bb08ce6ecc075c310ab1540f9d8a377e426821f4e7ff53`，各stage 3 embed／6 historical／5 tool hash前后同值，原test身份保护保持。
+- 最终13 stage全PASS：direct storage8／30、HTTP2／6、全包普通456／2389；完整native push race88／635（runner591.844s）、cmd87／482（package596.352s／runner601.917s，默认600包预算）、dropstorage10／77（84.668s）、newmerge8／30（76.315s）；vet／build／mod-verify／list-deps／fmt／diff PASS。四受影响包依实际godeps已全新整包race，非新all-package race／whole CI，npm build NOT_RUN；原process secret及新merge双入口在原生集合PASS。cmd包接近预算的事实保留，不改timer或额外优化。
+- 首HTTP新夹具FAIL及全部继承old FAIL／NOT_RUN永久保留。Implementer所有Go退出释放；不同A01已获唯一Go固定1e104，执行独立边界／source／metadata／真实COMMIT／交错双TLS测试及原定向，尚无结果、不预PASS，I01 NOT_RUN。source锁已释放但根不派新writer、等待review；父原AC／0014已done永久占用／0015未配／CAS reply待决及其他任务保持，不新增完成归档。
+
+- A01正式PASS／I01准备checkpoint（2026-11-07）：总调度决定`review`→`integrating`，未I01不能done。不同A01固定完整单链`86b3fa6b636147c46cabb27d29b89dd8c6b2b9f1`→`1e104fd01b49253387b8a47ba420f9eae8eb56b3`正式PASS，无confirmed finding；`/tmp/relaynest-be10-sync-enqueue-merge-a01-evidence/handoff.json` SHA256 `36fa977cda5404f16064fbc76b715805b94b2ed504d8c6fb08152b8b9ce5866d`及实际`evidence-index.json` SHA256 `66cd7ea6043095121337fd9d9cc23a78c5947b904af9ddd10904bfc90c391910`实核匹配，正式结论见同目录report.md。
+- A01独立普通／race全PASS；race storage原＋独立overlay12 top／42 all（96.380s），HTTP含交错TLS3／7（19.459s），236及extra输入前后同值；实施13 stage／125证据、四包实际闭包及旧test身份核验充分。所有历史FAIL／NOT_RUN保持，不冒新whole CI／npm build。A01 Go已全部退出释放。
+- I01 NOT_RUN，Integrator目前只读准备、未应用commit。待本状态commit后由总调度固定实际新HEAD创建隔离候选，只-x一次1e104保留docs；必要旧storage＋CAS／read历史组合、merge HTTP／storage及质量门槛最终清单与准确reuse须I01实际核实PASS，不能预放行。父原scope／0014已done永久占用／0015未配／CAS reply待决等保持，不归档COMPLETED或创建marker。
+
+
 <a id="g5-be10-alert-dnd-drop-storage"></a>
 
 ### BE-10-02-ALERT-DND-DROP-STORAGE 已预留alert命中DND的不可逆内部终止
