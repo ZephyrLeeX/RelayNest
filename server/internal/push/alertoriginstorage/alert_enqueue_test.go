@@ -396,6 +396,49 @@ func TestDuplicateAndRotationNeverRefreshOldRows(t *testing.T) {
 	}
 }
 
+// BE10-ALERT-ORIGIN-A01-01：策略拒绝不得把真实目标的重复调用变成成功。
+func TestDuplicateDeniedPolicyStillErrors(t *testing.T) {
+	for _, policy := range []string{"disabled", "read", "dnd"} {
+		t.Run(policy, func(t *testing.T) {
+			for _, oldState := range []string{"queued", "leased", "suppressed", "absent"} {
+				t.Run(oldState, func(t *testing.T) {
+					f := setup(t)
+					e := f.source(t)
+					if oldState != "absent" {
+						enqueue(t, f.store, e)
+					}
+					switch oldState {
+					case "leased":
+						exec(t, f.store, `UPDATE push_jobs SET state='leased',lease_hash=zeroblob(32),lease_until_ns=?`, e.CreatedAt.Add(time.Hour).UnixNano())
+					case "suppressed":
+						exec(t, f.store, `UPDATE push_jobs SET state='suppressed'`)
+					}
+					c := configuration()
+					switch policy {
+					case "disabled":
+						c = strings.Replace(c, `"enabled":true`, `"enabled":false`, 1)
+					case "read":
+						exec(t, f.store, `INSERT INTO bot_read_states(bot_id,read_seq,updated_at)VALUES(?,?,?) ON CONFLICT(bot_id) DO UPDATE SET read_seq=excluded.read_seq`, e.BotID, e.BotSeq, e.CreatedAt.Format(time.RFC3339Nano))
+					case "dnd":
+						c = strings.Replace(c, `"enabled":false,"timezone":"UTC","start":"22:00","end":"07:00"`, fmt.Sprintf(`"enabled":true,"timezone":"UTC","start":%q,"end":%q`, e.CreatedAt.UTC().Format("15:04"), e.CreatedAt.Add(time.Minute).UTC().Format("15:04")), 1)
+					}
+					f.configure(t, c)
+					before, prior := rows(t, f.store), state(t, f.store)
+					err := f.store.Write(ctx, func(tx *sql.Tx) error { return push.EnqueueAlertTx(ctx, tx, e) })
+					if oldState == "absent" {
+						if err != nil {
+							t.Fatal("new denied event failed", err)
+						}
+					} else if !errors.Is(err, push.ErrJobData) {
+						t.Fatal("duplicate denied event must fail", err)
+					}
+					unchanged(t, f, before, prior)
+				})
+			}
+		})
+	}
+}
+
 func TestWriteFaultsRollbackFirstCreate(t *testing.T) {
 	faults := map[string]string{
 		"ignore":       `CREATE TRIGGER fault BEFORE INSERT ON push_jobs BEGIN SELECT RAISE(IGNORE);END`,

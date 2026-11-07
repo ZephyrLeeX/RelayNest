@@ -86,13 +86,7 @@ func EnqueueAlertTx(ctx context.Context, tx *sql.Tx, event SyncEvent) error {
 			if err = alertOriginEligibleTx(ctx, tx, j); err != nil {
 				return err
 			}
-			decision, err := evaluateAlertPolicyTx(ctx, tx, j, event.CreatedAt)
-			if err != nil {
-				return err
-			}
-			if decision != alertPolicyEligible {
-				continue
-			}
+			// 已识别真实目标后先拒绝同 ID 旧行，当前策略拒绝不能掩盖重复调用。
 			// 任何同 ID 旧行都不能刷新，包含轮换、leased 和 suppressed。
 			var exists bool
 			if err = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM push_jobs WHERE id=?)`, j.ID).Scan(&exists); err != nil {
@@ -100,6 +94,13 @@ func EnqueueAlertTx(ctx context.Context, tx *sql.Tx, event SyncEvent) error {
 			}
 			if exists {
 				return ErrJobData
+			}
+			decision, err := evaluateAlertPolicyTx(ctx, tx, j, event.CreatedAt)
+			if err != nil {
+				return err
+			}
+			if decision != alertPolicyEligible {
+				continue
 			}
 			// 不使用通用 CreateJobTx 的无 RowsAffected 返回值，IGNORE 也必须失败。
 			result, err := tx.ExecContext(ctx, `INSERT INTO push_jobs(id,session_id,device_id,target_change_seq,state,next_attempt_at,
