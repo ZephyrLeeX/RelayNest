@@ -635,6 +635,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 - 恢复 checkpoint（2026-11-12）：B 仍 `running`；原树准确 base `44c13f26ea5bac2d2c7aa682ec1e7623e6f58082` 的五项 WIP 与用户 17:51 备份逐文件 SHA 一致，保持原 WIP／备份，不提交或覆盖。旧实现者已不在，OPUSH 写权暂由根持有保留，须待后续明确移交才恢复写入；本阶段未授权 Go（含 gofmt），也不因 A/F1 历史 race 终态获得窗口。原普通／race／质量、实现 commit／audit／精确 I01 仍未完成；本次只恢复元数据，不扩大范围或改写旧结果。
 - 下一静态续作：`planned`，planned owner `/root/alert_opush_reserve_resume`，创建成功后补实际 agent ID，不预写 running；固定原树／分支与 base `44c13f26ea5bac2d2c7aa682ec1e7623e6f58082`，仅接管原五 WIP 路径：`server/internal/push/job_claim.go`、`server/internal/push/job_repository.go`、`server/internal/push/job_claim_scope_test.go`、`server/internal/push/job_claim_opush_scope_test.go`、`server/internal/push/opushreservestorage/`。其中既有 `job_claim_scope_test.go` WIP 先查旧改动是否触及断言，不得擅改；其他只读，继续禁止 Go／gofmt／npm。写权仍由根保留至后续明确移交，本登记不提前授予写权或扩展范围。
+- 静态续作派发补记（2026-11-12）：planned→`running`，owner／实际 agent ID `/root/alert_opush_reserve_resume` 已创建成功；根明确仅移交上述原树五路径的静态接管与续作，其他只读，不执行 Go／gofmt／npm、不作实现提交。既有 private enum 测试输入调整须先向根提交理由并经审查，不擅改断言；原 WIP／备份保护、固定 base、后续独审／I01及所有范围限制保持。
 
 <a id="be10-preflight-a01"></a>
 
