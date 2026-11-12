@@ -147,6 +147,12 @@ func (r *JobRepository) ReserveSync(ctx context.Context, now time.Time, ttl time
 	return r.reserve(ctx, now, ttl, limit, jobReservationSync)
 }
 
+// ReserveOPushAlerts 仅预留原 AlertEligible 为真的完整 opush alert，提交成功后才发布句柄。
+// 不证明当前 vendor 模式、注册、策略或平台就绪；发送前仍须组合租约及策略复核。
+func (r *JobRepository) ReserveOPushAlerts(ctx context.Context, now time.Time, ttl time.Duration, limit int) ([]JobReservation, error) {
+	return r.reserve(ctx, now, ttl, limit, jobReservationOPushAlerts)
+}
+
 func (r *JobRepository) reserve(ctx context.Context, now time.Time, ttl time.Duration, limit int, scope jobReservationScope) ([]JobReservation, error) {
 	if ctx == nil || r == nil || r.store == nil {
 		return nil, ErrJobInput
