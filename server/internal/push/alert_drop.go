@@ -17,62 +17,69 @@ func (r *JobRepository) DropAlertDND(ctx context.Context, lease JobLease, expect
 	}
 	var changed bool
 	err := r.store.Write(ctx, func(tx *sql.Tx) error {
-		checked, err := CheckAlertLeaseTx(ctx, tx, lease, now)
-		if err != nil || checked == nil {
-			return err
-		}
-		original := checked.Job
-		if original.Snapshot != expected {
-			return nil
-		}
-		before, err := readAlertDropRow(ctx, tx, expected.ID)
-		if err != nil {
-			return err
-		}
-		decision, err := evaluateAlertPolicyTx(ctx, tx, original.Snapshot, now)
-		if err != nil || decision != alertPolicyDND {
-			return err
-		}
-		hash := sha256.Sum256(lease.secret[:])
-		result, err := tx.ExecContext(ctx, `UPDATE push_jobs SET state='suppressed',lease_hash=NULL,lease_until_ns=NULL
- WHERE id=? AND purpose='alert' AND state='leased' AND lease_hash=? AND lease_until_ns=?`, expected.ID, hash[:], lease.until.UnixNano())
-		if err != nil {
-			return err
-		}
-		if err := syncOneRow(result); err != nil {
-			return err
-		}
-		// 租约已清除，不能再调用要求 leased 的全 guard；按原快照复核身份和策略。
-		current, err := leaseCurrentSnapshot(ctx, tx, original.Snapshot, now, alertLeaseScope)
-		if err != nil {
-			return err
-		}
-		if !current {
-			return ErrJobData
-		}
-		decision, err = evaluateAlertPolicyTx(ctx, tx, original.Snapshot, now)
-		if err != nil {
-			return err
-		}
-		if decision != alertPolicyDND {
-			return ErrJobData
-		}
-		after, err := readAlertDropRow(ctx, tx, expected.ID)
-		if err != nil {
-			return err
-		}
-		before[4], before[19], before[20] = jobSuppressed, nil, nil
-		// interface 保留 SQLite 原存储类：不让 Scan 的文本/数字转换掩盖 trigger 篡改。
-		if !reflect.DeepEqual(before, after) {
-			return ErrJobData
-		}
-		changed = true
-		return ctx.Err()
+		var err error
+		changed, err = dropAlertDNDTx(ctx, tx, lease, expected, now)
+		return err
 	})
 	if err != nil {
 		return false, err
 	}
 	return changed, nil
+}
+
+// dropAlertDNDTx 供 Begin 在同一个写事务中复用全部 guard 与精确投影。
+// 调用方只在真实 COMMIT 后发布暂存结果。
+func dropAlertDNDTx(ctx context.Context, tx *sql.Tx, lease JobLease, expected JobSnapshot, now time.Time) (bool, error) {
+	checked, err := CheckAlertLeaseTx(ctx, tx, lease, now)
+	if err != nil || checked == nil {
+		return false, err
+	}
+	original := checked.Job
+	if original.Snapshot != expected {
+		return false, nil
+	}
+	before, err := readAlertDropRow(ctx, tx, expected.ID)
+	if err != nil {
+		return false, err
+	}
+	decision, err := evaluateAlertPolicyTx(ctx, tx, original.Snapshot, now)
+	if err != nil || decision != alertPolicyDND {
+		return false, err
+	}
+	hash := sha256.Sum256(lease.secret[:])
+	result, err := tx.ExecContext(ctx, `UPDATE push_jobs SET state='suppressed',lease_hash=NULL,lease_until_ns=NULL
+ WHERE id=? AND purpose='alert' AND state='leased' AND lease_hash=? AND lease_until_ns=?`, expected.ID, hash[:], lease.until.UnixNano())
+	if err != nil {
+		return false, err
+	}
+	if err := syncOneRow(result); err != nil {
+		return false, err
+	}
+	// 租约已清除，不能再调用要求 leased 的全 guard；按原快照复核身份和策略。
+	current, err := leaseCurrentSnapshot(ctx, tx, original.Snapshot, now, alertLeaseScope)
+	if err != nil {
+		return false, err
+	}
+	if !current {
+		return false, ErrJobData
+	}
+	decision, err = evaluateAlertPolicyTx(ctx, tx, original.Snapshot, now)
+	if err != nil {
+		return false, err
+	}
+	if decision != alertPolicyDND {
+		return false, ErrJobData
+	}
+	after, err := readAlertDropRow(ctx, tx, expected.ID)
+	if err != nil {
+		return false, err
+	}
+	before[4], before[19], before[20] = jobSuppressed, nil, nil
+	// interface 保留 SQLite 原存储类：不让 Scan 的文本/数字转换掩盖 trigger 篡改。
+	if !reflect.DeepEqual(before, after) {
+		return false, ErrJobData
+	}
+	return true, ctx.Err()
 }
 
 func readAlertDropRow(ctx context.Context, tx *sql.Tx, id string) ([26]any, error) {

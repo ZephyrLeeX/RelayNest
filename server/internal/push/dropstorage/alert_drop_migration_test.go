@@ -122,7 +122,7 @@ func TestEveryHistoricalLedgerUpgrade(t *testing.T) {
 						return fmt.Errorf("old ledger changed: %d", v)
 					}
 				}
-				if n != 14 {
+				if n != 15 {
 					return fmt.Errorf("ledger count=%d", n)
 				}
 				return rows.Err()
