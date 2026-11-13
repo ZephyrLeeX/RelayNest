@@ -521,6 +521,28 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 先用假adapter验证框架/FCM路径，OPPO外部审核不阻该有限任务；假结果不算厂商真机通过。PUSH-D2/D3已批准切换仅未来新事件、外发在途残余和离线展示限制；本地fencing不能撤回已外发，不以批准替代P02-05验证。发送失败不回滚消息，推送耗尽不进业务failed、不保护普通历史，DND/全部已读任务不复活。
 
+<a id="be10-next-r01"></a>
+
+#### BE10-NEXT-R01 已完成OPUSH后的下一有限叶规划
+
+已完成只读研究：[ALERT-ATTEMPT-RESULT-CONTRACT-R01 原范围、固定51ce28c适用核验、不同A01 PASS及授权更正链](COMPLETED.md#g5-be10-next-r01)。不是功能实现或动态PASS；后续有限实施按下列准入执行，不再重复派相同研究。原建议额外用户DDL确认已由正式补充更正：既有父行为持续授权足够，迁移号和实际写锁仍待根登记。
+
+<a id="be-10-02-alert-opush-attempt-storage"></a>
+
+#### BE-10-02-ALERT-OPUSH-ATTEMPT-STORAGE 完整opush alert内部持久尝试与结果
+
+- 状态：`ready`（2026-11-13，根采纳R01／不同A01 PASS及授权补充，允许已有BE-10-02父范围内的有限实施；别名 ALERT-ATTEMPT-RESULT-STORAGE）。尚未派Implementer、未开Go窗口或创建工作树，未实现／未测试；ready为下个有限派发候选，不自动授写权。准入产品固定 `51ce28c96549cf4e685f69e2680c5702c91efbdb`；本轮仅docs归档后，以Metadata实际回报提交SHA作为派发基线，派发时重核HEAD与产品同值，不在提交内自引用自身SHA。
+- 依赖与授权：[R01完整核证及准确六依赖SHA](COMPLETED.md#g5-be10-next-r01)，含已集成OPUSH53a71f5／Producer1d7bcf0／AlertLease d08d39e／typed policy d4a7c0f／DND Drop4abd54d；SyncAttempt0e01b88仅兼容参考，不当alert许可。父§9.1／9.3与持续授权已覆盖本有限内部实现，无重要未冻决定；不以父done为前置。唯一Go／gofmt窗口仍由根保留、未授；新迁移号**未分配**，Implementer只读核所有活跃树编号并回报后由根独占登记，不能假定0015、不修改旧0014或占用别人的号。
+- 单目标／最多5主要路径：一份编号待根分配的 `server/migrations/<编号>_push_opush_alert_attempt.sql`；新 `server/internal/push/alert_attempt.go`、`server/internal/push/alert_result.go`、`server/internal/push/alert_attempt_check.go`；`server/internal/push/alert_drop.go`仅抽取事务内私有helper，保既有公开Drop签名／行为。文件名为规划，实施先核等价现有实现；模型／helper放本包这些文件内，不为命名新增模块。发现第6主文件须checkpoint报根重新划界，不改sync实现、general／OPUSH Reserve、reader或公共模型／API／main／HTTP／worker。
+- 必要测试／锁：新test-only `server/internal/push/alertattemptstorage/`承担重型真实fixture与迁移测试，确需私有故障票据可新同包轻测；不迁／删／弱旧case。五旧成功ledger计数fixture仅确需时更新14→实际新版本：`server/internal/attachments/schema_test.go`、`server/internal/devices/push_repository_test.go`、`server/internal/messages/message_attachment_migration_test.go`、`server/internal/push/job_repository_test.go`、`server/internal/sync/read_migration_test.go`，历史失败／旧checksum断言不变；更多旧测试或非计数改动先checkpoint。根后续显式授上述主／test路径、新迁移号、隔离全新worktree唯一index writer及Go窗口，其他writer只读；当前只有Metadata三文档锁。
+- 持久兼容不变量：仅把原sync专有的两处CHECK兼容放宽到“原sync或原资格true完整opush alert”，显式非NULL／IS语义防NULL放行，其余attempt五列全空／严格有效、accepted与result_kind一致、1..8、时间顺序／原TTL约束保持；不新增列／表／索引／状态，不改SQL0001～0014。全部旧26列逐值及SQLite storage class、legacy五列writer、sync accepted／degraded／在途attempt、旧queued／leased alert、suppressed不可复活、3普通索引＋device leased唯一索引、复合FK／级联、snapshot不可变、旧ledger checksum／applied_at和迁移原子rollback／reopen保持；不制造alert票据或把旧queued自动accepted，不放宽FCM alert。
+- 操作合同：仅原AlertEligible=true完整opush alert；Begin自有短写Tx内核原lease／身份／版本／期限／当前policy、扣次并落fence，写后核原row精确投影与guard，真实COMMIT后才发布脱敏私有票据，同lease仅扣一次。明确typed DND须同Tx复用Drop全部guard／投影并nil票据，不跨Tx缓存bool，不把other_denied／error永久终止。8次／原24h及expiry上限，当前有效lease耗尽不给第9票据、仅push degraded清当前lease保元数据。即时Check只读重核lease／attempt／身份／版本／TTL及policy，false／error不发送；本叶无实际发送调用者。
+- 结果合同：accepted→accepted，target_invalid／configuration_error→degraded；transient／rate_limited／unknown_delivery沿sync参数10秒倍增、上限10分，attempt<8且next<原expiry才queued，否则degraded。原snapshot＋lease＋attempt及当前身份／版本／期限fence条件写，release／接管／轮换／到期／重复结果no-op，不改新holder／注册。结果是已发生尝试的记录，不要求当前policy通过、不给后续发送许可；下一Begin／即时Check必须完整policy。accepted仅平台受理，timeout保持unknown_delivery，不自动vendor→FCM，不解绑注册或回滚消息／业务delivery。
+- 必须验收：真实producer first-create Tx→OPUSH Reserve→lease／policy→Begin真实COMMIT→Check→六typed结果；双Store sync holder互斥、旧Release／接管／reopen；同lease重复一次、第8次／崩溃后无第9次、due／expiry／overflow、旧身份／注册／配置／实例及legacy／FCM alert／sync负控；DND不可逆不复活，other_denied零票据不误终止；六结果重试时间／原expiry与重复／迟到no-op、26列投影／storage class、无注册／业务表写入、Check全表digest零写及无token／正文／URL／lease秘密泄漏。
+- 写故障与迁移验收：每条写路径zero row／RAISE IGNORE／SQL／ctx／写后身份／策略／原row篡改／真实deferred FK COMMIT失败均整Tx回滚且不发布票据／changed，正常阴性对照必须成功、注入实际触发。旧1～14升级混合行逐列保持，中段／末段／ledger故障原子，foreign_key_check真零行，旧writer／索引／terminal／immutable真实拒绝，new opush正控／FCM alert负控及reopen；不能以静态SQL审计替代动态兼容验证。
+- 最小验证／完成门禁：根另授Go后先冻结实际source／embed／工具及普通和race依赖输入，记录每命令env／SHA／pre-post／exit／FAIL／NOT_RUN。新attempt／迁移包全case与sync兼容／Drop／OPUSH组合普通及相同race定向，使用既有 `go test -json -count=1 -p=1` 与对应 `-race`，不改timer／默认timeout／断言、不拆旧native族；新迁移须全服普通、实际受影响race（独审核闭包后固定范围），以及mod verify／vet ./...／build ./...／允许源格式／diff检查。历史Producer／OPUSH可信矩阵不重复全跑，也不借旧输入称新EXACT_MATCH／CI；不预承诺race ./... PASS。本地独立commit→不同固定SHA完整链审计→必要编号修复重审→准确组合I01→根决定done；超5主文件或预算（初始≤12k tokens、材料输出≤窗口60%、留≥25%交接）先checkpoint。
+- 明确边界：不接worker／main／HTTP／adapter／envelope／真实vendor或FCM send，不自动激活资格、不跨渠道补响、不加外部状态库。票据／Check不消除Tx外窗口或撤回外发；全时段DND捕获、永久source/read终止仍父剩余验收。CAS reply、平台／手机／Android／global／RelayShelf及部署发布不放行。当前所有动态与质量检查NOT_RUN，既有历史失败／近限／闭包缺项限制保留。
+
 <a id="be-10-02-pending-read"></a>
 
 #### BE-10-02-PENDING-READ 现有同步待办可信事务只读投影与水位归并

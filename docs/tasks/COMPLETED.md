@@ -28,6 +28,30 @@
 
 ## Go 后端（Bot Hub）
 
+<a id="g5-be10-next-r01"></a>
+
+### BE10-NEXT-R01／ALERT-ATTEMPT-RESULT-CONTRACT-R01 下一有限内部叶只读核证
+
+- 终态：`done`（2026-11-13，根采纳不同 Auditor `/root/backend_next_r01_a01` 正式 PASS／无编号发现及授权补充，批准研究有限叶完成）。Planner `/root/backend_next_r01` 已交付静态合同核证及下一唯一实施包；仅研究完成，不是 alert attempt/result 功能实现、DDL 落地、父任务或平台验收完成。只读固定产品无新业务提交可 cherry-pick，根据下述精确适用核验核收，不虚构产品 I01。
+- 固定根 `resume/backend-20261026@51ce28c96549cf4e685f69e2680c5702c91efbdb`。Metadata `/root/opush_metadata` 提交前核 HEAD 准确、server／web 对该基线无差异，Planner 五主文件及 Auditor 23 项 read-index 当前字节／hash 全匹配（BACKEND 仅根登记 dirty，明确非固定业务源）；声明 equal_fixed_baseline 的项目均与固定 Git 对象同值。OPUSH `53a71f52550115efdc8d39dc41e363178bcdb26a`、Producer `1d7bcf0c448e515c52c45ec559f88aa1d85009bb`、AlertLease `d08d39ec11ec1f07319e413bd0af3e186d49357a`、typed policy `d4a7c0f07feb36d38dd58d38018e0120bd385a95`、DND Drop `4abd54d64868c0143c109df6e054f758340c2f43`、SyncAttempt `0e01b88aa7e93af899b7534208ff0e251f4a4760` 六依赖均为祖先；历史功能 PASS 仅按原归档信任，不重审长日志或扩大动态结论。
+- Planner 正式 `/tmp/relaynest-be10-next-r01-20261113/handoff.md` SHA256 `3c36c8e3316b70b361f938df91968faa89755f0184ddf1d96fbf9cb6e985cba5`、`evidence.json` `a728e181fc9369bcfd013e18d763270b831919ffeeed12afcc567544df415228`；不同 A01 `/tmp/relaynest-be10-next-r01-a01-20261113/handoff.md` `88d9f321b85bdf90561e9f4e56b4035962fcd7ebff3bffd9efda98d2a4f7e2b6`、`index.json` `0a3f50a767e44a1ffd83ecc4bd89a177b0e86e06ad9e9b65367d26071296efd0`、`read-index.json` `7cdf66f2c76ae6a80a334d52628aa2439580f1adf3941e3c2a1fa875e9650e0b` 均实核，原交接／证据不改写。
+- **授权更正链**：A01 同目录 `authorization-supplement.md` SHA256 `128da8717301cbb9fa40b78dd08b22392de0e9913d10c77d371991d5c6963262` 更正原 Planner／A01 “需额外用户 DDL 确认”的过保守建议，技术 PASS 不变。角色当轮只读禁令不等于用户缺授权；父范围及 TECHNICAL_DESIGN §9.1／9.3 已冻结行为，有限 opush 内部兼容迁移可依已有持续授权由根派 Implementer，当前无须新增用户决定。旧交接保留，后续按此补充与根批准准入；若实际扩大需求／架构／安全／外部接口再按 AGENTS 原则3确认。补充本身不授 Planner／Auditor 产品写权。
+- 静态合同结论：0014 的 accepted／degraded 与 attempt 五列组两处仍 sync-only；既有 SyncAttempt／Outcome／Check 也只支持 sync，不是 alert API。沿现有26列实现 opush alert 持久尝试／结果需一份新兼容迁移；仅扩大至原 AlertEligible=true 完整 opush alert，不改旧0001～0014、不加列／表／索引／状态／外部状态库、不放宽FCM alert。reader 已支持 accepted／degraded，无证据要求第六主实现文件；SQL 结论来自静态读取，未伪造运行错误，也不声称所有替代架构均不可行。
+- 准入合同与最小提案：Begin 在单个自有短写Tx内复核原lease／身份／版本／期限／当前policy，扣一次并持久 fence，真实COMMIT后才发布脱敏私有票据；同lease幂等，8次／原24h到期上限，耗尽仅push degraded。明确typed DND在同Tx复用既有drop guard／投影不可逆终止，other_denied／error不得误 suppressed；即时Check只读复核全部guard和policy。六typed结果条件写原snapshot＋lease＋attempt：accepted→accepted，target_invalid／configuration_error→degraded，transient／rate_limited／unknown_delivery以10秒倍增、上限10分且next<原expiry、attempt<8才queued，否则degraded。结果记录已发生尝试，以原身份／版本／期限fence，不要求当前policy通过、不给新发送许可；下一Begin／Check仍完整policy复核。不解绑注册、不回滚消息／业务delivery、不跨渠道补响。完整实施范围、五主路径、兼容／故障矩阵及验证门禁已登记 [ALERT-OPUSH-ATTEMPT-STORAGE](BACKEND.md#be-10-02-alert-opush-attempt-storage)，不再重复派同一准备研究。
+- 限制与后续：普通／race／质量、Go／gofmt／npm、SQLite运行、平台／CI／手机均 NOT_RUN（只读研究及审计，无Go窗口），无新产品提交／迁移／动态PASS。全时段DND捕获及永久source/read拒绝终止仍是父剩余验收；票据和Check不消除Tx外窗口、不代表外发资格或可撤回外发。原OPUSH／Producer／DND历史失败、近600秒、输入闭包／overlay缺项及whole／native race／CI限制全部保留。0014永久占用，新迁移号未分配；CAS reply、worker／main／HTTP／真实send／资格激活、平台／Android／global／RelayShelf及部署发布不在本叶。Planner／A01临时输出锁已释放；唯一Go仍根保留，实施派发与迁移号／工作树／index及路径锁须根明确登记。
+
+#### 原规划登记（历史状态及额外确认建议以上述终态和授权补充为准）
+
+<a id="be10-next-r01"></a>
+
+#### BE10-NEXT-R01 已完成OPUSH后的下一有限叶规划
+
+- 状态：`ready`→`running`（2026-11-13，根确认 OPUSH A01／I01／归档完成后继续调度）；角色 Planner，已创建实际 ID `/root/backend_next_r01`，固定基线 `51ce28c96549cf4e685f69e2680c5702c91efbdb`，唯一目标仍项目根 `resume/backend-20261026`。仅规划已授权 BE-10-02 父范围中下一个依赖已精确集成的有限内部叶，不整组实施，不重做 Producer／OPUSH。
+- 允许范围：只读既有任务／设计及必要源码以核可执行边界；仅自己新 `/tmp` 交接材料可写，无产品／任务文档／index写权，不授Go／gofmt／npm。回交一个明确首选有限叶、准确依赖SHA、冻结接口、3～5主要文件及必要测试、验收与最小验证、禁止项／锁和需要用户决定的问题；无新DDL／公开契约／平台发送／资格激活授权，CAS reply继续待决。规划须不同Auditor核审后才供后续实施；没有新实施或PASS预填。
+
+- R01 具体交付／独审登记（2026-11-13）：Planner `/root/backend_next_r01` 已完成下一有限只读叶 `ALERT-ATTEMPT-RESULT-CONTRACT-R01` 核证及最小提案，R01 running→review。固定 `51ce28c96549cf4e685f69e2680c5702c91efbdb`，现有0014两处sync-only约束为待独审证据，拟仅兼容扩展eligible opush alert，未授权DDL／未分配0015。交接 `/tmp/relaynest-be10-next-r01-20261113/handoff.md` SHA256 `3c36c8e3316b70b361f938df91968faa89755f0184ddf1d96fbf9cb6e985cba5`；五主文件 `evidence.json` SHA256 `a728e181fc9369bcfd013e18d763270b831919ffeeed12afcc567544df415228`。普通／race／质量均NOT_RUN，产品及仓库未改。下一独立Auditor planned `/root/backend_next_r01_a01`，只读核证固定源／设计／矩阵和最小授权需求，正式PASS／编号问题后根再决定状态及必要用户确认，不提前放行实施。
+- R01 A01 创建确认（2026-11-13）：不同 Auditor 实际 ID `/root/backend_next_r01_a01` 已创建，审计子步骤planned→running；仅新临时审计交接可写，产品／任务文档／Go窗口未授。
+
 <a id="g5-be10-alert-opush-scoped-reserve"></a>
 
 ### BE-10-02-ALERT-OPUSH-SCOPED-RESERVE 完整 opush alert 限定内部预留
