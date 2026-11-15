@@ -621,7 +621,7 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-10-02-ALERT-OPUSH-SCOPED-RESERVE 完整opush alert限定内部预留
 
-已完成有限预留叶：[完整原范围／验收、源链、不同A01及准确I01组合与全部历史限制](COMPLETED.md#g5-be10-alert-opush-scoped-reserve)。source `11a150a475966b82ce88e04a0079fda7655a155c` 准确一次映射 canonical `53a71f52550115efdc8d39dc41e363178bcdb26a`，含既有Producer的新普通／race各joint3／3、scope16／37、OPUSH6／19及质量PASS；native闭包测试后确认为事前union子集，非事前枚举。旧whole／完整native race仅历史引用，不宣称含Producer完整闭包EXACT_MATCH或新whole／CI。父BE-10-02、最终发送／平台／Android global及CAS reply仍未完成；0014永久占用、0015未配，无DDL。实施／审计／集成写锁及Go窗口均释放给根，后续有限任务另行派发。
+已完成有限预留叶：[完整原范围／验收、源链、不同A01及准确I01组合与全部历史限制](COMPLETED.md#g5-be10-alert-opush-scoped-reserve)。source `11a150a475966b82ce88e04a0079fda7655a155c` 准确一次映射 canonical `53a71f52550115efdc8d39dc41e363178bcdb26a`，含既有Producer的新普通／race各joint3／3、scope16／37、OPUSH6／19及质量PASS；native闭包测试后确认为事前union子集，非事前枚举。旧whole／完整native race仅历史引用，不宣称含Producer完整闭包EXACT_MATCH或新whole／CI。父BE-10-02、最终发送／平台／Android global及CAS reply仍未完成；本reserve叶无DDL，0014永久占用；0015已由[attempt叶](COMPLETED.md#g5-be10-alert-opush-attempt-storage)canonical永久占用、0016未分配。实施／审计／集成写锁及Go窗口均释放给根，后续有限任务另行派发。
 
 <a id="be10-preflight-a01"></a>
 
