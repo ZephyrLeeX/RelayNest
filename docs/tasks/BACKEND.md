@@ -534,7 +534,9 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-10-02-ALERT-OPUSH-WORKER-CORE 完整opush alert内部单步假adapter编排
 
-- 当前状态：`running`（2026-11-15，Implementer实际ID `/root/alert_opush_worker_implementer` 创建成功，ready→running）；固定基线 `963a6d25f38fff913bdb899974605b42d0decde7`，仅上述批准的隔离树／四路径／index及唯一Go窗口移交生效。所有动态检查尚待实现者实证，不预PASS；未提交source／未独审／未集成，父仍未完成。以下初始准入与派发过程保留为历史，当前资源授权以本状态及末尾创建确认为准。
+- 当前状态：`review`（2026-11-15，根采纳Implementer正式交接，running→review）；准确source `1e6c1ed8d0b5d1e212f9f8ead8de2e1ef1766f72`，直接parent／实施基线 `963a6d25f38fff913bdb899974605b42d0decde7`。四路径／隔离树index与Go／gofmt已释放，Go窗口归根；不同A01已创建运行、尚无独审结论／未集成／未done，正式PASS前不放行I01，父仍未完成。以下初始准入和派发过程均保留为历史，当前状态及末尾正式交接为准。
+
+- 创建阶段状态（历史）：`running`（2026-11-15，Implementer实际ID `/root/alert_opush_worker_implementer` 创建成功，ready→running）；固定基线 `963a6d25f38fff913bdb899974605b42d0decde7`，仅上述批准的隔离树／四路径／index及唯一Go窗口移交生效。所有动态检查尚待实现者实证，不预PASS；未提交source／未独审／未集成，父仍未完成。以下初始准入与派发过程保留为历史，当前资源授权以本状态及末尾创建确认为准。
 
 - 初始准入（历史）：状态 `ready`（2026-11-15，根采纳上述正式执行包，依赖已集成，持续授权覆盖有限fake-only内部框架）；未实施／未测试／未独审／未集成，父BE-10-02仍未完成。拟Implementer planned `/root/alert_opush_worker_implementer`，计划隔离树 `/tmp/relaynest-be10-opush-worker-20261115`，分支 `impl/backend-be10-opush-worker-20261115`（根本轮指定）；实施前实际核树／分支／四路径可用，不覆盖现场。准入核证基线 `44da7d2b3aa6f2d2823759fa3359adb0a3837e3d`，正式实施基线为本次Metadata提交后实际回报SHA，派发时根登记并核产品同值，不在本提交内自引用自身SHA。
 - 七个准确依赖（Planner已核均为基线祖先）：Producer `1d7bcf0c448e515c52c45ec559f88aa1d85009bb`；OPUSH Reserve `53a71f52550115efdc8d39dc41e363178bcdb26a`；Alert Attempt／Check／Result `784d6602817d5be08178522d74d2c163e1dcaec8`（A01-001 CLOSED）；SyncWorker `6113767418f9299cf0c18464db0d094b67948314`（仅模式参考）；AlertLease `d08d39ec11ec1f07319e413bd0af3e186d49357a`；typed policy `d4a7c0f07feb36d38dd58d38018e0120bd385a95`；DND Drop `4abd54d64868c0143c109df6e054f758340c2f43`。已完成叶不重做，不以父done为前置；平台审核／手机／FCM或OPPO网络非本fake-only叶前置。
@@ -550,6 +552,13 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - 实施派发（2026-11-15）：根已批准planned Implementer `/root/alert_opush_worker_implementer`，固定实施基线 `963a6d25f38fff913bdb899974605b42d0decde7`／目标 `resume/backend-20261026`（产品对Planner `44da7d2…` 同值）；计划唯一隔离树 `/tmp/relaynest-be10-opush-worker-20261115`、分支 `impl/backend-be10-opush-worker-20261115`，先实际核既有树／分支及四新路径可用，不覆盖现场。仅本叶精确四路径及该隔离树index排他写权，root文档／index由Metadata独占，Implementer不写root。根明确移交唯一Go／gofmt窗口，固定Go1.27.3、普通／race实际闭包及工具freeze后，仅完整 `TestOPushAlertWorker` 前缀普通／race及mod verify／vet ./...／build ./...／四路径fmt／diff；npm仅确需锁版embed准备并先核已有输入，优先复用同版真实embed，不升级依赖或工具。原契约／禁区保持，0015永久占用、0016未分配；实际创建确认前保持ready，不预写running或检查PASS。实现者提交正式source并交接实际检查后释放四路径／隔离index／Go窗口，再交不同Auditor固定SHA独审与准确I01；本登记不授其他writer，不代实现者写报告。
 
 - 实际创建确认（2026-11-15）：Implementer `/root/alert_opush_worker_implementer` 已创建成功（独立上下文），本叶ready→running；既定四路径／隔离树唯一index写权与唯一Go／gofmt窗口正式移交该实现者，仍须先核树可用及固定输入，未因创建预填检查结果。Metadata仅root文档／index写权，提交本checkpoint核收后释放；根不直接改文档，不与实现者共享index。
+
+- Source正式交接（2026-11-15）：Implementer已提交 `1e6c1ed8d0b5d1e212f9f8ead8de2e1ef1766f72`，准确parent `963a6d25f38fff913bdb899974605b42d0decde7`，提交 `feat(server): add single-step opush alert worker`；原隔离树clean、index无锁，仅四授权新增路径，117行生产＋748行测试（原估算有偏差但路径及职责未扩）。正式 `/tmp/relaynest-be10-opush-worker-evidence-20261115/handoff.md` SHA256 `76a7739895913aeb6acb5232b7558222302caa35a304ac36a7c6484fe557d7e1`，index `a8e2b0d3cfa591e390e6dace2a7ece057033ac42447a2fcb330df42ae613a880`（122项），Metadata只核交接元数据／hash，不代技术审查。
+- 验证阶段适用摘要（2026-11-15）：最终完整普通前缀11顶层／86身份PASS，0 FAIL／SKIP；原完整race11／86 PASS后仅 `TestOPushAlertWorkerMixedScopeAndSyncHolder` 补排序键／顺序断言，产品与共用fixture未变，根批准最终该完整顶层定向race1／3 PASS，不重复150秒完整race。旧race受测test在race后、补强前封存且hash同事前snapshot；旧plain freeze在verify时从修改前manifest事后重建，明确非事前封存。最终普通全集已自然完成，最终相关包vet／四文件fmt／cached diff PASS；排序补强前mod verify／vet ./...／build ./... PASS按实际stage及不变产品范围适用，不冒最终test完整race／whole质量重新实跑或最终整个closure EXACT_MATCH。普通256包2873文件、race258包2881文件、quality312包2953文件、工具20／source230；每命令env／exit／日志hash／pre-post见原证据，系统库／内核／全部cache无全域持续不可变证明。
+- 失败与边界保留：两轮新test fixture失败、cache只读／首次freeze解析失败、原worktree权限及首次提交缺作者身份失败等原件均保留，未弱化旧test／timer／timeout；三件真实锁版embed仅同hash复用，npm／旧whole／完整native慢族／CI／平台／手机NOT_RUN。Begin后Check只读拒绝仍可leased待到期恢复，全时段DND／永久source-read终止与TOCTOU仍父缺口，不宣传真实send／平台／资格激活。0015永久占用、0016未分配；四路径／隔离树index／Go已释放，无在途Go命令，不push／main／清树／systemd。
+- A01准备派发（2026-11-15）：planned不同Auditor `/root/alert_opush_worker_a01`，固定完整 `963a6d25f38fff913bdb899974605b42d0decde7`→`1e6c1ed8d0b5d1e212f9f8ead8de2e1ef1766f72` source独审及全部阶段证据核收；产品／旧证据只读，仅自己新 `/tmp` 审计材料可写，Go未授、仍根保留。创建成功后回填实际ID；正式PASS前I01不放行，不因实施交接提前done。
+
+- A01实际创建确认（2026-11-15）：不同Auditor实际ID `/root/alert_opush_worker_a01` 已创建（独立上下文），独审子步骤planned→running；固定上述完整source，产品／旧证据只读，仅自有新临时审计材料可写，不授Go，Go窗口根保留，I01仍未放行。测试739行为补强前估算，正式提交统计748行仅原两新test，路径预算未增加；保留阶段差异，不改原证据。
 
 <a id="be10-next-r01"></a>
 
