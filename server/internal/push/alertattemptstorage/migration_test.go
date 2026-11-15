@@ -194,7 +194,8 @@ func TestMixedMigrationAtomicityAndReopen(t *testing.T) {
 			}
 			switch fault {
 			case "middle":
-				if _, e := db.Exec(`CREATE TABLE push_jobs_opush_alert_attempt(id TEXT)`); e != nil {
+				// 此 view 在复制前有效；DROP 旧表后，真正替换表的 ALTER 才因失效引用失败。
+				if _, e := db.Exec(`CREATE VIEW migration_middle_fault AS SELECT id FROM push_jobs`); e != nil {
 					t.Fatal(e)
 				}
 			case "end":
@@ -206,11 +207,28 @@ func TestMixedMigrationAtomicityAndReopen(t *testing.T) {
 					t.Fatal(e)
 				}
 			}
+			if fault == "middle" {
+				var count int
+				if e := db.QueryRow(`SELECT count(*) FROM migration_middle_fault`).Scan(&count); e != nil || count != len(wants) {
+					t.Fatal("middle view must be valid before replacement", e, count)
+				}
+			}
 			s, e := storage.Open(ctx, storage.Config{Path: path})
 			if fault != "none" {
 				if e == nil {
 					s.Close()
 					t.Fatal("fault accepted")
+				}
+				if fault == "middle" {
+					// 唯有复制并删除旧表后，ALTER 的 schema 校验才会报此 view 引用失效。
+					if !strings.Contains(e.Error(), "error in view migration_middle_fault") || !strings.Contains(e.Error(), "no such table: main.push_jobs") {
+						t.Fatal("middle fault did not reach table replacement", e)
+					}
+					t.Logf("reached table replacement: %v", e)
+					var temporaryTables int
+					if e := db.QueryRow(`SELECT count(*) FROM sqlite_schema WHERE type='table' AND name='push_jobs_opush_alert_attempt'`).Scan(&temporaryTables); e != nil || temporaryTables != 0 {
+						t.Fatal("middle replacement table not rolled back", e, temporaryTables)
+					}
 				}
 				var count int
 				if e = db.QueryRow(`SELECT count(*) FROM schema_migrations`).Scan(&count); e != nil || count != 14 {
@@ -228,7 +246,7 @@ func TestMixedMigrationAtomicityAndReopen(t *testing.T) {
 				}
 				switch fault {
 				case "middle":
-					_, e = db.Exec(`DROP TABLE push_jobs_opush_alert_attempt`)
+					_, e = db.Exec(`DROP VIEW migration_middle_fault`)
 				case "end":
 					_, e = db.Exec(`DROP TABLE push_jobs_pending`)
 				case "ledger":
