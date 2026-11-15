@@ -534,7 +534,9 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-10-02-ALERT-OPUSH-WORKER-CORE 完整opush alert内部单步假adapter编排
 
-- 当前状态：`review`（2026-11-15，根采纳Implementer正式交接，running→review）；准确source `1e6c1ed8d0b5d1e212f9f8ead8de2e1ef1766f72`，直接parent／实施基线 `963a6d25f38fff913bdb899974605b42d0decde7`。四路径／隔离树index与Go／gofmt已释放，Go窗口归根；不同A01已创建运行、尚无独审结论／未集成／未done，正式PASS前不放行I01，父仍未完成。以下初始准入和派发过程均保留为历史，当前状态及末尾正式交接为准。
+- 当前状态：`integrating`（2026-11-15，根采纳不同A01正式PASS、无编号，review→integrating）；固定source `1e6c1ed8d0b5d1e212f9f8ead8de2e1ef1766f72`／parent `963a6d25f38fff913bdb899974605b42d0decde7`。实施及审计占用均释放；I01仅planned、尚未创建／集成，未done，父仍未完成；Go窗口仍根保留，当前授权以本状态及末尾I01准入为准。
+
+- Source交接阶段状态（历史）：`review`（2026-11-15，根采纳Implementer正式交接，running→review）；准确source `1e6c1ed8d0b5d1e212f9f8ead8de2e1ef1766f72`，直接parent／实施基线 `963a6d25f38fff913bdb899974605b42d0decde7`。四路径／隔离树index与Go／gofmt已释放，Go窗口归根；不同A01已创建运行、尚无独审结论／未集成／未done，正式PASS前不放行I01，父仍未完成。以下初始准入和派发过程均保留为历史，当前状态及末尾正式交接为准。
 
 - 创建阶段状态（历史）：`running`（2026-11-15，Implementer实际ID `/root/alert_opush_worker_implementer` 创建成功，ready→running）；固定基线 `963a6d25f38fff913bdb899974605b42d0decde7`，仅上述批准的隔离树／四路径／index及唯一Go窗口移交生效。所有动态检查尚待实现者实证，不预PASS；未提交source／未独审／未集成，父仍未完成。以下初始准入与派发过程保留为历史，当前资源授权以本状态及末尾创建确认为准。
 
@@ -559,6 +561,9 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 - A01准备派发（2026-11-15）：planned不同Auditor `/root/alert_opush_worker_a01`，固定完整 `963a6d25f38fff913bdb899974605b42d0decde7`→`1e6c1ed8d0b5d1e212f9f8ead8de2e1ef1766f72` source独审及全部阶段证据核收；产品／旧证据只读，仅自己新 `/tmp` 审计材料可写，Go未授、仍根保留。创建成功后回填实际ID；正式PASS前I01不放行，不因实施交接提前done。
 
 - A01实际创建确认（2026-11-15）：不同Auditor实际ID `/root/alert_opush_worker_a01` 已创建（独立上下文），独审子步骤planned→running；固定上述完整source，产品／旧证据只读，仅自有新临时审计材料可写，不授Go，Go窗口根保留，I01仍未放行。测试739行为补强前估算，正式提交统计748行仅原两新test，路径预算未增加；保留阶段差异，不改原证据。
+
+- A01正式结论／I01准入（2026-11-15）：不同Auditor `/root/alert_opush_worker_a01` 对准确 `963a6d25f38fff913bdb899974605b42d0decde7`→`1e6c1ed8d0b5d1e212f9f8ead8de2e1ef1766f72` 完整四路径差异及原122项证据正式 **PASS**，无发现编号。交接 `/tmp/relaynest-be10-opush-worker-a01-20261115/handoff.md` SHA256 `2a5f6be9a1146d18244b33feccbbe48b930eaffdea587956329525e91276b6d9`，index `8fad6525ec49ad829ba0b3aa2b7e0eb300e44dd0bee1f6f25a12093f4b997716`（3项）；全部审计占用释放，未Go／修改源码或旧原件。最终普通11／86、原完整race11／86、最终mixedscope完整顶层race1／3及质量按真实stage分别成立，不冒最终完整race闭包exact、whole重跑或CI；旧FAIL／事后重建freeze及DND／source-read父缺口保持，根正式采纳review→integrating，尚未done。
+- I01 planned派发（2026-11-15）：拟不同Integrator `/root/alert_opush_worker_i01`，**仅planned，尚未创建**；计划候选树 `/tmp/relaynest-be10-opush-worker-i01-20261115`，分支 `integrate/backend-be10-opush-worker-i01-20261115`，先核现场可用、不覆盖。正式唯一目标 `resume/backend-20261026` 以本次Metadata checkpoint实际回报提交SHA为准（相对实施基线仅元数据），不在本提交自引用SHA；精确 `cherry-pick -x` 仅source `1e6c1ed8d0b5d1e212f9f8ead8de2e1ef1766f72`，保所有旧文档与现场。I01须核来源／完整patch、产品及测试tree、工具／实际输入与各stage证据适用；候选同受审source业务字节且目标额外仅元数据时，允许必要检查按stage精确reuse，不为形式重跑可信PASS，不称最终whole／fullrace EXACT_MATCH。无冲突且必要核证PASS可安全ff该唯一目标；冲突产生新业务字节须报告重审。根在本checkpoint提交、Metadata释放root文档／index后才创建I01并另授候选／目标必要写权，不与Metadata root写入并行；Go仍根保留、不授Integrator，确需新增动态先交计划。后续创建成功由根回报实际ID供最终登记；未改main／push／systemd／清树，0015永久占用、0016未分配。
 
 <a id="be10-next-r01"></a>
 
