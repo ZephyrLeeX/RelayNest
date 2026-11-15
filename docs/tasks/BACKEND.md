@@ -521,6 +521,13 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 先用假adapter验证框架/FCM路径，OPPO外部审核不阻该有限任务；假结果不算厂商真机通过。PUSH-D2/D3已批准切换仅未来新事件、外发在途残余和离线展示限制；本地fencing不能撤回已外发，不以批准替代P02-05验证。发送失败不回滚消息，推送耗尽不进业务failed、不保护普通历史，DND/全部已读任务不复活。
 
+<a id="be10-next-after-attempt-r01"></a>
+
+#### BE10-NEXT-AFTER-ATTEMPT-R01 下一有限后端叶规划
+
+- 状态：`running`（2026-11-15，用户明确从已完成OPUSH attempt/result checkpoint继续，根已创建Planner）；owner／角色：Planner，实际ID `/root/backend_next_after_attempt_r01`，固定基线 `resume/backend-20261026@a78bc9a961cf194a91781870a7b5e0706be75706`。单一目标：只读核对BACKEND／COMPLETED及实际已集成依赖，优先提出BE-10-02下一个可独立实施的有限叶；若本父无可行叶再核其他依赖满足的Backend叶，全部受阻才回报具体阻碍。已done的Producer／OPUSH reserve／OPUSH attempt-result及其已关闭A01-001不重做；研究运行不提前把候选标ready或done，父BE-10-02仍未完成。
+- 写权／门禁：Planner仅自己新 `/tmp` 交接材料可写，产品、任务文档、旧证据及refs只读，无worktree／index写权；Go／gofmt／npm未授，Go及产品文件锁仍根保留。0015已canonical永久占用、0016未分配，本轮不分配新迁移或实施写锁。Metadata独占BACKEND文档／index保存本登记，提交核收后释放；Planner正式交接并释放自有临时输出后，根再决定不同独审及选叶准入，候选产品／迁移号／文件和Go锁均须另行登记，不由规划自动取得。
+
 <a id="be10-next-r01"></a>
 
 #### BE10-NEXT-R01 已完成OPUSH后的下一有限叶规划
@@ -603,19 +610,19 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 #### BE-10-02-ALERT-DND-DROP-STORAGE 已预留alert命中DND的不可逆内部终止
 
-已完成有限持久叶：[完整原验收／8提交映射、A01～A05／F1～F7闭环及精确I01新跑／闭包复用／全部历史](COMPLETED.md#g5-be10-alert-dnd-drop-storage)。准确canonical `4abd54d64868c0143c109df6e054f758340c2f43`，I01新历史普通／race6／27、DND＋sync11／78及质量检查PASS，15包原生race闭包精确复用充分，不冒新whole／CI。0014已canonical永久占用，0013及SQL1～13保持，0015未分配；产品／Go锁释放。仅实际预留DND alert不可逆终止，父BE10-02仍未完成，真实发送／平台／全局门槛不放行。
+已完成有限持久叶：[完整原验收／8提交映射、A01～A05／F1～F7闭环及精确I01新跑／闭包复用／全部历史](COMPLETED.md#g5-be10-alert-dnd-drop-storage)。准确canonical `4abd54d64868c0143c109df6e054f758340c2f43`，I01新历史普通／race6／27、DND＋sync11／78及质量检查PASS，15包原生race闭包精确复用充分，不冒新whole／CI。0014已canonical永久占用，0013及SQL1～13保持；当时0015未分配，现已由attempt叶永久占用、0016未分配；产品／Go锁释放。仅实际预留DND alert不可逆终止，父BE10-02仍未完成，真实发送／平台／全局门槛不放行。
 
 <a id="be-10-02-sync-enqueue-watermark-merge"></a>
 
 #### BE-10-02-SYNC-ENQUEUE-WATERMARK-MERGE 同消息事务的sync水位归并
 
-已完成有限归并叶：[完整源链／原验收、不同A01及精确I01新跑／闭包复用／全部历史](COMPLETED.md#g5-be10-sync-enqueue-watermark-merge)。单source1e104准确-x canonical `d52164e385b26b4500f33ee508cda6850f8c0382`，I01新历史各6／27、native21／114及质量PASS，16包闭包精确reuse覆盖456／2389，非新whole／CI。SQL1～14不变，0014永久占用／0015未配；产品／Go锁释放，父仍未完成。
+已完成有限归并叶：[完整源链／原验收、不同A01及精确I01新跑／闭包复用／全部历史](COMPLETED.md#g5-be10-sync-enqueue-watermark-merge)。单source1e104准确-x canonical `d52164e385b26b4500f33ee508cda6850f8c0382`，I01新历史各6／27、native21／114及质量PASS，16包闭包精确reuse覆盖456／2389，非新whole／CI。本叶SQL1～14不变，0014永久占用；当时0015未配，现已由attempt叶永久占用、0016未分配；产品／Go锁释放，父仍未完成。
 
 <a id="be-10-02-alert-origin-enqueue-tx"></a>
 
 #### BE-10-02-ALERT-ORIGIN-ENQUEUE-TX 首次消息事务的原始app alert资格生产
 
-已完成有限生产叶：[完整源链／原验收、A01／F1／V01／A02编号关闭及精确I01新组合／历史复用与全部限制](COMPLETED.md#g5-be10-alert-origin-enqueue-tx)。准确 canonical `1d7bcf0c448e515c52c45ec559f88aa1d85009bb`，I01新普通／race各6／60及质量PASS，18包普通467／2534仅精确历史reuse；五native race历史缺18个race-tag事前hash及generated-overlay-testmain逐stage记录缺项等限制见归档，不冒新whole／CI。仅可信first-create事务内部资格生产，main／Webhook真实接线、平台发送、Android／global及父BE-10-02仍未完，CAS reply待决保持；无新DDL，0014永久占用／0015未配。A产品／Go锁已释放；下方OPUSH亦已完成准确组合并释放Go，后续窗口由根另授。
+已完成有限生产叶：[完整源链／原验收、A01／F1／V01／A02编号关闭及精确I01新组合／历史复用与全部限制](COMPLETED.md#g5-be10-alert-origin-enqueue-tx)。准确 canonical `1d7bcf0c448e515c52c45ec559f88aa1d85009bb`，I01新普通／race各6／60及质量PASS，18包普通467／2534仅精确历史reuse；五native race历史缺18个race-tag事前hash及generated-overlay-testmain逐stage记录缺项等限制见归档，不冒新whole／CI。仅可信first-create事务内部资格生产，main／Webhook真实接线、平台发送、Android／global及父BE-10-02仍未完，CAS reply待决保持；本叶无新DDL，0014永久占用；当时0015未配，现已由attempt叶永久占用、0016未分配。A产品／Go锁已释放；下方OPUSH亦已完成准确组合并释放Go，后续窗口由根另授。
 
 <a id="be-10-02-alert-opush-scoped-reserve"></a>
 
