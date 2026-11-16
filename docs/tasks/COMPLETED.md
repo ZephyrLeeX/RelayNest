@@ -28,6 +28,30 @@
 
 ## Go 后端（Bot Hub）
 
+<a id="g5-be10-push-scheduler-core"></a>
+
+### BE-10-02-PUSH-SCHEDULER-CORE sync／opush内部串行周期调度
+
+- 终态：`done`（2026-11-16，根采纳不同A01 PASS／无编号、准确I01 PASS，批准本有限叶 integrating→done；无需Fixer）。前置Metadata基线 `5f80b256940630f78bc44d6711734cf0b1233e10`→Implementer `/root/push_scheduler_implementer` 直接子source `b182c44c869dea8ca72fb931eb0f81fe463b403a`（`feat(server): 增加内部推送串行周期调度`）。仅三授权新增文件：`server/internal/push/push_scheduler.go`、`alertattemptstorage/push_scheduler_test.go`、`push_scheduler_fault_test.go`，559新增行；未修改既有源码／worker／fixture、依赖、DDL或冻结行为。
+- 内部能力：Run在任何Step前校验ctx／完整依赖／正interval，单实例最多一个Run；立即首周期，sync→opush各一次串行Step，每步前核ctx，两步正常后等完整interval，不追赶／并发／立即重试。error即终止，panic原样传播，取消／error／panic均释放占用与timer，退出可重启。忽略ctx的在途fake须等返回才退出，不造外发goroutine伪即时取消。无跨Step事务、自行Reserve／Release／扣次／Drop，也无main／HTTP／配置／凭据或平台装配；保持旧Check拒绝后租约到期恢复。
+- A01：不同Auditor `/root/push_scheduler_auditor` 固定上述base／source独审PASS，无发现编号；直接核三个新增文件及两个原worker、时序／重入／取消／panic清理、真实仓储故障和旧DND／read边界。独立新跑 `go test -json -count=1 -p=1 ./internal/push/alertattemptstorage -run '^TestPushScheduler'` 7顶层／28身份PASS、0fail／skip及diff check；race与质量仅核原实施日志／输入，非Auditor重跑。正式 `/tmp/relaynest-push-scheduler-audit-20261116/A01.md` SHA256 `f31e72f8171e7df5c15c60ec6bd4b67826a85d8dbebbde9210f332da1d7f9ce9`。
+- 准确I01：不同Integrator `/root/push_scheduler_integrator` PASS；新候选树 `/tmp/relaynest-be10-push-scheduler-i01-20261116`、分支 `integrate/backend-be10-push-scheduler-i01-20261116`，一次无冲突 `cherry-pick -x` 得canonical `67569e8c6be843f57d806be6807665a76072be99`。source／candidate／集成后root完整tree均 `d4508c200c57cb010a327e9dbd0a4b9b1f19d7cb`，无新业务字节；唯一目标 `resume/backend-20261026` 由前置基线安全ff。正式 `/tmp/relaynest-push-scheduler-i01-20261116/I01.md` SHA256 `c587cb94bb381c6abfdc197515a22d78875e1149cb026f4641bfd8b7a53ab814`，`integration.json` SHA256 `c764e39482dd01425b4988ec12aaf5e28a0f889edb0022f853c5161978099fe9`。
+- 实施矩阵与输入：Go1.27.3、GOTOOLCHAIN=local／GOFLAGS=-mod=readonly／CGO_ENABLED=1／GOPROXY=off、三件真实锁版embed；最终新增普通／race各7／28，0fail／skip、自然exit0；mod verify／vet ./...／build ./...／三文件fmt／diff及staged-diff均PASS。首轮普通7／28 PASS后补充断言，再跑最终矩阵，不冒初轮为最终字节。交接 `/tmp/relaynest-push-scheduler-evidence-20261116/handoff.json` SHA256 `7bafcde9ced6676c1687910acca21c89c18b4490d74f476b14a0a82d044f75fe`，`source-verification.json` SHA256 `f313e1a5020b2fbf9db61a6567004bffb2d911ea4e5c8d1e5de244b4ecd6f43d`；232个server／CI提交文件与受测字节相同，normal2891／race2902／tool12／source237冻结路径前后同值。I01候选实际新跑普通7／28及mod verify／vet／build／fmt／diff PASS；**race仅核同值复用Implementer7／28，未在候选重跑**。不声称整个系统或共享cache不变。
+- 未测／边界：全套普通／全套race、旧worker全族、CI、生产后台启动／重启恢复及真实平台均NOT_RUN；fake内部循环不算父运行时或最终组合验收。WORKER-CORE历史最终普通11／86 PASS、修改前完整race11／86 PASS、最终定向race1／3 PASS、**最终完整race未重跑**；PROJECTION／DROP-STORAGE全套普通／race未跑限制分别保留。本叶不补Drop、不完成source/read实际终止、DND全时段捕获或TOCTOU收口；旧worker补Drop路径仍needs_user／blocked，不泛化整个Backend blocked，父BE-10-02仍running。
+- 资源／本轮收尾：实施／审计／I01源码、各index及Go窗口均已释放；root受控／Index clean，仅既有 `.worktrees/` 未跟踪，main仍 `01c74a776b0b76fcc6616f60ae637a5a53f18384`。0015永久占用、0016未分配，无push／清树／systemd。Metadata仅归档两文档并保存本轮checkpoint，未跑Go，不新开第4叶或授写；下一轮先核实际HEAD、三叶归档及锁释放，详见BACKEND父checkpoint。
+
+#### 原前置登记（历史状态以上述最终闭环为准）
+
+- 当前状态：`ready`（2026-11-16，根批准既有父短周期／优雅退出义务的最小本地有限叶）；planned Implementer尚未创建、未实施／测试，不预记running或PASS。两个worker依赖已准确集成，不重做已归档PROJECTION／DROP-STORAGE／WORKER-CORE。父BE-10-02仍running；不以父done为前置，不需平台权限或新外部环境。
+- 准入基线：`39449cd6f401b7c2bb73f039169eea67a224bc97`／目标 `resume/backend-20261026`，产品同DROP-STORAGE canonical `b02d1b9334d09f8832a5b53b3d1d13a1be360a69`；前置Metadata提交后以实际回报SHA为实施基线，不自引用自身SHA。既有SyncWorker及OPushAlertWorker的Step／注册代次／用途隔离／结果契约均冻结，本叶只调用既有Step，不接终止仓储。
+- 精确三新增路径：`server/internal/push/push_scheduler.go`、`server/internal/push/alertattemptstorage/push_scheduler_test.go`、`push_scheduler_fault_test.go`。内部 `NewPushScheduler(*SyncWorker, *OPushAlertWorker, time.Duration) *PushScheduler`／`Run(ctx) error`；nil ctx／任一worker nil／interval<=0在任何Step前失败。同实例最多一个Run；结束、取消、error及panic均释放占用，退出后可重新Run，不做跨实例全局互斥承诺。
+- 周期／退出契约：立即首周期，每周期串行各一次sync Step及opush Step，每步前核ctx；正常完成两步后等待完整interval，等待可取消，不追赶、不并发、不立即重试。Step error立即终止，不启动下一步，不日志或附带adapter原始数据；panic原样传播，同时释放占用并清timer。在途fake忽略ctx时必须等该Step真实返回才停止，不造goroutine伪即时退出，不在两个Step间持有跨调用事务。
+- 禁区／预算：不装配main／HTTP／默认配置／凭据／平台，不改两个worker／Begin／Check及“Begin nil／Check false不补Drop、租约到期恢复”冻结合同，不调用任何Drop，不自行Reserve／Release／扣attempt，不改旧测试／fixture／依赖／DDL／既有timeout或timer。只新增三路径，超范围先checkpoint交根；0015永久占用、0016不分配，不清树／main／push／systemd。
+- owner／写锁：Metadata `/root/metadata_current` 暂持root本文件／index排他写锁，提交交接后释放；planned Implementer `/root/push_scheduler_implementer` **尚未创建**。计划新树 `/tmp/relaynest-be10-push-scheduler-20261116`、分支 `impl/backend-be10-push-scheduler-20261116`，当前只读核均不存在、三新增路径均不存在，创建前重核不覆盖现场。源码三路径／新树index及单Go／gofmt窗口仍留根，创建实际实施者并明确移交后才授写／测试；实施者不改root元数据，既有 `.worktrees/` 保留。
+- 验收：新 `TestPushScheduler*` 复用真实producer、两个真实worker与fake adapter，验证Apply及sync→opush串行；空队列后第二Store插入的任务下一周期被发现；blocked fake期间后续Step不启动、第二Store仍能写。覆盖启动前／等待／步间／在途取消（含忽略ctx须等返回边界）、真实仓储error停循环后可重启、同实例重入拒绝及error／panic释放。跨用途holder保持，DND／read Check拒绝仍不补Drop且旧恢复边界保持；无效输入零Step调用。不以假adapter结果充厂商／生产发送验收，不修改旧断言来满足新循环。
+- 必跑矩阵（获Go窗口后，`server/`）：`go test -json -count=1 -p=1 ./internal/push/alertattemptstorage -run '^TestPushScheduler'`及相同`-race`；`go mod verify`、`go vet ./...`、`go build ./...`、三授权Go文件gofmt与`git diff --check`。Go1.27.3、已有依赖／真实锁版embed；单Go窗口，冻结实际source／env／闭包pre-post，保留日志hash／自然exit及FAIL／NOT_RUN，不额外跑全族慢测试；新增闭包影响或额外检查需求先报根。
+- 闭环／剩余范围：实施独立commit→不同Auditor固定SHA→编号Fixer与新SHA重审（如需）→不同Integrator准确候选及受影响核证→安全ff唯一resume目标→根决定Metadata归档。当前新检查全部NOT_RUN，本叶仅内部Run循环，不宣称生产后台装配／重启恢复／真实发送或父组合完成；旧worker补Drop路径仍needs_user／blocked，其他Backend可推进。WORKER-CORE历史最终普通11／86、修改前完整race11／86、最终定向race1／3 PASS及最终完整race未重跑；PROJECTION／DROP-STORAGE全套普通／race未跑限制分别保留，0016未分配。
+
 <a id="g5-be10-alert-source-read-drop-storage"></a>
 
 ### BE-10-02-ALERT-SOURCE-READ-DROP-STORAGE 明确源缺失／共享已读的独立持久终止
