@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"relaynest/server/internal/devices"
-	sharedsync "relaynest/server/internal/sync"
 )
 
 // alertPolicyDecision 只描述当前可信事务中的策略投影，不含发送所需身份或敏感数据。
@@ -65,28 +64,11 @@ func evaluateAlertPolicyTx(ctx context.Context, tx *sql.Tx, j JobSnapshot, now t
 			return alertPolicyDND, nil
 		}
 	}
-	var matches, types bool
-	err = tx.QueryRowContext(ctx, `SELECT bot_id=? AND bot_seq=?,typeof(id)='text' AND typeof(bot_id)='text' AND typeof(bot_seq)='integer' FROM messages WHERE id=?`, j.BotID, j.BotSeq, j.MessageID).Scan(&matches, &types)
-	if err == sql.ErrNoRows {
-		return alertPolicyOtherDenied, nil
-	}
+	source, err := evaluateAlertSourceReadTx(ctx, tx, j)
 	if err != nil {
 		return "", err
 	}
-	if !types {
-		return "", ErrJobData
-	}
-	if !matches {
-		return alertPolicyOtherDenied, nil
-	}
-	state, err := sharedsync.GetReadStateTx(ctx, tx, j.BotID)
-	if err != nil {
-		return "", err
-	}
-	if err := ctx.Err(); err != nil {
-		return "", err
-	}
-	if state.ReadSeq >= j.BotSeq {
+	if source != alertSourceUnread {
 		return alertPolicyOtherDenied, nil
 	}
 	return alertPolicyEligible, nil
