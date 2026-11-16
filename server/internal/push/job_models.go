@@ -15,7 +15,7 @@ var (
 	ErrJobData  = errors.New("push: invalid job snapshot")
 )
 
-// jobSuppressed 表示原 alert 已命中 DND，后续配置或时段改变不能重新预留。
+// jobSuppressed 表示原 alert 已命中 DND，或明确源已清理／共享已读，后续不得重新预留。
 const jobSuppressed = "suppressed"
 
 const MaxJobReservations = 128
