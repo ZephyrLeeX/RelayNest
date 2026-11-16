@@ -522,9 +522,32 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 先用假adapter验证框架/FCM路径，OPPO外部审核不阻该有限任务；假结果不算厂商真机通过。PUSH-D2/D3已批准切换仅未来新事件、外发在途残余和离线展示限制；本地fencing不能撤回已外发，不以批准替代P02-05验证。发送失败不回滚消息，推送耗尽不进业务failed、不保护普通历史，DND/全部已读任务不复活。
 
+<a id="be10-blockers-20261116"></a>
+
+#### 2026-11-16 续接checkpoint：阻碍调查与完整本地测试
+
+- 恢复与实际完成范围：基线 `7ee3d7d26ab69f3ef50f8da2a3be17b14ff6a493`／`resume/backend-20261026`；Planner核三已归档叶的source→canonical、祖先及完整tree同值，第三canonical仍 `67569e8c6be843f57d806be6807665a76072be99`。恢复时tracked／Index clean，仅既有 `.worktrees/`，209个worktree均保留；main仍 `01c74a776b0b76fcc6616f60ae637a5a53f18384`。本轮无新代码、实现候选或代码集成，三叶不重做；父BE-10-02保持running，0015永久占用、0016未分配。
+- A／冻结调查：Planner与独立Contract Reviewer确认Begin nil／Check false不补Drop为明确合同；已有DropStorage不自动授权接线，Begin当前DND同事务终止也已完成。现有局部测试能证明取消／故障／重复Drop、旧Release和迟到结果保护，不能替代尚未实现的接线验收。**当前新代码ready=0**；以下三项已提请用户，均仍PENDING，不以无答复或“继续”推定批准。
+
+| 优先级／待决定项 | 精确候选范围与依赖 | 批准后仍须满足的验收 |
+|---|---|---|
+| P0／最小A1解冻：仅Begin `(nil,nil)` 后source/read终止 | `server/internal/push/opush_alert_worker.go`、`server/internal/push/alertattemptstorage/opush_worker_fault_test.go`（只phase2获批差异）、新 `server/internal/push/alertattemptstorage/opush_worker_source_read_termination_test.go`；Producer／Reserve／Attempt／PROJECTION／DROP-STORAGE均已集成，缺用户契约批准 | 用原lease／完整expected／新有效时刻调用现有DropAlertSourceRead，只missing/read正证据终止；Drop false沿旧恢复，error传播停止。真实COMMIT／SQL／IGNORE／取消故障回滚、attempt不加／adapter=0、终止不复活、无missing/read正证据的其他拒绝零写。额外clock计数准确，phase3旧合同保持；完整worker与scheduler定向普通／race、静态检查、固定SHA独审与准确集成。 |
+| P0／02-03里程碑划界 | 原父已写先假adapter验框架，BE-10-03负责类型化生产插槽／SDK／凭据／静态装配／真实环境；待确认按此分工解释后续摘要，未改依赖或父状态 | 02仍需真实HTTP／SQLite＋fake的终止、调度恢复及完整组合；真实Provider与最终产品验收不豁免。不能借澄清启用平台或解除Worker冻结。 |
+| P1／Bot API首次消息Alert入队scope | `server/cmd/relaynest/main.go`、新 `server/cmd/relaynest/alert_create_test.go`，确需分离故障验收时最多再新 `server/cmd/relaynest/alert_create_fault_test.go`；既有Sync首次回调／AlertProducer已完成，缺超出父 `internal/push/**` 的精确scope批准 | 同Tx先Sync成功再Alert，任意错误整消息／change／receipt／sync／alert回滚；真实TLS首次／幂等／过滤／SQL／IGNORE／COMMIT与旧sync安全、未就绪vendor拒绝回归及独审。`messages/create.go:157`排除Webhook，本候选只Bot hook；不改readiness=nil、不装worker／Provider或外发。 |
+
+- 保留边界：A1未批准、更未批准Check false／DND补偿；Begin／Check仓储、四字段fake envelope、取消／error／panic后不后台cleanup、不Release／续租／立即重试等旧合同保持。mismatch永久终止无授权，继续no-op。全时段DND／queued观察、TOCTOU、Webhook生产接线及父完整组合仍未完成，不造新Worker／包装层绕过。
+- B／Provider调查：已确认最小提示、六结果、accepted≠展示ACK、unknown不删注册／不跨通道补响、明确失效按原快照条件解绑和在途不可撤回原则；现Envelope仍fake-only，PushTarget／条件解绑能力不等于已接成生产秘密桥。尚缺生产request／原job目标解析、固定SDK/API及错误映射、配置项、凭据安全注入与轮换、初始化关闭／在途排空及失败恢复契约；项目账号／权限／目标机／出网及OPPO资格未提供或未核实，不声称其绝对不存在。BE-10-03仍依父、未偷开；真实Provider、手机及生产装配／发送NOT_RUN，本轮禁止启用真实发送。
+- C／术语与历史：scheduler的7／28指7个顶层Test／28个含父子层级身份，不是比例或全服；Implementer普通／race实际跑，A01与I01各重跑普通，I01 race只同值核证复用。历史11／86限定 `^TestOPushAlertWorker` 家族，1／3为mixedscope顶层定向；旧阶段当时“最终完整家族race未重跑”的事实保留，不倒改旧stage。三叶各自未跑全套的历史亦保留；本轮当前完整结果另记如下。
+- **本轮实际完整测试PASS**：Test Agent `/root/test_admission` 在固定上述HEAD、server tree `2fbb528954d08fc8ecc1415f4996b794c9455c29`、Go1.27.3及三件真实锁版embed执行 `go test -json -count=1 -p=1 ./...`，自然exit0／299.558秒；再执行 `go test -json -count=1 -p=1 -race -timeout=30m ./...`，自然exit0／3485.112秒、无DATA RACE。各19测试包、518顶层／2875身份PASS、0测试fail／skip；第20个主模块migrations包无测试，非测试跳过。race每包30分钟是根事前批准的显式命令预算，不冒充默认10分钟命令，不改断言／内部timeout／fixture。
+- 当前完整结果实际覆盖最终Worker11／86、Scheduler7／28、Drop7／59；输入HEAD／server及CI／env／embed和normal2971／race2982／tool12／source237文件pre-post零漂移。因此**受测7ee3d7d产品的“当前完整server race未运行”限制已解除**；旧stage未跑事实仍保留。两个日志各有一个动态UUID测试名差异，初次身份集合全等的辅助汇总断言失败保留于 `aggregation-attempt01.json`；独立证据审查确认仅精确UUID位置归一化、无遗漏，不是测试失败、未改结果。本轮未新跑mod verify／vet／build／gofmt／Web重建／CI，旧静态证据不写成新跑；完整本地Go不等于真实Provider或生产生命周期通过。
+- 独立证据审查A01：不同Auditor对固定受测HEAD／server tree、原始JSON、包／身份、自然退出、39项manifest及当前闭包核验PASS，无编号问题；Auditor未运行Go、不是代码候选审计。测试窗口已释放，无待集成代码，不需代码Integrator；Metadata本次仅写本任务文档。
+- 调查证据：Planner `/tmp/relaynest-be10-resume-plan-20261116/PLAN.md`（SHA256 `ba03ee4ac4dbc85031a3de46962b873a454bb24f37427b7ce3eec599d940e3ae`）；独立契约 `/tmp/relaynest-be10-contract-review-20261116.md`（`daf6a6c3fa315c361a3eaa58bbe51871050d07dd3e087983142bcd7680db74ba`）；测试准入 `/tmp/relaynest-be10-test-admission-20261116-r01/C-admission.md`（`35039794e6b737f0911a3fda258a6640e9cda4396aeb1072d4481d0178542c82`）及 `admission-evidence.json`（`d651f0a0ad0366319a5c8ab16bdd8927462b6fb4faab99a571b274fc6bddaa04`）。
+- 完整测试证据：`/tmp/relaynest-be10-full-tests-20261116-r01/FULL-VALIDATION.md`（SHA256 `0b3284ce3b75318b3a4b14cc087f32d6225a31cbe8b738bdbe09ca4c6a6df088`）、`handoff.json`（`8e2a5816abe679dac17e894fb3b7eac5e3f5d8ec1bd2e644c7a2db7bf0663fb7`）、`final-verification.json`（`18500e1731cca5a9428301c7043c9f8f0568cf3cf8e0c38c9ed8bd269d429d88`）和39项 `index.json`（`83e09268dab437e499870ad4ffa82ec72cc48cbf46157b477b2830691410f0c3`）；独立 `/tmp/relaynest-be10-full-test-evidence-audit-20261116/A01.md`（`193688ef61b4a33ffee9b1d85dcfe6f40d041889152d13a809c2a11c9b1e52cb`）及 `verification.json`（`4961bd734898d2eea7090a786ea116652b211829d468e3d1a436681643b80b81`）。原始普通／race日志hash与全部命令、身份见上述manifest，失败辅助汇总证据保留。
+- 准确续接：以本次Metadata实际提交SHA恢复，先核HEAD／本节证据／三叶唯一归档和所有锁释放，再收取A1、02-03划界、Bot first-create scope三项精确决定；只有明确获批、依赖／测试／独审／路径锁全部满足才登记ready，一次一条受控流水线。无答复则本轮停于调查／验证／checkpoint，不强造第四叶，不把局部needs_user或外部blocked泛化整个Backend。受控文件／Index提交后应clean，仅既有 `.worktrees/`；不改main分支、不清树／push／恢复systemd／真实发送。
+
 <a id="be10-checkpoint-20261116"></a>
 
-#### 2026-11-16 Backend Orchestrator 本轮checkpoint
+#### 2026-11-16 Backend Orchestrator 上一轮历史checkpoint
 
 - 三有限叶各经独立Implementer→不同Auditor A01 PASS→不同Integrator I01 PASS→Metadata归档，无Fixer：PROJECTION source `d7d9da60bebabf568486e354c90d89abae61bb74`→canonical `b0b71fdd24309bbdb28a8b8cc11efa36522fde22`；DROP-STORAGE source `351135b6603c473f7992acb59efc89fda6d65e13`→canonical `b02d1b9334d09f8832a5b53b3d1d13a1be360a69`；SCHEDULER source `b182c44c869dea8ca72fb931eb0f81fe463b403a`→canonical `67569e8c6be843f57d806be6807665a76072be99`。本次Metadata提交仅两任务文档，后续基线以实际回报SHA为准；父BE-10-02保持running，不重复任一已归档叶或旧WORKER-CORE A01／I01。
 - 准确验证界限：PROJECTION定向policy普通／race各20／154、消费者各12／126；DROP新增普通／race各7／59、兼容各3／38；SCHEDULER普通／race各7／28，静态质量均按各归档stage实际执行／同值复用区分。三叶均未跑全套普通／全套race，旧WORKER历史最终普通11／86、修改前完整race11／86、最终定向race1／3 PASS及最终完整race未重跑分别保留，不称whole／CI。源码／各index／Go占用均释放，现有所有worktree保留，未push／systemd；0015永久占用、0016未分配，main保持 `01c74a776b0b76fcc6616f60ae637a5a53f18384`。
