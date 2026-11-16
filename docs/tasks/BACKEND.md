@@ -521,11 +521,25 @@ git worktree add -b resume/push-i01 ../RelayNest-push-i01 origin/recovery/backen
 
 先用假adapter验证框架/FCM路径，OPPO外部审核不阻该有限任务；假结果不算厂商真机通过。PUSH-D2/D3已批准切换仅未来新事件、外发在途残余和离线展示限制；本地fencing不能撤回已外发，不以批准替代P02-05验证。发送失败不回滚消息，推送耗尽不进业务failed、不保护普通历史，DND/全部已读任务不复活。
 
+<a id="be-10-02-alert-source-read-drop-storage"></a>
+
+#### BE-10-02-ALERT-SOURCE-READ-DROP-STORAGE 明确源缺失／共享已读的独立持久终止
+
+- 当前状态：`ready`（2026-11-16，根批准Planner对已完成投影后下一最小有限叶的拆分）；尚未创建Implementer、未实施／测试。只新增独立内部仓储能力，不接调用链、不宣称所有提醒已实时终止，父BE-10-02保持running；已归档PROJECTION／WORKER-CORE及A01／I01不重做。
+- 准入基线：`742e05952bb8686dd52e43541caa5cc3eca49914`／目标 `resume/backend-20261026`，产品同PROJECTION canonical `b0b71fdd24309bbdb28a8b8cc11efa36522fde22`；本次Metadata提交后以实际回报SHA为实施基线，不自引用自身SHA。依赖PROJECTION、原始资格Producer、OPUSH Reserve／Attempt、既有DND Drop／租约与共享已读均已准确集成。授权依据技术设计§9.1“目标消息已清理／全部已读时丢弃提醒任务，不重新生成历史”；未查到mismatch永久终止授权，故不扩大到错配。无真实平台权限或外部环境前置，不要求父done。
+- 精确四路径：新 `server/internal/push/alert_source_read_drop.go`；`server/internal/push/job_models.go` **只更新jobSuppressed原因注释**；新 `server/internal/push/alertattemptstorage/source_read_drop_test.go`、`source_read_drop_fault_test.go`。新增内部 `DropAlertSourceRead(ctx, lease, expected, now) (bool, error)`，沿DropAlertDND自有短写事务模式，复用既有readAlertDropRow／syncOneRow／leaseCurrentSnapshot及精确行投影核验，不改既有方法或抽取第五路径。
+- 事务／授权不变量：先核参数，经CheckAlertLeaseTx核当前身份／注册配置版本／原未过期租约，再完整比对expected，限定原eligible完整opush alert及有效期／effective24h；同事务source/read helper仅missing或read正证据可suppressed并清两lease列，unread／mismatch `false,nil`零写。错误回滚且false；只在真实COMMIT成功后true。更新后重核当前身份、missing/read正证据及全部26列SQLite值／存储类；前后原因可在missing/read集合中变化，不额外冻结同一原因。只目标state与两lease列变化，attempt／fence／结果、其他快照／next／稳定键／期限及业务表／注册不变；不能将other_denied、配置拒绝或错误当终止证据，不跨事务复用原因。
+- 禁区／预算：不接Begin／Check／worker、不改其冻结拒绝语义，不扫描queued、不领取／续租／释放、不发送或扣attempt，不实现调度／真实平台／TOCTOU收口；不改旧测试／fixture、外部API契约、DDL／依赖／配置／timer／timeout。0015永久占用，0016不分配。超四路径、需改冻结语义或额外安全决定时checkpoint交根，不自行扩展；main／任何既有worktree／远端／systemd保持。
+- owner／锁：Metadata `/root/metadata_current` 暂持root本文件／index唯一写锁，提交交接后释放。planned Implementer `/root/alert_source_read_drop_implementer` **尚未创建**；计划新树 `/tmp/relaynest-be10-alert-source-read-drop-20261116`、分支 `impl/backend-be10-alert-source-read-drop-20261116`，本次只读核不存在，实施创建前重核，不覆盖现场。源码四路径／新树index及单Go／gofmt窗口当前留根，须根创建实施者并明确移交后才能写／测试；实施者不改root元数据，旧 `.worktrees/` 保留。
+- 验收：新增 `TestAlertSourceReadDrop*` 复用真实producer→Reserve和现有fixture；missing／read equal或above持久终止，unread／below／mismatch零写；第二Store及reopen能见COMMIT，Begin前后均可独立终止，旧Reserve／Release／Begin／迟到Apply不得复活或污染元数据。完整覆盖expected／身份版本／租约／资格类型／过期／接管释放／注册配置轮换拒绝零写，以及损坏source/read／SQL／取消不得成为终止证据。真实COMMIT故障、UPDATE IGNORE及代表行／身份／source触发器异常必须证明注入命中目标阶段、false且全事务回滚。双Store竞争最多一个true，清holder后其他合法用途按既有规则继续；仅目标三列变化，全表digest验证其余零写。不能用单独helper输出代替完整守卫。
+- 必跑矩阵（获Go窗口后，`server/`）：`go test -json -count=1 -p=1 ./internal/push/alertattemptstorage -run '^TestAlertSourceReadDrop'`及相同`-race`；同包 `go test -json -count=1 -p=1 ./internal/push/alertattemptstorage -run '^(TestPolicyDNDAndOtherDenied|TestFencesAndPolicyResultSeparation|TestOPushAlertWorkerBeginAndCheckDenied)'`及相同`-race`；`go mod verify`、`go vet ./...`、`go build ./...`、四授权Go文件格式与`git diff --check`。Go1.27.3、已有依赖／真实锁版embed；单Go窗口，记录实际source/env/闭包pre-post／日志hash／自然exit及所有FAIL／NOT_RUN，不弱化断言或timeout。新增闭包影响先报根，不擅跑整套慢族。
+- 闭环／边界：独立实施commit→不同Auditor固定SHA→编号Fixer与新SHA重审（如需）→不同Integrator准确候选及受影响组合→安全ff唯一resume目标→根决定Metadata归档；冲突新增业务字节重审。当前全部新检查NOT_RUN，不借PROJECTION旧PASS替代；全时段DND、终止实际接线、queued扫描、调度、真实发送、TOCTOU与父最终组合继续未完成。WORKER-CORE最终普通11／86、修改前完整race11／86、最终定向race1／3 PASS且最终完整race未重跑，以及PROJECTION全套普通／race未跑边界原样保留。
+
 <a id="be-10-02-alert-source-read-projection"></a>
 
 #### BE-10-02-ALERT-SOURCE-READ-PROJECTION alert源消息与共享已读的私有只读原因投影
 
-已完成有限叶：[完整范围／验收、source、不同A01 PASS及准确I01与历史限制](COMPLETED.md#g5-be10-alert-source-read-projection)。canonical `b0b71fdd24309bbdb28a8b8cc11efa36522fde22`；仅三源码路径，冻结三原因／bool／DND顺序保持，不是永久drop授权。I01新普通20／154及质量PASS，policy race与消费者矩阵仅同值核证复用；本叶全套普通／race均未跑，WORKER-CORE最终完整race未重跑限制保留。0015永久占用、0016未分配，源码／index／Go锁释放；source/read永久终止、DND全时段捕获、调度／真实发送／TOCTOU与父组合仍未完成，下一叶尚未ready／未授写。
+已完成有限叶：[完整范围／验收、source、不同A01 PASS及准确I01与历史限制](COMPLETED.md#g5-be10-alert-source-read-projection)。canonical `b0b71fdd24309bbdb28a8b8cc11efa36522fde22`；仅三源码路径，冻结三原因／bool／DND顺序保持，不是永久drop授权。I01新普通20／154及质量PASS，policy race与消费者矩阵仅同值核证复用；本叶全套普通／race均未跑，WORKER-CORE最终完整race未重跑限制保留。0015永久占用、0016未分配，源码／index／Go锁释放；source/read永久终止、DND全时段捕获、调度／真实发送／TOCTOU与父组合仍未完成；下一有限[DROP-STORAGE](#be-10-02-alert-source-read-drop-storage)仅前置ready，源码／Go仍待根移交。
 
 <a id="be10-next-after-attempt-r01"></a>
 
