@@ -130,10 +130,28 @@ func TestOPushAlertWorkerBeginAndCheckDenied(t *testing.T) {
 					return push.AlertAccepted, nil
 				})
 				got, e := w.Step(ctx)
-				if (e != nil) != (mode == "error") || got != (push.OPushAlertStepResult{}) || calls != 0 || clocks != phase {
+				wantClocks := phase
+				if phase == 2 && mode != "error" {
+					wantClocks = 3
+				}
+				if (e != nil) != (mode == "error") || got != (push.OPushAlertStepResult{}) || calls != 0 || clocks != wantClocks {
 					t.Fatal("denial", got, e, calls, clocks)
 				}
 				if mode == "error" {
+					return
+				}
+				if phase == 2 && (mode == "read" || mode == "source") {
+					after := read(t, f, j.ID)
+					if after.State != "suppressed" || after.Attempt != 0 {
+						t.Fatal("Begin source/read not permanently dropped", after)
+					}
+					if mode == "read" {
+						exec(t, other, `UPDATE bot_read_states SET read_seq=0`)
+					}
+					n = n.Add(time.Minute)
+					if again, e := w.Step(ctx); e != nil || again != (push.OPushAlertStepResult{}) || calls != 0 {
+						t.Fatal("source/read revived", again, e)
+					}
 					return
 				}
 				if phase == 2 && mode == "dnd" {

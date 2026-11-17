@@ -61,7 +61,17 @@ func (w *OPushAlertWorker) Step(ctx context.Context) (result OPushAlertStepResul
 		return result, err
 	}
 	ticket, err := w.repository.BeginAlert(ctx, held[0].Lease, now)
-	if err != nil || ticket == nil {
+	if err != nil {
+		return result, err
+	}
+	if ticket == nil {
+		// Begin 拒绝只补做源／已读终止；用新时刻和完整原快照在独立事务重核。
+		// 其他拒绝仍由既有到期恢复处理，不释放租约或立即重试。
+		now, err = nextNow()
+		if err != nil {
+			return result, err
+		}
+		_, err = w.repository.DropAlertSourceRead(ctx, held[0].Lease, held[0].Job.Snapshot, now)
 		return result, err
 	}
 	now, err = nextNow()
