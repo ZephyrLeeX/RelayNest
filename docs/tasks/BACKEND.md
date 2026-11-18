@@ -1,13 +1,43 @@
 # Go 后端剩余任务
 
-## 当前权威恢复入口（2026-10-27）
+## 当前权威恢复入口：Debian → Arch Linux（2026-11-18）
+
+本轮仅迁移、暂停新 Backend 开发派发；任务状态仍由本文件条目与 [COMPLETED](COMPLETED.md) 唯一维护。下方 2026-10-26／27 环境记录及其中恢复命令均为历史，不再作为新克隆入口。
+
+### 集成检查点与成果筛选
+
+- 唯一 Backend 集成分支：`resume/backend-20261026`，仓库 `https://github.com/ZephyrLeeX/RelayNest`。迁移前准确 HEAD 为 `27e11901aba321dd78945d452625fcc7b8732432`，server tree 为 `3fb1591541b191210e459f5d70f9883988b7e533`；本次 Metadata 只补本文档，提交后分支 HEAD 用 `git rev-parse HEAD` 获取，源码仍对应上述 tree。最终远程检查点以本轮实际推送后逐 ref 核验结果为准，本文不预写尚未发生的成功。
+- 迁移前远端集成 HEAD：`2bb6bc3a37af2159932a98046f21410114a365ea`；本地／远端 `main` 均为 `01c74a776b0b76fcc6616f60ae637a5a53f18384`。用户已授权本次集成分支与必要恢复分支的明确 refspec 非强制推送，未授权 main、Release、部署或新业务实施。
+- 根仓库实际 211 个 worktree、184 个本地分支已只读盘点；121 个分支 HEAD 已为集成祖先，63 个其余分支的 `git cherry` 全为负。无尚需迁移的独有业务提交，**本轮必要恢复分支为 0**，不重复上传已集成／等价／过时实现。历史独立克隆 `.worktrees/backend-local` 的 3 个 worktree 均 clean，仅作历史载体；不在该克隆推进第二个目标。
+- 根 tracked／index 原为 clean，仅未跟踪 `.worktrees/`；全部活跃／未闭环任务未发现待保存的未提交业务实现。临时历史 worktree 的受控文件删除原样保留；四份未跟踪文件分别为 `/tmp/relaynest-be10-alert-policy-audit-a01/server/internal/push/alert_policy_a01_test.go`、`/tmp/relaynest-be10-alert-policy-reason-audit-a01/server/internal/push/alert_policy_reason_a01_test.go`、`/tmp/relaynest-be10-sync-scoped-reserve-a01/server/internal/push/a01_independent_test.go`、`/tmp/relaynest-be10-sync-worker-a01/server/internal/push/sync_worker_a01_test.go`，均属已闭环历史独立审计，不是待恢复业务 WIP，本轮不上传、不覆盖。
+- `/tmp/relaynest-archive-review/report.md` 仍可读取；其旧 Origin Enqueue／OPUSH 待完成结论已被后续独审与准确集成取代，不得据此重复实施或再建恢复分支。
+
+### 当前任务、授权与验证边界
+
+- 已集成 Alert Origin Enqueue、OPUSH Scoped Reserve、OPUSH Attempt/Result Storage、ALERT-OPUSH-WORKER-CORE，以及后续 Projection、Drop Storage、Scheduler；准确源链／canonical／审计及测试见各唯一归档。最后完成有限叶为 [A1 Begin空票据后 source/read 终止](COMPLETED.md#g5-be10-a1-source-read-termination)，canonical `8ef28b9e8ead5aee4288cbb2bf91b2551c08f1a7`，不同 A01／准确 I01 PASS，无未关闭编号问题。
+- 父 BE-10-02 仍 `running`，迁移期间不运行新实施叶；当前没有在途业务实施、审计、修复、Go 测试或集成写操作。既有产品／index／Go窗口已释放，本次 Metadata 仅持本文档／根 index 排他锁，提交交接后释放。tmux `codex-test` 为只读空闲、`relaynest-backend-v2` 为 shell、`relaynest-backend` 承载本次迁移；旧停止态 Codex 及空闲 helper 原样保留，不 kill、不恢复 systemd 自动续作。
+- **A2 尚未批准、尚未实现**：Check `(false,nil)` 后 source/read 重新判定仍只是已审 P02 建议、状态 `needs_user`。A1 的精确授权仅覆盖 Begin `(nil,nil)`；Drop false 沿旧租约到期恢复，不自动扩至 Check、DND／其他拒绝补 Drop 或 mismatch 永久终止。
+- 冻结与未完成：queued／未领取窗口、全生命周期 source/read／DND、TOCTOU、父组合及 Android global 尚未收口；Bot API／Webhook／main 首次接线、Provider 凭据／真实发送、生产生命周期、02-03 划界、CAS reply_to／original_reply 决策及发布按现有条目保持冻结／待决定。迁移授权不替代业务解冻。0015 已永久占用，仓库当前 SQL 为 0001～0015；0016 未分配，恢复后实际核号再排他登记。
+- 已有真实验证：固定 `7ee3d7d26ab69f3ef50f8da2a3be17b14ff6a493` 的全 server 普通及 race 各 518 顶层／2875 身份 PASS，限原受测产品；不能冒称新 A1 全矩阵。固定 `8ef28b9e8ead5aee4288cbb2bf91b2551c08f1a7` 的 A1 实现阶段 Worker／Scheduler／Drop 普通及 race 分别 17／123、7／28、7／59 PASS，mod verify／vet／build／格式及真实锁版 Web 构建 PASS；A01／I01 新跑与精确证据复用的区别见 A1 归档。
+- **8ef 的全 server 普通／race 均 NOT_RUN**，真实 Provider、生产装配与真机未验收；后续必要组合验证须针对实际新环境和源码执行。本轮只补交接文档，不因备份重跑耗时 Go 矩阵；执行文档差异／链接、暂存白名单及提交前后源码 tree 检查，不新增业务验收结论。
+
+### Arch Linux 恢复顺序与本地材料
+
+1. 通过 SSH 克隆 `git@github.com:ZephyrLeeX/RelayNest.git`，检出 `resume/backend-20261026`；将 `git rev-parse HEAD` 与本轮最终远程检查点对照。无需旧 recovery 分支重组，不从 main 重做、不 cherry-pick 已有成果。
+2. 先读 `AGENTS.md`、`docs/tasks/WORKFLOW.md`、本文本节、[当前剩余授权](#be10-blockers-20261116)及 A1 归档；核真实 HEAD／dirty／refs／路径锁。当前没有 ready 实施叶，优先取得 A2、02-03 划界、Bot first-create scope 的精确决定，再按授权选择一个有限叶。
+3. 准备仓库锁版工具：Go `1.27.3`（`server/go.mod`）、Node `22.23.2`／npm `10.9.8`（`web/mise.toml`／`web/package.json`）；race 需 x86_64 本机 C 工具链及 `CGO_ENABLED=1`。先 `npm --prefix web ci --no-audit --no-fund`、`npm --prefix web run build` 生成真实 embed，再在 `server/` 获取并校验依赖；不得拿占位资源或旧 dist 代替。新环境网络／代理及依赖下载可用性须真实核验。
+4. 新建一个 Backend Orchestrator，依保存 Git 状态、权威任务文档与已集成代码接续。旧子 Agent 的会话／session ID 无法凭 GitHub 克隆恢复；重新登录 Codex／GitHub，按新环境独立准备 tmux、工具链、凭据与代理，不能假定 Debian 登录、缓存或运行进程已迁移。
+
+不能从 GitHub 直接恢复的本地材料包括：Debian tmux／Agent 运行现场、认证与秘密、代理配置、Go／npm 缓存、构建产物、原始 `/tmp` 审计 overlay／夹具／测试日志及上述四份历史审计测试。必要开发状态、准确源码 SHA、测试／审计结论和限制已由本文与 COMPLETED 版本化；原始证据未上传，不宣称可在新机原字节复核，需原始材料时保留 Debian 或在新机重现。保留所有 Debian 原始树与历史 refs，本次不删除源项目、不创建第二套任务注册系统。
+
+## 历史恢复入口（2026-10-27）
 
 - 当前唯一推进目标为项目根 `/home/codex/projects/RelayNest` / `resume/backend-20261026`。Integrator `/root/push_i01_retry` 核实原根只有未跟踪 `.worktrees/`、无受控用户修改／路径冲突后，从既有本地克隆执行无 force 的本地 fetch，准确导入 `8a1e875730410be49ae810e9ce5a5b84932085f9`，并已安全 switch 到该 resume 分支；导入时 commit／tree 与克隆完全一致，后续本节元数据提交以实际 HEAD 为准。未从 main 重做、未重复 cherry-pick，`main` ref 仍为 `01c74a776b0b76fcc6616f60ae637a5a53f18384`。
 - ADMIN 完整 WIP／修复链现已在准确 `665edd785d8784ae0e3304d3d3bdfed2d474f872` 组合取得 A04 PASS、全部必检与 I01 安全 ff，由总调度批准[有限叶完成](COMPLETED.md#g5-be02-admin)；原 `work/backend-admin-resume@92404a1…` 仅保留 source 可达性。`ADMIN-A03-B01` 已因准确组合全服 race PASS 关闭；独立 [STORAGE-BUSY-01 修复](COMPLETED.md#g5-storage-busy-01) 与推送 STORAGE 已 done 的结论不变，父 BE-02 限定范围已另经[独立 R01／A01／I01](COMPLETED.md#g5-be02-compose)完成，其他 HTTP／跨端门槛不自动通过。
 - `.worktrees/backend-local@8a1e875…` 现在仅为历史恢复载体，不再并行推进第二个目标；其 Git/index 未被改写。ADMIN 与 baseline 等现有独立 worktree 路径／归属保持不动，仍按原登记的仓库和固定 SHA 检查。原根未跟踪 `.worktrees/` 不得整体 stage，也不删除或覆盖其中现场。
 - 下次先在项目根核真实分支／HEAD、dirty、refs 与文档中的未闭环证据；不要再次切回默认 main、克隆新目标或重复应用已有代码。需要的源码实现／审计／修复／精确集成仍使用独立 Agent 和排他工作树；用户本轮已明确“同意”同库共享、可取消的写准入修复，有限子叶 `STORAGE-BUSY-01` 已完成两编号修复、A02 PASS 与 I01 精确合入；ADMIN 已完成准确组合检查、A04 续独审及 I01，父 BE-02 原四项已另经 R01／A01／I01 限定收口；未来能力仍按各自任务执行。未 push、部署或创建 `.codex-task-done`；下方旧环境记录保留作历史证据。
 
-## 环境迁移交接（2026-10-26）
+## 历史环境迁移交接（2026-10-26）
 
 用户已明确授权将代码和状态文档备份到 GitHub，随后更换执行环境。本节记录恢复入口与断点；任务状态仍以下方条目及 COMPLETED 为准，不以备份提交代替实施、审计或集成验收。
 
